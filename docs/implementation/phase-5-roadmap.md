@@ -2,7 +2,7 @@
 
 Date: 2026-09-06. Status: implementation started; milestone exits require the evidence below.
 
-Implementation checkpoint: [Phase 6 / M01](phase-6-m01.md) now provides a runnable private course/lecture preview. Full service qualification is pending WSL/Docker startup; M01 is not yet marked complete. M02–M08 remain planned. The exit criteria below remain the baseline.
+Implementation checkpoint: [Phase 6 / M01](phase-6-m01.md) is complete for the private course/lecture foundation. The real PostgreSQL application suite, S3/Kafka probes, container builds, persistent-volume restart drill and container-app browser walkthrough passed on 2026-09-06. M02–M08 remain planned; the full note-taking product is not qualified. The exit criteria below remain the baseline.
 
 This is the build backlog for product-development Phase 6. Milestone IDs M01–M08 are build increments, not a restart of the phase numbering. The [consolidated specification](../../multimodal_academic_learning_system_spec.md) controls scope; the [reconciliation record](phase-5-reconciliation.md) explains changes from the originals. Every milestone requires its stated evidence before being called complete.
 
@@ -26,7 +26,7 @@ Priority P0 means required for the first release. P1 means a desired extension a
 - Build: Next.js/TypeScript shell and one FastAPI codebase for REST, WebSockets, and separately launched workers. Add Docker Compose for PostgreSQL, SeaweedFS, and Kafka; keep models in an explicit local provisioning profile. Pin versions after checking the actual host. Add health checks, opaque trace IDs, migrations, one-use owner bootstrap, sessions, CSRF/origin checks, course/lecture creation and consistent snapshot reads.
 - Persistence: owners/sessions, courses, settings versions, lecture lifecycle/capture/audio epochs, command receipts, job/outbox/inbox/update tables. Implement authorization helpers and tombstone checks before content routes; only health information is public. Do not expose placeholder recording controls as working features.
 - Verify: a fresh isolated database migrates, restart preserves a course, duplicate create keys return one result, mismatched reuse conflicts, unauthorized REST/WebSocket/source IDs reveal no content. Real object put/read/checksum and broker publish/consume succeed with persistent volumes. No lecture content in telemetry.
-- Exit evidence: pinned environment manifest, reproducible start/test instructions, migration logs, integration results, and a course create/reopen walkthrough. M01 is the next executable task, not completion of the note-taking product.
+- Exit evidence: pinned environment manifest, reproducible start/test instructions, migration logs, integration results, and a course create/reopen walkthrough. These passed for M01; this does not establish completion of the note-taking product.
 
 ### M02: Capture and durable acknowledgement
 
@@ -81,13 +81,13 @@ Roles identify who supplies evidence, not people already assigned. The implement
 | G03 | Chosen hardware/model settings meet predeclared live/final delay criteria under simultaneous STT/notes; sample counts, backlog, cold/warm timings and peak memory recorded. | AI/runtime implementer with student workflow review | M05, M08 | Open: note-only trials took 66–214 seconds; no live default qualified. |
 | G04 | Real browser/storage/DB failure tests validate acknowledgement, gap reporting, edit/version fences, restart/recovery and scoped deletion. | Application implementer | M02, M06, M07, M08 | Open: only finite reference/contract tests pass. |
 | G05 | Review a representative course for visual-only material; retain disclosed limitations or explicitly move materials/visual capture forward if notes cannot be useful without it. | Subject reviewer with product owner | M04, M08 | Open: synthetic missing-board warnings do not establish course suitability. |
-| G06 | Exact supported environment, accessibility walkthrough, local privacy checks, full-lecture UX results and backup/restore limits documented. | Application implementer with student reviewer | M01, M08 | Open: Windows/Chromium are design targets, not verified support. |
+| G06 | Exact supported environment, accessibility walkthrough, local privacy checks, full-lecture UX results and backup/restore limits documented. | Application implementer with student reviewer | M01, M08 | Open: M01 Windows/container foundation and basic browser walkthrough pass; recording, assistive technology, full lectures and backup/restore remain unqualified. |
 
 Do not reduce gates simply to obtain a passing report. Any threshold or scope change needs a recorded reason, reference data, and a new evaluation; changing runtime candidates does not authorize sending lectures externally.
 
 ## Acceptance ownership
 
-Each scenario has one primary completion milestone below. It can receive earlier component checks and is rerun in M08. All scenarios remain unexecuted against an application today.
+Each scenario has one primary completion milestone below. It can receive earlier component checks and is rerun in M08. M01 now has application evidence for course/lecture persistence and the existing authorization boundary; later source routes must extend those checks. Full-scenario and release qualification remain open.
 
 | Scenarios | Primary milestone | Evidence focus |
 | --- | --- | --- |

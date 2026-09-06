@@ -6,11 +6,11 @@ The current product priority is **reliable lecture capture → timestamped trans
 
 ## Current phase
 
-**Phase 6 / M01: building the application.** A Next.js/FastAPI course-and-lecture workspace now runs locally, with private sessions, persistent records, migrations and application tests. Recording and generated notes are not implemented yet. PostgreSQL/SeaweedFS/Kafka configuration is ready for integration testing; Docker Desktop is installed but its Linux engine needs WSL setup.
+**Phase 6 / M01 complete: private workspace and service foundation.** The Next.js/FastAPI course-and-lecture workspace runs in Docker with PostgreSQL, SeaweedFS and Kafka. Real-service tests, container builds and persistent-volume restart checks pass. Recording and generated notes are not implemented yet.
 
-- [Run the app and review M01 results](docs/implementation/phase-6-m01.md): preview instructions, service setup, implemented behavior and remaining verification.
+- [Run the app and review M01 results](docs/implementation/phase-6-m01.md): local startup, implemented behavior, executed checks and remaining milestones.
 
-After dependency installation, run `pwsh -File scripts/Start-Preview.ps1 -NewUnlockCode`, open `http://127.0.0.1:3000`, and use `.local/unlock-code.txt`. The explicitly labeled preview uses a local SQLite file; PostgreSQL remains the intended application store and has no automatic fallback. See the linked guide before switching modes or handling existing data.
+With Docker Desktop's Linux engine running, run `pwsh -File scripts/Start-App.ps1 -NewUnlockCode`, open `http://127.0.0.1:3000`, and use `.local/unlock-code.txt`. This builds and starts the app, creates a one-use code and preserves existing courses. Subsequent starts can omit `-NewUnlockCode` while the browser session is valid. The separately selected SQLite preview remains available; its data is preserved separately and is not automatically copied to PostgreSQL.
 
 - [Current product and technical specification](multimodal_academic_learning_system_spec.md): consolidated scope, selected architecture, evidence boundaries and release gates.
 - [Current architecture artifact](multimodal_academic_learning_system_architecture_v2.html): standalone visual overview, version 0.3; the existing filename is retained.
@@ -18,7 +18,7 @@ After dependency installation, run `pwsh -File scripts/Start-Preview.ps1 -NewUnl
 - [Phase 5 reconciliation](docs/implementation/phase-5-reconciliation.md): decisions changed from the originals and unresolved evaluation work.
 - [Phase 5 verification](docs/implementation/phase-5-verification.md): checks performed on the consolidated documents and artifact.
 
-The next check is **M01's real service qualification**, then M02 microphone capture and recovery. Human review, real-audio quality and usable live performance remain required release evidence. Earlier design records follow:
+The next build milestone is **M02 microphone capture and recovery**. Human review, real-audio quality and usable live performance remain required release evidence. Earlier design records follow:
 
 - [Phase 1 product brief](docs/product/phase-1-product-brief.md): audience, first-release scope, note requirements, quality gates, and open decisions.
 - [Phase 2 student experience](docs/product/phase-2-student-experience.md): screens, lecture workflows, recording states, source inspection, editing, export, and accessibility requirements.

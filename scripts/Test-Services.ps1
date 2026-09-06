@@ -1,3 +1,4 @@
+param([switch]$Restart, [string]$DockerPath = 'docker')
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $taskRoot
@@ -16,6 +17,12 @@ $env:S3_SECRET_KEY=$taskValues.S3_SECRET_KEY
 $env:PYTHONPATH='apps/api'
 & .venv/Scripts/python.exe -m notetaker.verify_services
 if ($LASTEXITCODE -ne 0) { throw 'Real service probe failed. Do not mark M01 services verified.' }
-& .venv/Scripts/python.exe -m pytest -q
+$taskTestRoot = Join-Path $taskRoot ('.cache/service-tests-' + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $taskTestRoot | Out-Null
+& .venv/Scripts/python.exe -m pytest -q --tb=short --basetemp "$taskTestRoot/temp" -o "cache_dir=$taskTestRoot/cache"
 if ($LASTEXITCODE -ne 0) { throw 'PostgreSQL integration tests failed.' }
+if ($Restart) {
+    & .venv/Scripts/python.exe -m notetaker.verify_restart --docker $DockerPath
+    if ($LASTEXITCODE -ne 0) { throw 'Persistent-volume restart verification failed.' }
+}
 Write-Output 'Real PostgreSQL application tests and synthetic object/broker probes passed. Capture durability still requires M02.'
