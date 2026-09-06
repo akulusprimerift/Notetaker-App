@@ -1,0 +1,151 @@
+{
+  "started_at": "2026-09-06T04:25:18.925Z",
+  "dataset_version": "cs-notes-v1",
+  "dataset_sha256": "f73b8c141edf1f868dd0e410fc57f42157dca146ab84743c8b81130424668229",
+  "prompt_sha256": "60d3d0a77a8dd587fc4dfc8b68a7aaec8bcd5cb02482673d1bce0b1a356e76bc",
+  "schema_sha256": "0f038bf652bbe1699f963e74c18f179f53373c216caa76462eac9ef1a2fab51c",
+  "provider_schema_sha256": "95be48ccb8fb6cd324933d15bc7a95092bf9023b67325c6fc4a9879a1c6ecf5a",
+  "fixture_origin": "synthetic",
+  "human_review_status": "pending",
+  "model": "qwen3:4b",
+  "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+  "prompt_version": "v2",
+  "selected_case_ids": [
+    "correction-and-conditions"
+  ],
+  "environment": {
+    "node": "v22.13.1",
+    "cpu": "13th Gen Intel(R) Core(TM) i7-13700H",
+    "logical_processors": 20,
+    "memory_bytes": 34029125632,
+    "platform": "win32",
+    "os_release": "10.0.26200"
+  },
+  "settings": {
+    "temperature": 0,
+    "seed": 42,
+    "num_ctx": 8192,
+    "num_predict": 4096
+  },
+  "cases": [
+    {
+      "id": "correction-and-conditions",
+      "contract_valid": true,
+      "semantic_support": "not_evaluated",
+      "human_review_status": "pending",
+      "raw_content": "{\n  \"schema_version\": 1,\n  \"source_snapshot_id\": \"graph-snapshot-v1\",\n  \"settings_version\": 1,\n  \"blocks\": [\n    {\n      \"id\": \"block-1\",\n      \"topic\": \"Dijkstra's Algorithm Requirements\",\n      \"kind\": \"definition\",\n      \"passages\": [\n        {\n          \"id\": \"passage-1\",\n          \"evidence_kind\": \"lecture_paraphrase\",\n          \"text\": \"Dijkstra's algorithm requires nonnegative edge weights, with zero-weight edges permitted but negative edge weights not allowed.\",\n          \"sources\": [\n            {\n              \"source_id\": \"g-2-v1\",\n              \"quote\": \"Correction: I misspoke. The standard Dijkstra algorithm requires nonnegative edge weights. Zero-weight edges are allowed. Do not write that negative edges are supported.\",\n              \"occurrence\": 0\n            }\n          ]\n        }\n      ]\n    },\n    {\n      \"id\": \"block-2\",\n      \"topic\": \"Relaxation Step\",\n      \"kind\": \"procedure\",\n      \"passages\": [\n        {\n          \"id\": \"passage-2\",\n          \"evidence_kind\": \"lecture_paraphrase\",\n          \"text\": \"The relaxation step for an edge (u, v) involves comparing the current distance to v with the candidate distance dist[u] + weight(u, v). If the candidate distance is smaller, update dist[v] to this candidate and set predecessor[v] to u.\",\n          \"sources\": [\n            {\n              \"source_id\": \"g-3-v1\",\n              \"quote\": \"Relaxing an edge (u, v) means checking whether dist[u] + weight(u, v) is smaller than dist[v]. If it is, update dist[v] to that candidate distance and set predecessor[v] to u.\",\n              \"occurrence\": 0\n            }\n          ]\n        }\n      ]\n    }\n  ],\n  \"issues\": [\n    {\n      \"code\": \"incomplete_evidence\",\n      \"detail\": \"The initial statement about negative edge weights was retracted in the correction. The lecture does not provide explicit examples of how negative weights might be handled or alternative algorithms for negative weights.\",\n      \"source_ids\": [\"g-1-v1\"]\n    }\n  ],\n  \"coverage\": [\n    {\n      \"source_id\": \"g-1-v1\",\n      \"disposition\": \"omitted\",\n      \"reason\": \"The initial claim about negative edge weights was retracted in the correction, so it is not part of the current rule.\"\n    },\n    {\n      \"source_id\": \"g-2-v1\",\n      \"disposition\": \"used\",\n      \"reason\": \"This source provides the corrected rule for Dijkstra's algorithm edge weights.\"\n    },\n    {\n      \"source_id\": \"g-3-v1\",\n      \"disposition\": \"used\",\n      \"reason\": \"This source describes the relaxation step in detail.\"\n    }\n  ]\n}",
+      "done_reason": "stop",
+      "ollama_metrics": {
+        "total_duration": 87951705400,
+        "load_duration": 7823100,
+        "prompt_eval_count": 1307,
+        "prompt_eval_duration": 18872515000,
+        "eval_count": 620,
+        "eval_duration": 68943964000
+      },
+      "output": {
+        "schema_version": 1,
+        "source_snapshot_id": "graph-snapshot-v1",
+        "settings_version": 1,
+        "blocks": [
+          {
+            "id": "block-1",
+            "topic": "Dijkstra's Algorithm Requirements",
+            "kind": "definition",
+            "passages": [
+              {
+                "id": "passage-1",
+                "evidence_kind": "lecture_paraphrase",
+                "text": "Dijkstra's algorithm requires nonnegative edge weights, with zero-weight edges permitted but negative edge weights not allowed.",
+                "sources": [
+                  {
+                    "source_id": "g-2-v1",
+                    "quote": "Correction: I misspoke. The standard Dijkstra algorithm requires nonnegative edge weights. Zero-weight edges are allowed. Do not write that negative edges are supported.",
+                    "occurrence": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "block-2",
+            "topic": "Relaxation Step",
+            "kind": "procedure",
+            "passages": [
+              {
+                "id": "passage-2",
+                "evidence_kind": "lecture_paraphrase",
+                "text": "The relaxation step for an edge (u, v) involves comparing the current distance to v with the candidate distance dist[u] + weight(u, v). If the candidate distance is smaller, update dist[v] to this candidate and set predecessor[v] to u.",
+                "sources": [
+                  {
+                    "source_id": "g-3-v1",
+                    "quote": "Relaxing an edge (u, v) means checking whether dist[u] + weight(u, v) is smaller than dist[v]. If it is, update dist[v] to that candidate distance and set predecessor[v] to u.",
+                    "occurrence": 0
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "code": "incomplete_evidence",
+            "detail": "The initial statement about negative edge weights was retracted in the correction. The lecture does not provide explicit examples of how negative weights might be handled or alternative algorithms for negative weights.",
+            "source_ids": [
+              "g-1-v1"
+            ]
+          }
+        ],
+        "coverage": [
+          {
+            "source_id": "g-1-v1",
+            "disposition": "omitted",
+            "reason": "The initial claim about negative edge weights was retracted in the correction, so it is not part of the current rule."
+          },
+          {
+            "source_id": "g-2-v1",
+            "disposition": "used",
+            "reason": "This source provides the corrected rule for Dijkstra's algorithm edge weights."
+          },
+          {
+            "source_id": "g-3-v1",
+            "disposition": "used",
+            "reason": "This source describes the relaxation step in detail."
+          }
+        ]
+      },
+      "validation": {
+        "structurallyValid": true,
+        "resolvedCitations": [
+          {
+            "passage_id": "passage-1",
+            "source_id": "g-2-v1",
+            "start": 0,
+            "end": 169
+          },
+          {
+            "passage_id": "passage-2",
+            "source_id": "g-3-v1",
+            "start": 0,
+            "end": 175
+          }
+        ],
+        "semanticSupport": "not_evaluated"
+      },
+      "wall_ms": 87962,
+      "loaded_models": [
+        {
+          "name": "qwen3:4b",
+          "size": 3884460276,
+          "size_vram": 0,
+          "context_length": 8192
+        }
+      ]
+    }
+  ],
+  "release_eligible": false,
+  "ollama_version": "0.33.3",
+  "completed_at": "2026-09-06T04:26:46.968Z",
+  "contract_valid_cases": 1,
+  "all_cases_contract_valid": true
+}

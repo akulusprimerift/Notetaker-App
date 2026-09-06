@@ -28,4 +28,6 @@ The [Phase 1 product brief](product/phase-1-product-brief.md) establishes the in
 
 The [Phase 3 architecture](architecture/phase-3-architecture.md), [data model](architecture/phase-3-data-model.md), and [API/event contracts](architecture/phase-3-api-events.md) define the implementation baseline. [Phase 3 verification](architecture/phase-3-verification.md) maps all student acceptance cases to architecture responsibilities and distinguishes reference-model checks from integration tests.
 
-The next phase is AI pipeline design and evaluation. Hardware capacity, model quality, browser recovery, and physical storage durability remain unvalidated; the chosen architecture defines how they must be tested rather than claiming they already work.
+The [Phase 4 pipeline](ai/phase-4-pipeline.md) and [evaluation plan](ai/phase-4-evaluation.md) define the AI contracts and candidate settings. The [Phase 4 results](ai/phase-4-results.md) distinguish executed contract checks and synthetic local-model trials from uncompleted human review, real-audio STT, and full-lecture evaluation.
+
+The next planning phase consolidates the specification and implementation roadmap. It must carry those qualification gaps forward as explicit gates; synthetic results do not establish release readiness, browser recovery, or physical storage durability.

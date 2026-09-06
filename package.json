@@ -1,0 +1,16 @@
+{
+  "name": "notetaker-design-validation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Planning contracts and evaluation tools; not the application runtime.",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test tests/architecture/reference-model.test.mjs tests/ai/contracts.test.mjs",
+    "test:architecture": "node --test tests/architecture/reference-model.test.mjs",
+    "test:ai": "node --test tests/ai/contracts.test.mjs",
+    "verify:docs": "pwsh -NoProfile -File scripts/Verify-PlanningDocs.ps1",
+    "eval:notes": "node scripts/evaluate-notes.mjs"
+  },
+  "devDependencies": { "ajv": "8.20.0" }
+}

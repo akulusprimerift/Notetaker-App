@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:notetaker:note-output:1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "source_snapshot_id", "settings_version", "blocks", "issues", "coverage"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "source_snapshot_id": { "type": "string", "minLength": 1 },
+    "settings_version": { "type": "integer", "minimum": 1 },
+    "blocks": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/block" } },
+    "issues": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/issue" } },
+    "coverage": { "type": "array", "maxItems": 200, "items": { "$ref": "#/$defs/coverage" } }
+  },
+  "$defs": {
+    "citation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_id", "quote", "occurrence"],
+      "properties": {
+        "source_id": { "type": "string", "minLength": 1 },
+        "quote": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "occurrence": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "passage": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "evidence_kind", "text", "sources"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "evidence_kind": { "enum": ["lecture_paraphrase", "exact_quote", "ai_explanation", "uncertainty"] },
+        "text": { "type": "string", "minLength": 1, "maxLength": 12000 },
+        "sources": { "type": "array", "maxItems": 20, "items": { "$ref": "#/$defs/citation" } }
+      }
+    },
+    "block": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "topic", "kind", "passages"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "topic": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "kind": { "enum": ["definition", "explanation", "procedure", "example", "qualification", "emphasis", "uncertainty", "code", "equation"] },
+        "passages": { "type": "array", "minItems": 1, "maxItems": 30, "items": { "$ref": "#/$defs/passage" } }
+      }
+    },
+    "issue": {
+      "type": "object", "additionalProperties": false,
+      "required": ["code", "detail", "source_ids"],
+      "properties": {
+        "code": { "enum": ["missing_visual", "unclear_audio", "source_conflict", "incomplete_evidence"] },
+        "detail": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "source_ids": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "coverage": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_id", "disposition", "reason"],
+      "properties": {
+        "source_id": { "type": "string", "minLength": 1 },
+        "disposition": { "enum": ["used", "unclear", "omitted"] },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 1000 }
+      }
+    }
+  }
+}

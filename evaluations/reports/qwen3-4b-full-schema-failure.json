@@ -1,0 +1,80 @@
+{
+  "started_at": "2026-09-06T04:17:02.647Z",
+  "dataset_version": "cs-notes-v1",
+  "dataset_sha256": "f73b8c141edf1f868dd0e410fc57f42157dca146ab84743c8b81130424668229",
+  "prompt_sha256": "1a10fcef6794e4d3c1bbe726662fdb4bf6f519b7f50f222cf46cab57c2404b0c",
+  "schema_sha256": "0f038bf652bbe1699f963e74c18f179f53373c216caa76462eac9ef1a2fab51c",
+  "fixture_origin": "synthetic",
+  "human_review_status": "pending",
+  "model": "qwen3:4b",
+  "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+  "environment": {
+    "node": "v22.13.1",
+    "cpu": "13th Gen Intel(R) Core(TM) i7-13700H",
+    "logical_processors": 20,
+    "memory_bytes": 34029125632,
+    "platform": "win32",
+    "os_release": "10.0.26200"
+  },
+  "settings": {
+    "temperature": 0,
+    "seed": 42,
+    "num_ctx": 8192,
+    "num_predict": 4096
+  },
+  "cases": [
+    {
+      "id": "binary-search-detail",
+      "contract_valid": false,
+      "semantic_support": "not_evaluated",
+      "human_review_status": "pending",
+      "error": "Ollama chat: HTTP 400",
+      "wall_ms": 5301,
+      "loaded_models": [
+        {
+          "name": "qwen3:4b",
+          "size": 3884460276,
+          "size_vram": 0,
+          "context_length": 8192
+        }
+      ]
+    },
+    {
+      "id": "correction-and-conditions",
+      "contract_valid": false,
+      "semantic_support": "not_evaluated",
+      "human_review_status": "pending",
+      "error": "Ollama chat: HTTP 400",
+      "wall_ms": 27,
+      "loaded_models": [
+        {
+          "name": "qwen3:4b",
+          "size": 3884460276,
+          "size_vram": 0,
+          "context_length": 8192
+        }
+      ]
+    },
+    {
+      "id": "quoted-instruction-and-ambiguity",
+      "contract_valid": false,
+      "semantic_support": "not_evaluated",
+      "human_review_status": "pending",
+      "error": "Ollama chat: HTTP 400",
+      "wall_ms": 22,
+      "loaded_models": [
+        {
+          "name": "qwen3:4b",
+          "size": 3884460276,
+          "size_vram": 0,
+          "context_length": 8192
+        }
+      ]
+    }
+  ],
+  "release_eligible": false,
+  "ollama_version": "0.33.3",
+  "completed_at": "2026-09-06T04:17:08.057Z",
+  "contract_valid_cases": 0,
+  "all_cases_contract_valid": false
+}

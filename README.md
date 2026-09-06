@@ -6,7 +6,7 @@ The current product priority is **reliable lecture capture → timestamped trans
 
 ## Current phase
 
-**Phase 3: Architecture and data design.** Product scope, student workflows, and the architecture baseline are documented. The repository contains planning documents and executable architecture reference tests; application implementation has not started.
+**Phase 4: AI pipeline and evaluation.** Product scope, workflows, architecture, and AI contracts are documented. The repository includes design tests and a local synthetic-note evaluation harness; the application recording pipeline is not implemented.
 
 - [Phase 1 product brief](docs/product/phase-1-product-brief.md): audience, first-release scope, note requirements, quality gates, and open decisions.
 - [Phase 2 student experience](docs/product/phase-2-student-experience.md): screens, lecture workflows, recording states, source inspection, editing, export, and accessibility requirements.
@@ -16,6 +16,9 @@ The current product priority is **reliable lecture capture → timestamped trans
 - [Phase 3 data model](docs/architecture/phase-3-data-model.md): entities, relationships, constraints, and transaction boundaries.
 - [Phase 3 API and events](docs/architecture/phase-3-api-events.md): write, replay, retry, and synchronization contracts.
 - [Phase 3 verification](docs/architecture/phase-3-verification.md): scenario traceability, reference tests, and remaining integration work.
+- [Phase 4 AI pipeline](docs/ai/phase-4-pipeline.md): speech/note settings, evidence boundaries, context handling, and provider contracts.
+- [Phase 4 evaluation plan](docs/ai/phase-4-evaluation.md): fixtures, scoring, review requirements, and qualification gates.
+- [Phase 4 results](docs/ai/phase-4-results.md): executed checks, local model trials, and outstanding validation.
 - [Project phases](docs/project-phases.md): the sequence from product definition through implementation and expansion.
 
 The Phase 1 brief records the current note-taking priority. The original documents remain broader references; their feature lists and infrastructure phases are not all requirements for the first release.
@@ -29,4 +32,6 @@ Practice generation, mastery tracking, personalization, and advanced infrastruct
 
 ## Documentation verification
 
-Run `pwsh -NoProfile -File scripts/Verify-PlanningDocs.ps1` to check local Markdown file links, Phase 2 acceptance coverage, and Phase 3 architecture traceability. Run `node --test tests/architecture/reference-model.test.mjs` for executable architecture reference checks. These do not test a running application or infrastructure. Run `git diff --check` before committing edits.
+Install pinned test dependencies with `npm ci --ignore-scripts`. Run `npm test` for architecture and AI contract tests, and `npm run verify:docs` for local links and scenario traceability. These do not test the full application or infrastructure. Run `git diff --check` before committing edits.
+
+With Qwen3 4B already installed in a local Ollama service, run `npm run eval:notes -- qwen3:4b` for the three synthetic CS cases. This command contacts only the loopback Ollama endpoint, never downloads a model, and writes results under the ignored `evaluations/local-runs/` directory. Valid structure is not a passing educational-quality score. Selected reviewed run artifacts belong in `evaluations/reports/`; model weights and caches do not belong in Git.
