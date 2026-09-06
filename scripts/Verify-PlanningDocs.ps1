@@ -65,6 +65,38 @@ foreach ($screenId in $screenIds) {
     if (-not $coveredScreens.ContainsKey($screenId)) { throw "Uncovered screen: $screenId" }
 }
 
+$architecture = Get-Content -LiteralPath (Join-Path $docsPath 'architecture/phase-3-architecture.md') -Raw
+$architectureVerification = Get-Content -LiteralPath (Join-Path $docsPath 'architecture/phase-3-verification.md') -Raw
+$contractIds = @([regex]::Matches($architecture, '(?m)^## (ARC-\d{2}):') | ForEach-Object { $_.Groups[1].Value })
+if ($contractIds.Count -eq 0 -or ($contractIds | Select-Object -Unique).Count -ne $contractIds.Count) {
+    throw 'Missing or duplicate architecture contract IDs.'
+}
+$architectureRows = @([regex]::Matches($architectureVerification, '(?m)^\| (UX-\d{2}(?:, UX-\d{2})*) \| ([^|]+) \| ([^|]+) \|\r?$'))
+if ($architectureRows.Count -eq 0 -or ([regex]::Matches($architectureVerification, '(?m)^\| UX-')).Count -ne $architectureRows.Count) {
+    throw 'Missing or malformed architecture mapping rows.'
+}
+$mappedScenarios = @{}
+$mappedContracts = @{}
+foreach ($architectureRow in $architectureRows) {
+    foreach ($scenarioId in ($architectureRow.Groups[1].Value -split ', ')) {
+        if (-not $seenScenarios.ContainsKey($scenarioId)) { throw "Unknown mapped scenario: $scenarioId" }
+        if ($mappedScenarios.ContainsKey($scenarioId)) { throw "Duplicate mapped scenario: $scenarioId" }
+        $mappedScenarios[$scenarioId] = $true
+    }
+    foreach ($contractId in ($architectureRow.Groups[2].Value -split ',' | ForEach-Object { $_.Trim() })) {
+        if ($contractId -notin $contractIds) { throw "Unknown architecture contract: $contractId" }
+        $mappedContracts[$contractId] = $true
+    }
+    if ([string]::IsNullOrWhiteSpace($architectureRow.Groups[3].Value)) { throw 'Empty architecture responsibility.' }
+}
+foreach ($scenarioId in $seenScenarios.Keys) {
+    if (-not $mappedScenarios.ContainsKey($scenarioId)) { throw "Scenario missing architecture mapping: $scenarioId" }
+}
+foreach ($contractId in $contractIds) {
+    if (-not $mappedContracts.ContainsKey($contractId)) { throw "Unmapped architecture contract: $contractId" }
+}
+
 Write-Output "PASS: $($markdownFiles.Count) planning Markdown files; $linkCount local file links resolve."
 Write-Output "PASS: $($scenarioRows.Count) unique scenarios cover $($requiredIds.Count) core requirements and $($screenIds.Count) screens."
+Write-Output "PASS: $($mappedScenarios.Count) student scenarios map to $($contractIds.Count) architecture contracts."
 Write-Output 'Scope: file links and structural coverage only; application behavior and note quality are not tested.'

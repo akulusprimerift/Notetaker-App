@@ -26,4 +26,6 @@ These are product-development phases. They are distinct from the older, zero-bas
 
 The [Phase 1 product brief](product/phase-1-product-brief.md) establishes the initial scope. The [Phase 2 student experience](product/phase-2-student-experience.md) defines the workflows and screen requirements, with [acceptance scenarios](product/phase-2-acceptance-scenarios.md) covering the core scope. [Verification notes](product/phase-2-verification.md) distinguish documentation validation from application tests that have not yet run.
 
-The next phase is architecture and data design. Hardware, model choices, and recording durability mechanisms remain open until architecture and evaluation work establish a supported baseline.
+The [Phase 3 architecture](architecture/phase-3-architecture.md), [data model](architecture/phase-3-data-model.md), and [API/event contracts](architecture/phase-3-api-events.md) define the implementation baseline. [Phase 3 verification](architecture/phase-3-verification.md) maps all student acceptance cases to architecture responsibilities and distinguishes reference-model checks from integration tests.
+
+The next phase is AI pipeline design and evaluation. Hardware capacity, model quality, browser recovery, and physical storage durability remain unvalidated; the chosen architecture defines how they must be tested rather than claiming they already work.
