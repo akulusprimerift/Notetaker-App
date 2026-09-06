@@ -6,7 +6,15 @@ The current product priority is **reliable lecture capture → timestamped trans
 
 ## Current phase
 
-**Phase 4: AI pipeline and evaluation.** Product scope, workflows, architecture, and AI contracts are documented. The repository includes design tests and a local synthetic-note evaluation harness; the application recording pipeline is not implemented.
+**Phase 5: Consolidated specification and implementation roadmap.** The current specification and architecture artifact now reflect the note-taking priority and measured AI limitations. Eight implementation milestones lead to a full lecture workflow. The repository includes design tests and a local synthetic-note evaluation harness; the application recording pipeline is not implemented.
+
+- [Current product and technical specification](multimodal_academic_learning_system_spec.md): consolidated scope, selected architecture, evidence boundaries and release gates.
+- [Current architecture artifact](multimodal_academic_learning_system_architecture_v2.html): standalone visual overview, version 0.3; the existing filename is retained.
+- [Phase 5 implementation roadmap](docs/implementation/phase-5-roadmap.md): M01–M08, dependencies, migration/interface sequence, all 32 acceptance cases and six open qualification gates.
+- [Phase 5 reconciliation](docs/implementation/phase-5-reconciliation.md): decisions changed from the originals and unresolved evaluation work.
+- [Phase 5 verification](docs/implementation/phase-5-verification.md): checks performed on the consolidated documents and artifact.
+
+The next build task is **Phase 6 / M01: private workspace and service foundation**. Human review, real-audio quality and usable live performance remain required release evidence. Earlier design records follow:
 
 - [Phase 1 product brief](docs/product/phase-1-product-brief.md): audience, first-release scope, note requirements, quality gates, and open decisions.
 - [Phase 2 student experience](docs/product/phase-2-student-experience.md): screens, lecture workflows, recording states, source inspection, editing, export, and accessibility requirements.
@@ -21,12 +29,12 @@ The current product priority is **reliable lecture capture → timestamped trans
 - [Phase 4 results](docs/ai/phase-4-results.md): executed checks, local model trials, and outstanding validation.
 - [Project phases](docs/project-phases.md): the sequence from product definition through implementation and expansion.
 
-The Phase 1 brief records the current note-taking priority. The original documents remain broader references; their feature lists and infrastructure phases are not all requirements for the first release.
+The consolidated specification controls current scope. Earlier phase documents retain detailed contracts and the history of design/evaluation decisions.
 
 ## Original design references
 
-- [Product and technical specification](multimodal_academic_learning_system_spec.md)
-- [HTML architecture artifact](multimodal_academic_learning_system_architecture_v2.html)
+- [Archived v0.2 specification](docs/archive/original-spec-v0.2.md)
+- [Archived v0.2 architecture artifact](docs/archive/original-architecture-v0.2.html)
 
 Practice generation, mastery tracking, personalization, and advanced infrastructure demonstrations follow validation of the core note-taking experience.
 

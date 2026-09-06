@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Preserve the original Markdown's intentional two-space line breaks in the archive.
+docs/archive/original-spec-v0.2.md whitespace=-blank-at-eol

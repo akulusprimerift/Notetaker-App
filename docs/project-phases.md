@@ -2,7 +2,7 @@
 
 This roadmap reflects the current priority: reliable transcription and excellent lecture notes, especially for content-heavy courses.
 
-These are product-development phases. They are distinct from the older, zero-based implementation phases in the original specification and HTML artifact. The original implementation roadmap will be reconciled in Phase 5.
+These are product-development phases. They are distinct from the older, zero-based implementation phases in the archived specification and HTML artifact. Phase 5 replaces that original build order with M01–M08 inside product-development Phase 6.
 
 | Phase | Focus | Deliverable and completion condition |
 | --- | --- | --- |
@@ -30,4 +30,6 @@ The [Phase 3 architecture](architecture/phase-3-architecture.md), [data model](a
 
 The [Phase 4 pipeline](ai/phase-4-pipeline.md) and [evaluation plan](ai/phase-4-evaluation.md) define the AI contracts and candidate settings. The [Phase 4 results](ai/phase-4-results.md) distinguish executed contract checks and synthetic local-model trials from uncompleted human review, real-audio STT, and full-lecture evaluation.
 
-The next planning phase consolidates the specification and implementation roadmap. It must carry those qualification gaps forward as explicit gates; synthetic results do not establish release readiness, browser recovery, or physical storage durability.
+The [consolidated specification](../multimodal_academic_learning_system_spec.md), [updated architecture artifact](../multimodal_academic_learning_system_architecture_v2.html), and [Phase 5 roadmap](implementation/phase-5-roadmap.md) reconcile the original documents. [Reconciliation](implementation/phase-5-reconciliation.md) records the decisions; [verification](implementation/phase-5-verification.md) records executed checks. M01–M08 map all 32 UX scenarios and carry six unresolved qualification gates into implementation. Phase 4's human-reviewed fixtures and calibrated quality/performance completion conditions remain open.
+
+Next: Phase 6 / M01 builds the private workspace and service foundation. Synthetic results and passing design checks do not establish release readiness, browser recovery, or physical storage durability.

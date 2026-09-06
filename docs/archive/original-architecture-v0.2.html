@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Multimodal Academic Learning System — Production Architecture v0.2</title>
+<style>
+  :root{
+    --bg:#0b1020;
+    --panel:#11182d;
+    --panel2:#0f1630;
+    --ink:#eef2ff;
+    --muted:#aab4d6;
+    --line:#28345c;
+    --accent:#7c8cff;
+    --accent2:#55d6be;
+    --accent3:#f4c95d;
+    --danger:#ff7d95;
+    --soft:#171f3b;
+    --code:#0a0f1d;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:
+      radial-gradient(circle at 10% 0%, rgba(124,140,255,.13), transparent 26rem),
+      radial-gradient(circle at 100% 20%, rgba(85,214,190,.08), transparent 28rem),
+      var(--bg);
+    color:var(--ink);
+    line-height:1.55;
+  }
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1220px;margin:0 auto;padding:0 26px 80px}
+  .hero{padding:72px 0 42px}
+  .eyebrow{
+    display:inline-flex;gap:8px;align-items:center;padding:7px 12px;
+    border:1px solid var(--line);border-radius:999px;color:#cbd3ff;
+    background:rgba(17,24,45,.65);font-size:12px;letter-spacing:.1em;text-transform:uppercase
+  }
+  h1{font-size:clamp(42px,7vw,82px);line-height:.98;margin:22px 0 20px;letter-spacing:-.045em}
+  .lead{font-size:20px;max-width:880px;color:var(--muted);margin:0 0 24px}
+  .chips{display:flex;flex-wrap:wrap;gap:9px}
+  .chip{padding:8px 11px;border-radius:999px;background:var(--soft);border:1px solid var(--line);font-size:13px;color:#dce3ff}
+  .grid{display:grid;gap:18px}
+  .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  @media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr}}
+  .card{
+    background:linear-gradient(180deg,rgba(18,25,48,.98),rgba(13,19,38,.98));
+    border:1px solid var(--line);border-radius:22px;padding:22px;
+    box-shadow:0 20px 50px rgba(0,0,0,.14)
+  }
+  .card h3{margin:0 0 8px;font-size:18px}
+  .card p{margin:0;color:var(--muted)}
+  section{padding:38px 0}
+  .section-head{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:18px}
+  .section-head h2{font-size:31px;margin:0;letter-spacing:-.02em}
+  .section-head p{margin:0;color:var(--muted);max-width:650px}
+  .kicker{color:var(--accent2);font-size:12px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px}
+  .diagram{
+    border:1px solid var(--line);border-radius:24px;padding:20px;background:
+      linear-gradient(rgba(124,140,255,.025) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(124,140,255,.025) 1px,transparent 1px),
+      #0c1225;
+    background-size:24px 24px;
+    overflow:auto;
+  }
+  svg{max-width:100%;height:auto;display:block;margin:auto}
+  .flow{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
+  .node{
+    flex:1 1 150px;min-width:150px;padding:16px;border:1px solid var(--line);
+    border-radius:16px;background:var(--panel);position:relative
+  }
+  .node b{display:block;margin-bottom:5px}
+  .arrow{align-self:center;color:var(--accent);font-size:24px}
+  .pill{
+    display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;border:1px solid var(--line);
+    color:#c9d2f5;background:#111a35;margin-right:5px;margin-top:6px
+  }
+  table{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  th,td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+  th{background:#121a33;color:#e7ebff;font-size:13px}
+  td{color:var(--muted);font-size:14px}
+  tr:last-child td{border-bottom:0}
+  code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  pre{
+    margin:0;background:var(--code);border:1px solid #202a4a;border-radius:16px;padding:16px;
+    overflow:auto;color:#d9e0ff;font-size:13px;line-height:1.55
+  }
+  .callout{
+    border-left:3px solid var(--accent2);padding:14px 16px;background:rgba(85,214,190,.07);
+    border-radius:0 14px 14px 0;color:#dce8ff
+  }
+  .warning{border-left-color:var(--danger);background:rgba(255,125,149,.07)}
+  .phase{
+    position:relative;padding-left:36px;margin:18px 0
+  }
+  .phase:before{
+    content:"";position:absolute;left:10px;top:4px;bottom:-22px;width:2px;background:var(--line)
+  }
+  .phase:last-child:before{bottom:24px}
+  .phase-dot{
+    position:absolute;left:2px;top:4px;width:18px;height:18px;border-radius:50%;
+    background:var(--accent);box-shadow:0 0 0 5px rgba(124,140,255,.12)
+  }
+  .phase h3{margin:0 0 4px}.phase p{margin:0;color:var(--muted)}
+  .mini{font-size:12px;color:var(--muted)}
+  .tag{font-size:11px;color:#dce3ff;background:#192347;padding:4px 7px;border-radius:8px;margin-right:5px;display:inline-block}
+  .toc{
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:28px
+  }
+  .toc a{
+    border:1px solid var(--line);border-radius:14px;padding:12px 13px;background:rgba(17,24,45,.72);color:#ccd5f8;font-size:13px
+  }
+  @media(max-width:780px){.toc{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .footer{border-top:1px solid var(--line);padding-top:24px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">Production-Inspired Architecture · v0.2</div>
+  <h1>Multimodal Academic<br/>Learning System</h1>
+  <p class="lead">
+    A lecture-first learning platform built around <b>Capture → Understand → Practice → Measure → Personalize</b>.
+    The note-taking experience remains the entry point, while the underlying system builds a course-aware, multimodal
+    learning memory that can explain poorly taught concepts, preserve provenance, and adapt to each student over time.
+  </p>
+  <div class="chips">
+    <span class="chip">Live transcription</span><span class="chip">Custom note profiles</span>
+    <span class="chip">Ollama / local models</span><span class="chip">Document RAG</span>
+    <span class="chip">Board / slide capture</span><span class="chip">Course memory</span>
+    <span class="chip">Active recall</span><span class="chip">Mastery modeling</span>
+  </div>
+  <nav class="toc">
+    <a href="#northstar">01 · Product North Star</a>
+    <a href="#system">02 · System Architecture</a>
+    <a href="#lecture">03 · Lecture Pipeline</a>
+    <a href="#models">04 · AI / Model Layer</a>
+    <a href="#rag">05 · Course Context & RAG</a>
+    <a href="#visual">06 · Multimodal Capture</a>
+    <a href="#data">07 · Data Model</a>
+    <a href="#api">08 · Backend & APIs</a>
+    <a href="#frontend">09 · Frontend Surfaces</a>
+    <a href="#learning">10 · Learning Engine</a>
+    <a href="#privacy">11 · Privacy & Reliability</a>
+    <a href="#phases">12 · Build Phases</a>
+  </nav>
+</header>
+
+<section id="northstar">
+  <div class="section-head">
+    <div><div class="kicker">01 · North Star</div><h2>What the product is actually doing</h2></div>
+    <p>The AI is not there to replace thinking. It is there to remove friction, preserve missed information, and help the student re-engage.</p>
+  </div>
+  <div class="grid g5"></div>
+  <div class="flow">
+    <div class="node"><b>1. Capture</b><span>Audio, transcript, slides, board photos, course files.</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><b>2. Understand</b><span>Structure concepts, explain weak instruction, connect prerequisites.</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><b>3. Practice</b><span>Generate targeted recall, examples, and application questions.</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><b>4. Measure</b><span>Track evidence of understanding rather than assuming mastery.</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><b>5. Personalize</b><span>Adapt future notes and reviews to demonstrated strengths and gaps.</span></div>
+  </div>
+  <div class="grid g3" style="margin-top:18px">
+    <div class="card"><h3>Core promise</h3><p>“Even if a lecture is boring, unclear, or poorly delivered, you should leave with an accurate record and a path to actually understanding it.”</p></div>
+    <div class="card"><h3>Non-goal</h3><p>“Ignore class because the AI will do everything.” The system should make catching up easy, not encourage permanent disengagement.</p></div>
+    <div class="card"><h3>Trust principle</h3><p>Every generated claim should distinguish lecture-derived content from course-material-derived context and AI-generated explanation.</p></div>
+  </div>
+</section>
+
+<section id="system">
+  <div class="section-head">
+    <div><div class="kicker">02 · System Architecture</div><h2>High-level component map</h2></div>
+    <p>The system is intentionally modular so transcription, note generation, vision, embeddings, and storage can be swapped independently.</p>
+  </div>
+  <div class="diagram">
+    <svg viewBox="0 0 1180 650" aria-label="system architecture">
+      <defs>
+        <style>
+          .b{fill:#121a33;stroke:#344474;stroke-width:1.4}
+          .h{fill:#18224a;stroke:#6070c8;stroke-width:1.5}
+          .t{fill:#edf1ff;font:600 15px Inter, sans-serif}
+          .s{fill:#aab4d6;font:12px Inter, sans-serif}
+          .l{stroke:#6f80dd;stroke-width:2;fill:none;marker-end:url(#m)}
+        </style>
+        <marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#6f80dd"/>
+        </marker>
+      </defs>
+      <rect class="h" x="35" y="35" width="250" height="125" rx="18"/>
+      <text class="t" x="60" y="70">Client Surfaces</text>
+      <text class="s" x="60" y="98">Web / Desktop Lecture UI</text>
+      <text class="s" x="60" y="120">Phone Capture Companion</text>
+      <text class="s" x="60" y="142">Study / Review UI</text>
+
+      <rect class="h" x="355" y="35" width="250" height="125" rx="18"/>
+      <text class="t" x="380" y="70">Realtime Gateway</text>
+      <text class="s" x="380" y="98">WebSocket session</text>
+      <text class="s" x="380" y="120">Audio chunks / events</text>
+      <text class="s" x="380" y="142">Live note deltas</text>
+
+      <rect class="h" x="675" y="35" width="460" height="125" rx="18"/>
+      <text class="t" x="700" y="70">AI Orchestration Layer</text>
+      <text class="s" x="700" y="98">STT provider · Note model · Vision model</text>
+      <text class="s" x="700" y="120">Prompt assembly · RAG retrieval · provenance</text>
+      <text class="s" x="700" y="142">Topic segmentation · post-lecture refinement</text>
+
+      <rect class="b" x="35" y="235" width="250" height="130" rx="18"/>
+      <text class="t" x="60" y="270">Course Context Service</text>
+      <text class="s" x="60" y="298">Syllabus / slides / homework</text>
+      <text class="s" x="60" y="320">Document parsing / chunking</text>
+      <text class="s" x="60" y="342">Course metadata / schedule</text>
+
+      <rect class="b" x="355" y="235" width="250" height="130" rx="18"/>
+      <text class="t" x="380" y="270">Learning Engine</text>
+      <text class="s" x="380" y="298">Concept graph</text>
+      <text class="s" x="380" y="320">Practice generation</text>
+      <text class="s" x="380" y="342">Mastery estimation</text>
+
+      <rect class="b" x="675" y="235" width="210" height="130" rx="18"/>
+      <text class="t" x="700" y="270">Relational DB</text>
+      <text class="s" x="700" y="298">Courses / lectures</text>
+      <text class="s" x="700" y="320">Notes / prompts</text>
+      <text class="s" x="700" y="342">Mastery events</text>
+
+      <rect class="b" x="925" y="235" width="210" height="130" rx="18"/>
+      <text class="t" x="950" y="270">Vector Store</text>
+      <text class="s" x="950" y="298">Course chunks</text>
+      <text class="s" x="950" y="320">Lecture segments</text>
+      <text class="s" x="950" y="342">Semantic retrieval</text>
+
+      <rect class="b" x="35" y="440" width="250" height="130" rx="18"/>
+      <text class="t" x="60" y="475">Object Storage</text>
+      <text class="s" x="60" y="503">Audio segments</text>
+      <text class="s" x="60" y="525">PDFs / slides / images</text>
+      <text class="s" x="60" y="547">Optional local-only mode</text>
+
+      <rect class="b" x="355" y="440" width="250" height="130" rx="18"/>
+      <text class="t" x="380" y="475">Background Jobs</text>
+      <text class="s" x="380" y="503">Final transcript pass</text>
+      <text class="s" x="380" y="525">Embedding generation</text>
+      <text class="s" x="380" y="547">Study artifact generation</text>
+
+      <rect class="b" x="675" y="440" width="460" height="130" rx="18"/>
+      <text class="t" x="700" y="475">Provider Abstraction</text>
+      <text class="s" x="700" y="503">Local: Ollama · faster-whisper · local embeddings</text>
+      <text class="s" x="700" y="525">Cloud: OpenAI / Anthropic / Gemini / Deepgram / others</text>
+      <text class="s" x="700" y="547">OpenAI-compatible custom endpoint support</text>
+
+      <path class="l" d="M285 98 L355 98"/>
+      <path class="l" d="M605 98 L675 98"/>
+      <path class="l" d="M805 160 L805 235"/>
+      <path class="l" d="M975 160 L975 235"/>
+      <path class="l" d="M480 160 L480 235"/>
+      <path class="l" d="M160 160 L160 235"/>
+      <path class="l" d="M160 365 L160 440"/>
+      <path class="l" d="M480 365 L480 440"/>
+      <path class="l" d="M805 365 L805 440"/>
+      <path class="l" d="M1020 365 L1020 440"/>
+    </svg>
+  </div>
+</section>
+
+<section id="lecture">
+  <div class="section-head">
+    <div><div class="kicker">03 · Lecture Pipeline</div><h2>The lifecycle of one live lecture</h2></div>
+    <p>Live mode prioritizes responsiveness. Final mode prioritizes accuracy, provenance, and coherence.</p>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>Live path</h3>
+      <pre>Microphone
+  ↓
+Audio frames (1–5 s)
+  ↓
+Voice activity detection
+  ↓
+Streaming / chunked STT
+  ↓
+Timestamped transcript segments
+  ↓
+Topic buffer
+  ↓
+Note delta generator
+  ↓
+Live notes UI</pre>
+    </div>
+    <div class="card">
+      <h3>Final refinement path</h3>
+      <pre>Recorded lecture audio
+  ↓
+Higher-quality STT pass
+  ↓
+Transcript correction
+  ↓
+Topic segmentation
+  ↓
+Slide / image alignment
+  ↓
+RAG retrieval
+  ↓
+Final structured notes
+  ↓
+Concept extraction + study plan</pre>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:18px">
+    <b>Important:</b> Do not let arbitrary 30-second windows define the note structure. Maintain a rolling transcript buffer and commit notes around semantic/topic boundaries whenever possible.
+  </div>
+
+  <div class="grid g3" style="margin-top:18px">
+    <div class="card"><h3>Live transcript</h3><p>Fast, timestamped, editable, and allowed to be imperfect. The student can follow it without waiting.</p></div>
+    <div class="card"><h3>Live notes</h3><p>Incremental structured deltas. Never rewrite the whole document every few seconds.</p></div>
+    <div class="card"><h3>Final notes</h3><p>Rebuilt after the lecture using the best transcript, visual evidence, retrieved course context, and user note profile.</p></div>
+  </div>
+</section>
+
+<section id="models">
+  <div class="section-head">
+    <div><div class="kicker">04 · AI / Model Layer</div><h2>Provider-agnostic by design</h2></div>
+    <p>Speech recognition, note generation, vision, and embeddings are separate model roles. The app should never assume one provider handles all four.</p>
+  </div>
+
+  <table>
+    <thead><tr><th>Role</th><th>Local option</th><th>Cloud option</th><th>Key requirement</th></tr></thead>
+    <tbody>
+      <tr><td>Speech-to-text</td><td>faster-whisper</td><td>Realtime / streaming STT provider</td><td>Timestamps, low latency, terminology handling</td></tr>
+      <tr><td>Note / reasoning model</td><td>Ollama model</td><td>OpenAI / Anthropic / Gemini / compatible API</td><td>Structured output + long context + tool/RAG support</td></tr>
+      <tr><td>Vision model</td><td>Ollama VLM</td><td>Multimodal API</td><td>Board diagrams, equations, code, slides</td></tr>
+      <tr><td>Embeddings</td><td>Local embedding model</td><td>Embedding API</td><td>Stable vector dimension + batch support</td></tr>
+    </tbody>
+  </table>
+
+  <div class="grid g2" style="margin-top:18px">
+    <div class="card">
+      <h3>Internal provider contract</h3>
+      <pre>interface NoteModelProvider {
+  generate(messages, schema, settings)
+}
+
+interface SpeechProvider {
+  startSession(config)
+  transcribeChunk(audio)
+  finalize()
+}
+
+interface VisionProvider {
+  analyze(image, context)
+}
+
+interface EmbeddingProvider {
+  embed(texts[])
+}</pre>
+    </div>
+    <div class="card">
+      <h3>User-facing model controls</h3>
+      <p><b>Default:</b> “Recommended” profile. Advanced users can switch to Fully Local, Cloud, or Custom. Provider-specific model IDs stay under an Advanced panel so the product does not overwhelm normal students.</p>
+      <div style="margin-top:12px">
+        <span class="pill">Recommended</span><span class="pill">Fully Local</span><span class="pill">Custom</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="rag">
+  <div class="section-head">
+    <div><div class="kicker">05 · Course Context & RAG</div><h2>Course materials become structured memory</h2></div>
+    <p>Syllabus, slides, homework, readings, and previous lectures should be parsed once and retrieved selectively—not shoved wholesale into every prompt.</p>
+  </div>
+
+  <div class="diagram">
+    <div class="flow">
+      <div class="node"><b>Upload</b><span>Syllabus / PDF / PPT export / homework / notes.</span></div>
+      <div class="arrow">→</div>
+      <div class="node"><b>Parse</b><span>Extract text, layout, page numbers, metadata.</span></div>
+      <div class="arrow">→</div>
+      <div class="node"><b>Chunk</b><span>Semantic sections, slide boundaries, question blocks.</span></div>
+      <div class="arrow">→</div>
+      <div class="node"><b>Embed</b><span>Generate vectors and searchable metadata.</span></div>
+      <div class="arrow">→</div>
+      <div class="node"><b>Retrieve</b><span>Current topic → best matching course context.</span></div>
+    </div>
+  </div>
+
+  <div class="grid g3" style="margin-top:18px">
+    <div class="card"><h3>Syllabus intelligence</h3><p>Extract course schedule, exam dates, weighting, topics, policies, office hours, and named resources into structured course metadata.</p></div>
+    <div class="card"><h3>Slide alignment</h3><p>Each slide is a retrievable unit. Transcript similarity can infer which slide the professor is currently discussing.</p></div>
+    <div class="card"><h3>Homework context</h3><p>Retrieve assignment concepts and referenced topics to explain relevance—without automatically generating submission-ready answers.</p></div>
+  </div>
+
+  <div class="callout" style="margin-top:18px">
+    <b>Retrieval rule:</b> combine semantic similarity with metadata filters such as course, lecture, document type, slide/page number, and date. Pure cosine similarity alone will eventually return noisy context.
+  </div>
+</section>
+
+<section id="visual">
+  <div class="section-head">
+    <div><div class="kicker">06 · Multimodal Capture</div><h2>Phone camera as a context sensor</h2></div>
+    <p>The phone should be a nearly zero-friction capture companion, not a second complex app.</p>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>Phone pairing flow</h3>
+      <pre>Desktop lecture session
+  ↓
+Generate QR / short code
+  ↓
+Phone opens capture URL
+  ↓
+WebSocket joins lecture session
+  ↓
+[ Capture Board ]
+  ↓
+Image upload + timestamp
+  ↓
+Vision analysis
+  ↓
+Associate with nearby transcript</pre>
+    </div>
+    <div class="card">
+      <h3>Image analysis object</h3>
+      <pre>{
+  "kind": "whiteboard_diagram",
+  "topic": "AVL rotations",
+  "contains_equation": true,
+  "contains_code": false,
+  "importance": 0.91,
+  "extracted_text": "...",
+  "structured_summary": "...",
+  "timestamp": "00:37:24"
+}</pre>
+    </div>
+  </div>
+
+  <table style="margin-top:18px">
+    <thead><tr><th>Visual type</th><th>What matters</th><th>Processing emphasis</th></tr></thead>
+    <tbody>
+      <tr><td>Equation</td><td>Symbols, structure, variables</td><td>Math-aware extraction + optional LaTeX</td></tr>
+      <tr><td>Code</td><td>Exact syntax, indentation, identifiers</td><td>High-fidelity code extraction</td></tr>
+      <tr><td>Diagram</td><td>Relationships and arrows</td><td>Vision-language interpretation</td></tr>
+      <tr><td>Slide</td><td>Title, bullets, figures, professor commentary</td><td>Alignment to uploaded deck</td></tr>
+      <tr><td>Chart / graph</td><td>Axes, trends, labels, comparisons</td><td>Structural visual reasoning</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="data">
+  <div class="section-head">
+    <div><div class="kicker">07 · Data Model</div><h2>Core entities and relationships</h2></div>
+    <p>Preserve raw evidence and derived artifacts separately. This lets you re-run better models later without losing original context.</p>
+  </div>
+
+  <div class="diagram">
+    <pre>USER
+ ├── NoteProfile
+ ├── ModelProfile
+ └── Course
+      ├── CourseDocument
+      │    └── DocumentChunk
+      ├── Lecture
+      │    ├── AudioAsset
+      │    ├── TranscriptSegment
+      │    ├── VisualCapture
+      │    ├── TopicSegment
+      │    ├── NoteDocument
+      │    │    └── NoteBlock
+      │    │         └── ProvenanceLink
+      │    └── ConceptOccurrence
+      └── Concept
+           ├── ConceptEdge
+           ├── PracticeItem
+           └── MasteryEvent</pre>
+  </div>
+
+  <div class="grid g3" style="margin-top:18px">
+    <div class="card"><h3>Raw evidence</h3><p>Audio, raw transcript, uploaded documents, board images. Treat these as immutable or append-only whenever possible.</p></div>
+    <div class="card"><h3>Derived artifacts</h3><p>Corrected transcript, topic segments, notes, concept graph, flashcards, summaries. These can be regenerated.</p></div>
+    <div class="card"><h3>Learning telemetry</h3><p>Practice attempts, hints, latency, confidence, review timing, mastery updates. Keep this separate from course content.</p></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>Provenance model</h3>
+    <pre>NoteBlock
+  id
+  content
+  block_type
+  ai_generated: true/false
+
+ProvenanceLink
+  note_block_id
+  source_type:
+    transcript | slide | board_image | homework | textbook | ai_explanation
+  source_id
+  start_time / end_time
+  page / slide
+  confidence</pre>
+  </div>
+</section>
+
+<section id="api">
+  <div class="section-head">
+    <div><div class="kicker">08 · Backend & APIs</div><h2>Recommended service boundaries</h2></div>
+    <p>Start as a modular monolith. Do not prematurely split into microservices. Keep clear internal modules so individual components can be extracted later if scaling demands it.</p>
+  </div>
+
+  <div class="grid g3">
+    <div class="card"><h3>Web/API server</h3><p><span class="tag">FastAPI</span><span class="tag">Python</span></p><p style="margin-top:9px">Auth, courses, lectures, file metadata, settings, notes, study sessions.</p></div>
+    <div class="card"><h3>Realtime server</h3><p><span class="tag">WebSocket</span><span class="tag">asyncio</span></p><p style="margin-top:9px">Lecture session state, live transcript, note deltas, phone pairing.</p></div>
+    <div class="card"><h3>Job worker</h3><p><span class="tag">RQ/Celery/Arq</span></p><p style="margin-top:9px">Document parsing, embeddings, final transcript pass, final notes, practice generation.</p></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>Representative API surface</h3>
+    <pre>POST   /courses
+GET    /courses/:id
+POST   /courses/:id/documents
+GET    /courses/:id/concepts
+
+POST   /lectures
+POST   /lectures/:id/start
+POST   /lectures/:id/stop
+GET    /lectures/:id
+GET    /lectures/:id/notes
+
+POST   /lectures/:id/captures
+POST   /lectures/:id/mark-important
+POST   /lectures/:id/catch-me-up
+
+POST   /note-profiles
+POST   /model-profiles
+
+POST   /study-sessions
+POST   /practice/:id/attempt
+
+WS     /ws/lectures/:id</pre>
+  </div>
+</section>
+
+<section id="frontend">
+  <div class="section-head">
+    <div><div class="kicker">09 · Frontend Surfaces</div><h2>The UI should minimize lecture-time distraction</h2></div>
+    <p>Configuration belongs before class. During class, the student should need almost no interaction.</p>
+  </div>
+
+  <div class="grid g4">
+    <div class="card"><h3>Dashboard</h3><p>Courses, next lecture, pending review, weak concepts, recent notes.</p></div>
+    <div class="card"><h3>Course workspace</h3><p>Documents, lecture history, concept map, exam schedule, search.</p></div>
+    <div class="card"><h3>Live lecture</h3><p>Recording indicator, current topic, live notes, transcript status, Catch Me Up, Important.</p></div>
+    <div class="card"><h3>Post-lecture review</h3><p>Final notes, source links, AI explanations, practice session, mastery updates.</p></div>
+  </div>
+
+  <div class="diagram" style="margin-top:18px">
+    <pre>┌─────────────────────────────────────────────────────────────────────┐
+│ CS 344 · Lecture 07                          ● LIVE · 43:16         │
+├─────────────────────────────────────────────────────────────────────┤
+│ Current Topic                                                        │
+│ AVL Tree Rotations                                                   │
+│                                                                       │
+│ LIVE NOTES                           SOURCE                           │
+│ • AVL trees maintain balance        🎙 31:44                         │
+│ • BF = h(left) - h(right)            📄 Slide 14                     │
+│ • LL imbalance → right rotation      🎙 35:12 · 📷 Board             │
+│                                                                       │
+│ [ Catch Me Up ]          [ ★ Important ]        Transcript: Good     │
+└─────────────────────────────────────────────────────────────────────┘</pre>
+  </div>
+</section>
+
+<section id="learning">
+  <div class="section-head">
+    <div><div class="kicker">10 · Learning Engine</div><h2>From notes to evidence of understanding</h2></div>
+    <p>The learning engine should operate on concepts, not just documents.</p>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>Concept pipeline</h3>
+      <pre>Final lecture notes
+  ↓
+Concept extraction
+  ↓
+Link to existing course concepts
+  ↓
+Create prerequisite / related edges
+  ↓
+Generate targeted practice
+  ↓
+Record attempts
+  ↓
+Update mastery state
+  ↓
+Influence next lecture's notes + reviews</pre>
+    </div>
+    <div class="card">
+      <h3>Mastery is evidence-based</h3>
+      <p>Use signals such as correctness, question difficulty, response time, hints, repeated errors, review spacing, and application performance. Avoid claiming certainty from a single LLM-generated score.</p>
+      <div class="callout" style="margin-top:14px">Start simple: a weighted heuristic is enough for an MVP. Later, you can experiment with Bayesian Knowledge Tracing, Item Response Theory, or other knowledge-tracing methods.</div>
+    </div>
+  </div>
+
+  <div class="grid g3" style="margin-top:18px">
+    <div class="card"><h3>Catch Me Up</h3><p>Summarize the last missed segment and explicitly connect it to what is happening right now.</p></div>
+    <div class="card"><h3>8-minute review</h3><p>A short active-recall session after class focused on newly introduced and emphasized concepts.</p></div>
+    <div class="card"><h3>Adaptive notes</h3><p>Condense already-mastered material while expanding unfamiliar concepts, without hiding professor emphasis.</p></div>
+  </div>
+</section>
+
+<section id="privacy">
+  <div class="section-head">
+    <div><div class="kicker">11 · Privacy, Safety & Reliability</div><h2>Trust is part of the architecture</h2></div>
+    <p>Lecture recording and academic guidance create privacy and reliability obligations that should be designed in from the beginning.</p>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>Privacy modes</h3>
+      <p><b>Fully Local:</b> local transcription, Ollama, local embeddings, SQLite/local files.</p>
+      <p style="margin-top:10px"><b>Hybrid:</b> local audio processing with cloud reasoning, or vice versa.</p>
+      <p style="margin-top:10px"><b>Cloud:</b> easiest setup, strongest models, explicit upload disclosure.</p>
+    </div>
+    <div class="card">
+      <h3>Reliability rules</h3>
+      <p>Keep raw transcript and source links. Display model confidence where useful. Mark AI-added explanations. Let students replay source audio around important notes. Never silently rewrite professor claims as AI facts.</p>
+    </div>
+  </div>
+
+  <div class="callout warning" style="margin-top:18px">
+    <b>Recording constraint:</b> the product should make recording status obvious and instruct users to follow their institution’s policies and applicable consent laws. Build deletion and retention controls early.
+  </div>
+</section>
+
+<section id="phases">
+  <div class="section-head">
+    <div><div class="kicker">12 · Build Phases</div><h2>How to build it without creating a monster</h2></div>
+    <p>Each phase should produce something usable before the next layer is added.</p>
+  </div>
+
+  <div class="phase">
+    <span class="phase-dot"></span>
+    <h3>Phase 0 — Foundation</h3>
+    <p>Repo, auth, course/lecture schema, provider interfaces, settings, local development environment, logging.</p>
+    <div class="mini">Exit criterion: user can create a course and lecture and persist basic metadata.</div>
+  </div>
+
+  <div class="phase">
+    <span class="phase-dot"></span>
+    <h3>Phase 1 — Reliable Live Capture</h3>
+    <p>Browser microphone capture, audio chunking, faster-whisper or chosen STT, timestamped transcript, WebSocket updates, lecture recording controls.</p>
+    <div class="mini">Exit criterion: 45–60 minute lecture can be transcribed continuously without losing ordering or timestamps.</div>
+  </div>
+
+  <div class="phase">
+    <span class="phase-dot"></span>
+    <h3>Phase 2 — Custom Note Engine</h3>
+    <p>Note profiles, structured JSON note deltas, topic buffer, incremental note UI, user-selectable model provider, Ollama support.</p>
+    <div class="mini">Exit criterion: two users can generate noticeably different note styles from the same transcript.</div>
+  </div>
+
+  <div class="phase">
+    <span class="phase-dot"></span>
+    <h3>Phase 3 — Course Context / RAG</h3>
+    <p>Document uploads, parsing, chunking, embeddings, vector retrieval, syllabus extraction, slide indexing, provenance.</p>
+    <div class="mini">Exit criterion: note generation can cite relevant course material without loading every file into the prompt.</div>
+  </div>
+
+  <div class="phase">
+    <span class="phase-dot"></span>
+    <h3>Phase 4 — Multimodal Capture</h3>
+    <p>Phone QR pairing, image capture, visual classification, board/slide analysis, transcript alignment.</p>
+    <div class="mini">Exit criterion: a board photo can enrich the correct section of lecture notes with source attribution.</div>
+  </div>
+
+  <div class="phase">
+    <span class="phase-dot"></span>
+    <h3>Phase 5 — Post-Lecture Learning</h3>
+    <p>Final transcript pass, final note regeneration, concept extraction, “teach this better,” short active-recall sessions.</p>
+    <div class="mini">Exit criterion: every lecture ends with accurate notes plus a targeted review session.</div>
+  </div>
+
+  <div class="phase">
+    <span class="phase-dot"></span>
+    <h3>Phase 6 — Measure & Personalize</h3>
+    <p>Mastery events, concept graph, spaced review scheduling, adaptive note density, targeted practice.</p>
+    <div class="mini">Exit criterion: the app changes what it emphasizes based on demonstrated understanding.</div>
+  </div>
+
+  <div class="phase">
+    <span class="phase-dot"></span>
+    <h3>Phase 7 — Course Intelligence</h3>
+    <p>Cross-lecture semantic search, exam review mode, “what did professor emphasize?”, concept history, advanced analytics.</p>
+    <div class="mini">Exit criterion: the student can query and study the entire course as one connected knowledge system.</div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <div><div class="kicker">Recommended Initial Stack</div><h2>Practical starting point</h2></div>
+    <p>Optimized for a student-built project that can later scale without forcing unnecessary infrastructure now.</p>
+  </div>
+  <table>
+    <thead><tr><th>Layer</th><th>Recommendation</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Frontend</td><td>Next.js + TypeScript</td><td>Fast UI iteration, good browser APIs, easy deployment later.</td></tr>
+      <tr><td>Backend</td><td>FastAPI + Python</td><td>Excellent fit for AI/STT libraries and async streaming.</td></tr>
+      <tr><td>Realtime</td><td>WebSockets</td><td>Live transcript, notes, phone pairing, session state.</td></tr>
+      <tr><td>Primary DB</td><td>PostgreSQL</td><td>Strong relational model; can use pgvector initially.</td></tr>
+      <tr><td>Vector search</td><td>pgvector first</td><td>Avoid a separate vector DB until scale requires it.</td></tr>
+      <tr><td>Object storage</td><td>Local filesystem in dev; S3-compatible later</td><td>Simple migration path.</td></tr>
+      <tr><td>Local STT</td><td>faster-whisper</td><td>Good local baseline and easy experimentation.</td></tr>
+      <tr><td>Local LLM</td><td>Ollama</td><td>Provider flexibility and privacy mode.</td></tr>
+      <tr><td>Jobs</td><td>Simple worker / queue</td><td>Needed for final passes and document processing; keep it lightweight at first.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <div class="section-head">
+    <div><div class="kicker">Engineering Rules</div><h2>Decisions that will save the project later</h2></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><h3>Store evidence, not just output</h3><p>Keep raw transcript segments, timestamps, document chunks, and image captures. Generated notes should always be reproducible.</p></div>
+    <div class="card"><h3>Use schemas for model output</h3><p>Notes, concepts, provenance, and visual analyses should be structured JSON objects—not freeform blobs that the frontend has to guess how to parse.</p></div>
+    <div class="card"><h3>Keep provider boundaries clean</h3><p>No frontend code should know how Ollama, OpenAI, or any STT provider works internally. Route everything through your provider layer.</p></div>
+    <div class="card"><h3>Prefer modular monolith</h3><p>One backend repository with strong internal modules is the right tradeoff for the first several phases. Microservices would mostly slow you down.</p></div>
+  </div>
+</section>
+
+
+<section id="production-stack">
+  <div class="section-head">
+    <div><div class="kicker">Production Addendum</div><h2>Event-driven, observable, containerized architecture</h2></div>
+    <p>This project is intentionally production-inspired. Kafka, Kubernetes, observability, autoscaling, and load testing are included only where they perform real architectural work that can be explained and measured.</p>
+  </div>
+  <div class="diagram"><pre>
+                              ┌──────────────────────┐
+                              │      NEXT.JS UI      │
+                              │ web + phone capture  │
+                              └──────────┬───────────┘
+                                         │ REST / WebSocket
+                              ┌──────────▼───────────┐
+                              │ API + REALTIME GATE  │
+                              │ FastAPI / WebSockets │
+                              └──────────┬───────────┘
+                                         │ domain events
+                         ┌───────────────▼────────────────┐
+                         │         APACHE KAFKA           │
+                         │ topics + consumer groups       │
+                         │ + Apicurio schema registry     │
+                         └──────┬──────┬──────┬──────┬───┘
+                                │      │      │      │
+               ┌────────────────┘      │      │      └────────────────┐
+               ▼                       ▼      ▼                       ▼
+        ┌────────────┐          ┌──────────┐ ┌──────────┐      ┌────────────┐
+        │ STT WORKER │          │ NOTE     │ │ VISION   │      │ STUDY      │
+        │ Whisper    │          │ WORKER   │ │ WORKER   │      │ WORKER     │
+        └─────┬──────┘          └────┬─────┘ └────┬─────┘      └─────┬──────┘
+              │                      │            │                  │
+              └──────────────┬───────┴────────────┴──────────┬───────┘
+                             ▼                               ▼
+                    ┌──────────────────┐             ┌──────────────────┐
+                    │ PostgreSQL       │             │ SeaweedFS        │
+                    │ + pgvector       │             │ audio/images/PDF │
+                    └───────┬──────────┘             └──────────────────┘
+                            │
+                    ┌───────▼──────────┐
+                    │ Valkey           │
+                    │ buffers/cache/   │
+                    │ locks/sessions   │
+                    └──────────────────┘
+
+  AI PROVIDER PLANE: Ollama · faster-whisper · local embeddings · optional cloud providers
+
+  OBSERVABILITY:
+  app/workers → OpenTelemetry → Prometheus / Loki / Tempo → Grafana
+                              ↘ GlitchTip (errors)
+                              ↘ Alertmanager (alerts)
+
+  ORCHESTRATION:
+  Docker Compose → k3d/k3s → Kubernetes → Strimzi + KEDA + Helm
+  </pre></div>
+</section>
+
+<section id="kafka-production">
+  <div class="section-head"><div><div class="kicker">Kafka Backbone</div><h2>Events, ordering, consumer groups, retries</h2></div>
+  <p>Kafka carries domain events and metadata. Large binaries remain in object storage. Lecture-scoped streams use <b>lecture_id</b> as the partition key so ordering is preserved within a lecture while different lectures can process concurrently.</p></div>
+  <div class="grid g2">
+    <div class="card"><h3>Representative event chain</h3><pre>lecture.started
+  ↓
+audio.chunk.uploaded
+  ↓
+audio.chunk.ready
+  ↓
+transcript.segment.created
+  ↓
+topic.segment.completed
+  ↓
+context.retrieved
+  ↓
+notes.delta.generated
+  ↓
+notes.block.updated
+  ↓
+notes.finalized
+  ↓
+concept.detected
+  ↓
+practice.generated
+  ↓
+mastery.updated</pre></div>
+    <div class="card"><h3>Standard event envelope</h3><pre>{
+  "event_id": "uuid",
+  "event_type": "audio.chunk.ready",
+  "schema_version": 1,
+  "occurred_at": "...",
+  "producer": "realtime-gateway",
+  "trace_id": "...",
+  "lecture_id": "...",
+  "payload": {
+    "object_key": "...",
+    "sequence": 42,
+    "start_ms": 126000,
+    "end_ms": 131000
+  }
+}</pre></div>
+  </div>
+  <div class="grid g4" style="margin-top:18px">
+    <div class="card"><h3>Consumer groups</h3><p>stt-workers, note-workers, vision-workers, document-workers, context-workers, study-workers.</p></div>
+    <div class="card"><h3>Schema evolution</h3><p>Protobuf or Avro contracts in Apicurio Registry; compatibility tests protect older consumers.</p></div>
+    <div class="card"><h3>Idempotency</h3><p>Assume at-least-once delivery. Use event IDs, deterministic upserts, and unique constraints to prevent duplicate side effects.</p></div>
+    <div class="card"><h3>DLQ</h3><p>Bound retries. Permanent failures move to a dead-letter topic whose growth is observable and alertable.</p></div>
+  </div>
+  <div class="callout" style="margin-top:18px"><b>Do not send audio blobs through Kafka.</b> Store the chunk in SeaweedFS and publish only the object key, sequence, timestamps, checksum, and trace context.</div>
+</section>
+
+<section id="observability-production">
+  <div class="section-head"><div><div class="kicker">Observability</div><h2>Trace one note from microphone to screen</h2></div>
+  <p>OpenTelemetry propagates trace context through HTTP, WebSocket work, and Kafka headers so end-to-end latency can be decomposed instead of guessed.</p></div>
+  <div class="diagram"><pre>
+FastAPI / Next.js / Workers
+          │
+          ▼
+   OpenTelemetry SDKs
+          │
+          ▼
+ OpenTelemetry Collector
+    ┌─────┼──────────────┐
+    ▼     ▼              ▼
+Prometheus Loki          Tempo
+ metrics   logs           traces
+    └─────┼──────────────┘
+          ▼
+        Grafana
+
+Exceptions / stack traces ─────────► GlitchTip
+Alert rules ───────────────────────► Alertmanager
+Synthetic load ────────────────────► k6
+  </pre></div>
+  <table style="margin-top:18px"><thead><tr><th>Area</th><th>Measure</th><th>Example alert / SLO target</th></tr></thead><tbody>
+    <tr><td>STT</td><td>Inference time, chunk→transcript latency, error count, confidence</td><td>Target p95 live transcript &lt; 3 s</td></tr>
+    <tr><td>Kafka</td><td>Consumer lag, producer/consumer rate, retry and DLQ count</td><td>Alert when STT lag &gt; 1000</td></tr>
+    <tr><td>LLM</td><td>Request latency, tokens, failures, structured-output parse failures</td><td>Alert on sustained failure rate</td></tr>
+    <tr><td>Notes</td><td>Transcript→note latency, finalization duration</td><td>Target p95 live note delta within several seconds</td></tr>
+    <tr><td>API</td><td>RPS, p50/p95/p99, 4xx/5xx</td><td>Alert if 5xx &gt; 5%</td></tr>
+    <tr><td>Storage</td><td>Disk utilization, DB pool, object errors</td><td>Alert at 85% storage</td></tr>
+  </tbody></table>
+</section>
+
+<section id="kubernetes-production">
+  <div class="section-head"><div><div class="kicker">Docker + Kubernetes</div><h2>Development stays simple; orchestration is still real</h2></div>
+  <p>Compose is the default developer experience. k3d runs a k3s Kubernetes cluster inside Docker for production-style orchestration, Kafka operators, autoscaling, and fault testing.</p></div>
+  <div class="grid g2">
+    <div class="card"><h3>Compose profiles</h3><pre>core
+├── frontend
+├── api
+├── realtime
+├── postgres
+├── valkey
+├── seaweedfs
+└── kafka
+
+ai
+├── ollama
+├── stt-worker
+├── note-worker
+├── vision-worker
+└── document-worker
+
+observability
+├── otel-collector
+├── prometheus
+├── grafana
+├── loki
+├── tempo
+└── alertmanager</pre></div>
+    <div class="card"><h3>Kubernetes namespaces</h3><pre>application/
+  frontend, api, realtime, workers
+
+data/
+  postgres, valkey, seaweedfs
+
+kafka/
+  strimzi, brokers, apicurio, kafbat-ui
+
+observability/
+  otel, prometheus, grafana,
+  loki, tempo, alertmanager, glitchtip</pre></div>
+  </div>
+  <div class="grid g3" style="margin-top:18px">
+    <div class="card"><h3>Strimzi</h3><p>Manage Kafka with Kubernetes CRDs and an operator instead of hand-building broker StatefulSets.</p></div>
+    <div class="card"><h3>KEDA</h3><p>Scale worker deployments using Kafka consumer lag. This gives autoscaling a real, measurable trigger.</p></div>
+    <div class="card"><h3>Helm + Argo CD</h3><p>Use Helm for packaging after manifests work. Add Argo CD only in a late GitOps phase.</p></div>
+  </div>
+</section>
+
+<section id="reliability-production">
+  <div class="section-head"><div><div class="kicker">Reliability</div><h2>Failure handling is part of the demo</h2></div>
+  <p>The strongest version of this project demonstrates what happens when systems fail rather than only when the happy path works.</p></div>
+  <div class="grid g4">
+    <div class="card"><h3>Bounded retry</h3><p>Classify transient vs permanent errors and use exponential backoff before DLQ.</p></div>
+    <div class="card"><h3>Transactional outbox</h3><p>Write DB state and an outbox row atomically; publish asynchronously. Debezium CDC can be added later.</p></div>
+    <div class="card"><h3>Graceful degradation</h3><p>If RAG fails, preserve lecture-only notes. If note generation fails, preserve transcript. If vision fails, preserve image for retry.</p></div>
+    <div class="card"><h3>Fault tests</h3><p>Kill workers, pause Kafka, break Ollama, force DLQs, and verify recovery through metrics and traces.</p></div>
+  </div>
+</section>
+
+<section id="revised-phases-production">
+  <div class="section-head"><div><div class="kicker">Revised Build Phases</div><h2>Infrastructure grows with product capability</h2></div>
+  <p>Do not boot twenty containers on day one. Each infrastructure addition arrives when there is a concrete workflow to exercise it.</p></div>
+  <div class="phase"><span class="phase-dot"></span><h3>Phase 0 — Foundation + Core Containers</h3><p>Monorepo, Next.js, FastAPI, Postgres, Valkey, SeaweedFS, single-node Kafka, event envelope, provider interfaces, baseline OpenTelemetry.</p></div>
+  <div class="phase"><span class="phase-dot"></span><h3>Phase 1 — Live Capture + Kafka STT</h3><p>Browser microphone, audio objects, chunk events, faster-whisper consumer group, ordered transcript, WebSocket delivery, retry + DLQ.</p></div>
+  <div class="phase"><span class="phase-dot"></span><h3>Phase 2 — Custom Note Engine</h3><p>Ollama, Note Profiles, structured deltas, topic buffering, provenance, Catch Me Up, Mark Important.</p></div>
+  <div class="phase"><span class="phase-dot"></span><h3>Phase 3 — Course RAG + Schemas</h3><p>Document workers, pgvector, syllabus/slide indexing, metadata-aware retrieval, Apicurio Registry, Protobuf contracts.</p></div>
+  <div class="phase"><span class="phase-dot"></span><h3>Phase 4 — Multimodal Capture</h3><p>Phone pairing, visual uploads, VLM worker, equation/code/diagram handling, slide alignment.</p></div>
+  <div class="phase"><span class="phase-dot"></span><h3>Phase 5 — Post-Lecture Learning</h3><p>Final STT, final notes, concepts, Teach This Better, active recall, practice and mastery events.</p></div>
+  <div class="phase"><span class="phase-dot"></span><h3>Phase 6 — Full Observability + Reliability</h3><p>Prometheus, Grafana, Loki, Tempo, Alertmanager, GlitchTip, outbox, runbooks, failure drills.</p></div>
+  <div class="phase"><span class="phase-dot"></span><h3>Phase 7 — Local Kubernetes</h3><p>k3d, Helm, Strimzi, probes, persistent volumes, resource requests/limits.</p></div>
+  <div class="phase"><span class="phase-dot"></span><h3>Phase 8 — KEDA + k6</h3><p>Lag-driven worker autoscaling, concurrency scenarios, p50/p95/p99 benchmark report, resource profiling.</p></div>
+  <div class="phase"><span class="phase-dot"></span><h3>Phase 9 — Optional GitOps / CDC</h3><p>Argo CD, Debezium, environment overlays, advanced deployment and recovery documentation.</p></div>
+</section>
+
+<section id="production-rule">
+  <div class="callout"><b>Final architecture rule:</b> if you cannot explain why a tool exists, the failure mode it addresses, or the measurement it improves, remove it. The resume value comes from the engineering reasoning—not the logo count.</div>
+</section>
+
+<div class="footer">
+  Multimodal Academic Learning System · Architecture Spec v0.1 · Focus: Capture → Understand → Practice → Measure → Personalize
+</div>
+
+</div>
+</body>
+</html>
