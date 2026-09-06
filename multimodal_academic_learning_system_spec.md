@@ -1,6 +1,8 @@
 # Notetaker App: consolidated product and technical specification
 
-Version: 0.3 • Date: 2026-09-06 • Status: implementation baseline; application not built.
+Version: 0.3 • Date: 2026-09-06 • Status: implementation baseline; M01 preview available.
+
+Implementation update: [Phase 6 / M01](docs/implementation/phase-6-m01.md) now implements the private course/lecture foundation in an explicitly selected local preview mode. Full service qualification is pending. Recording and AI notes remain unimplemented; the specification below continues to define the target rather than claim all behavior is present.
 
 **Primary promise:** turn dense lectures into detailed, trustworthy, editable notes that a student can study from. Transcription and note quality are the project's highest priorities.
 
@@ -140,4 +142,4 @@ After core gates: Catch Me Up, Mark Important, optional glossary; course materia
 
 With the pinned test dependency installed, `npm test` runs architecture/AI contract tests and `npm run verify:docs` checks planning links, requirement/scenario ownership and roadmap/artifact consistency. `npm run eval:notes -- qwen3:4b` runs synthetic v1 evaluation against an already installed local model; it does not download weights or validate real audio. Results/failures are not educational approval.
 
-No application launch, migration or end-to-end command exists yet. [Phase 5 verification](docs/implementation/phase-5-verification.md) records what was actually checked for this consolidation.
+Application preview, migration and backend test commands now exist; see the [M01 run guide](docs/implementation/phase-6-m01.md). No complete lecture-to-notes end-to-end command exists. [Phase 5 verification](docs/implementation/phase-5-verification.md) retains the historical consolidation checks.

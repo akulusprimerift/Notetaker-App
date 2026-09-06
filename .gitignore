@@ -4,3 +4,12 @@ node_modules/
 .env.*
 !.env.example
 evaluations/local-runs/
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+.next/
+*.tsbuildinfo
+.local/
+playwright-report/
+test-results/

@@ -1,6 +1,8 @@
 # Phase 5: Implementation roadmap
 
-Date: 2026-09-06. Status: planned, not implemented.
+Date: 2026-09-06. Status: implementation started; milestone exits require the evidence below.
+
+Implementation checkpoint: [Phase 6 / M01](phase-6-m01.md) now provides a runnable private course/lecture preview. Full service qualification is pending WSL/Docker startup; M01 is not yet marked complete. M02–M08 remain planned. The exit criteria below remain the baseline.
 
 This is the build backlog for product-development Phase 6. Milestone IDs M01–M08 are build increments, not a restart of the phase numbering. The [consolidated specification](../../multimodal_academic_learning_system_spec.md) controls scope; the [reconciliation record](phase-5-reconciliation.md) explains changes from the originals. Every milestone requires its stated evidence before being called complete.
 

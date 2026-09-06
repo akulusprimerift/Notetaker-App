@@ -1,0 +1,4 @@
+# Persist filer metadata alongside object volumes. Defaults must not land in ephemeral /tmp.
+[leveldb2]
+enabled = true
+dir = "/data/filerldb2"

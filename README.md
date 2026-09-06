@@ -6,7 +6,11 @@ The current product priority is **reliable lecture capture → timestamped trans
 
 ## Current phase
 
-**Phase 5: Consolidated specification and implementation roadmap.** The current specification and architecture artifact now reflect the note-taking priority and measured AI limitations. Eight implementation milestones lead to a full lecture workflow. The repository includes design tests and a local synthetic-note evaluation harness; the application recording pipeline is not implemented.
+**Phase 6 / M01: building the application.** A Next.js/FastAPI course-and-lecture workspace now runs locally, with private sessions, persistent records, migrations and application tests. Recording and generated notes are not implemented yet. PostgreSQL/SeaweedFS/Kafka configuration is ready for integration testing; Docker Desktop is installed but its Linux engine needs WSL setup.
+
+- [Run the app and review M01 results](docs/implementation/phase-6-m01.md): preview instructions, service setup, implemented behavior and remaining verification.
+
+After dependency installation, run `pwsh -File scripts/Start-Preview.ps1 -NewUnlockCode`, open `http://127.0.0.1:3000`, and use `.local/unlock-code.txt`. The explicitly labeled preview uses a local SQLite file; PostgreSQL remains the intended application store and has no automatic fallback. See the linked guide before switching modes or handling existing data.
 
 - [Current product and technical specification](multimodal_academic_learning_system_spec.md): consolidated scope, selected architecture, evidence boundaries and release gates.
 - [Current architecture artifact](multimodal_academic_learning_system_architecture_v2.html): standalone visual overview, version 0.3; the existing filename is retained.
@@ -14,7 +18,7 @@ The current product priority is **reliable lecture capture → timestamped trans
 - [Phase 5 reconciliation](docs/implementation/phase-5-reconciliation.md): decisions changed from the originals and unresolved evaluation work.
 - [Phase 5 verification](docs/implementation/phase-5-verification.md): checks performed on the consolidated documents and artifact.
 
-The next build task is **Phase 6 / M01: private workspace and service foundation**. Human review, real-audio quality and usable live performance remain required release evidence. Earlier design records follow:
+The next check is **M01's real service qualification**, then M02 microphone capture and recovery. Human review, real-audio quality and usable live performance remain required release evidence. Earlier design records follow:
 
 - [Phase 1 product brief](docs/product/phase-1-product-brief.md): audience, first-release scope, note requirements, quality gates, and open decisions.
 - [Phase 2 student experience](docs/product/phase-2-student-experience.md): screens, lecture workflows, recording states, source inspection, editing, export, and accessibility requirements.
@@ -40,6 +44,6 @@ Practice generation, mastery tracking, personalization, and advanced infrastruct
 
 ## Documentation verification
 
-Install pinned test dependencies with `npm ci --ignore-scripts`. Run `npm test` for architecture and AI contract tests, and `npm run verify:docs` for local links and scenario traceability. These do not test the full application or infrastructure. Run `git diff --check` before committing edits.
+Install pinned JavaScript dependencies with `npm ci --ignore-scripts`. Run `npm test` for architecture/AI contracts, `.venv/Scripts/python.exe -m pytest -q` for backend application tests after Python setup, `npm run typecheck` and `npm run build:web` for the frontend, and `npm run verify:docs` for planning links/traceability. The default backend tests use isolated SQLite preview databases; the M01 guide describes real-service tests. Run `git diff --check` before committing edits.
 
 With Qwen3 4B already installed in a local Ollama service, run `npm run eval:notes -- qwen3:4b` for the three synthetic CS cases. This command contacts only the loopback Ollama endpoint, never downloads a model, and writes results under the ignored `evaluations/local-runs/` directory. Valid structure is not a passing educational-quality score. Selected reviewed run artifacts belong in `evaluations/reports/`; model weights and caches do not belong in Git.
