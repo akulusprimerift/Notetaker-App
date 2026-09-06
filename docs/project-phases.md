@@ -24,4 +24,6 @@ These are product-development phases. They are distinct from the older, zero-bas
 
 ## Current checkpoint
 
-The [Phase 1 product brief](product/phase-1-product-brief.md) establishes the initial scope. Phase 2 will turn that scope into student workflows. Hardware and model choices remain open until architecture and evaluation work establish a supported baseline.
+The [Phase 1 product brief](product/phase-1-product-brief.md) establishes the initial scope. The [Phase 2 student experience](product/phase-2-student-experience.md) defines the workflows and screen requirements, with [acceptance scenarios](product/phase-2-acceptance-scenarios.md) covering the core scope. [Verification notes](product/phase-2-verification.md) distinguish documentation validation from application tests that have not yet run.
+
+The next phase is architecture and data design. Hardware, model choices, and recording durability mechanisms remain open until architecture and evaluation work establish a supported baseline.
