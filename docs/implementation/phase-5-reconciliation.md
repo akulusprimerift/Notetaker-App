@@ -37,3 +37,7 @@ Use the root consolidated specification for scope and the [roadmap](phase-5-road
 Product-development phases remain 1–7. M01–M08 are implementation increments inside Phase 6. The original zero-based Phases 0–9 are archived and no longer an active build order.
 
 Record future scope/contract changes with motivation, impacted requirement/UX IDs, evidence and revised gates. Do not weaken a source, edit-protection, privacy or quality requirement merely because a candidate fails. No user approval of an unmeasured numerical threshold is implied by proceeding to the next phase.
+
+## 2026-09-07: Windows desktop delivery
+
+The user explicitly requires a Windows application by the end of development. The current browser UI becomes the development preview; M08 now owns an installable desktop host, service startup/shutdown, user-data/model paths, upgrade preservation and clean-machine qualification. This extends delivery and G06 evidence without moving optional learning tools ahead of note quality. CAP-01, CAP-02, PRIV-01 and UX-01/UX-02/UX-29/UX-31/UX-32 must be exercised in the selected desktop runtime. Wrapper technology and service bundling remain a recorded architecture decision before packaging; no installer or desktop capture support is claimed today. Earlier browser-only scope statements are historical.

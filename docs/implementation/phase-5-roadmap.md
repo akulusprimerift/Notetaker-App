@@ -2,7 +2,7 @@
 
 Date: 2026-09-06. Status: implementation started; milestone exits require the evidence below.
 
-Implementation checkpoint: [Phase 6 / M01](phase-6-m01.md) is complete for the private course/lecture foundation. [M02 recording and recovery](phase-6-m02.md) is implemented with synthetic browser and real-service evidence; actual microphone/device-failure qualification remains open under the user's synthetic-only testing preference. M03–M08 remain planned; the full note-taking product is not qualified. The exit criteria below remain the baseline.
+Implementation checkpoint: [Phase 6 / M01](phase-6-m01.md) is complete for the private course/lecture foundation. [M02 recording and recovery](phase-6-m02.md) is implemented with synthetic browser and real-service evidence; actual microphone/device-failure qualification remains open under the user's synthetic-only testing preference. [M03 saved-audio transcription](phase-6-m03.md) is implemented with synthetic verification; M04–M08 remain planned; the full note-taking product is not qualified. The exit criteria below remain the baseline.
 
 This is the build backlog for product-development Phase 6. Milestone IDs M01–M08 are build increments, not a restart of the phase numbering. The [consolidated specification](../../multimodal_academic_learning_system_spec.md) controls scope; the [reconciliation record](phase-5-reconciliation.md) explains changes from the originals. Every milestone requires its stated evidence before being called complete.
 
@@ -21,7 +21,7 @@ Priority P0 means required for the first release. P1 means a desired extension a
 | M05 | P0 | M04 | Receive incremental transcript and notes while recording, with honest delay and recovery states. |
 | M06 | P0 | M05 | Change preferences, edit notes, and compare regeneration proposals without losing work. |
 | M07 | P0 | M06 | Finalize a lecture, preserve revisions, and remove audio or the lecture with visible progress. |
-| M08 | P0 | M07 | Complete the full lecture workflow on the declared environment with reviewed quality and recovery evidence. |
+| M08 | P0 | M07 | Install and use the Windows desktop app, completing the lecture workflow with reviewed quality and recovery evidence. |
 
 ### M01: Private workspace and service foundation
 
@@ -66,11 +66,11 @@ Priority P0 means required for the first release. P1 means a desired extension a
 - Verify: stop before all chunks arrive, unsealed crashes, terminal speech failure, no usable transcript, failed final notes, late recovery, concurrent edit/finalize/delete, upload finishing after deletion, obsolete worker attempt, disconnected browser copies, audio removal followed by transcript-only regeneration, and stale URLs/events after deletion.
 - Exit evidence: real storage/DB/browser failure drills, readable prior revisions after finalization failure, no post-tombstone content recreation, and accurate deletion-scope reporting. Document that exports/backups are outside app deletion control; no automatic backup is claimed.
 
-### M08: Full lecture qualification
+### M08: Windows desktop delivery and full lecture qualification
 
-- Build: integration/endurance harness, reproducible local runbook, supported-environment report, and remaining accessibility/recovery fixes. Finish the manual backup/restore procedure with a database/object manifest and separate deletion journal; an unavailable journal means isolated restore review.
-- Verify: execute all 32 UX cases with real browser/services, including a complete 45–60 minute independently annotated CS lecture and interruption; run topic-finding/edit-effort review, concurrent worker/edit/deletion drills, and backup restore without resurrecting deleted content. Include keyboard, assistive technology, zoom, narrow layout and code readability checks. Never call the HTML architecture artifact a tested application.
-- Exit evidence: expected/observed outcomes per UX case, all G01–G06 gates resolved with evidence, calibrated quality/performance criteria, supported exact versions, residual limitations, and zero unflagged critical errors or fabricated lecturer attribution in release fixtures. Failed gates block release, not investigation or fixes.
+- Build: an installable Windows desktop host with its own window and Start menu entry, reusing the existing UI/backend. Record the host technology and service-distribution decision before packaging; implement local service lifecycle, private endpoints, user-data/model locations and upgrade preservation. Add integration/endurance harness, reproducible local runbook, supported-environment report, and remaining accessibility/recovery fixes. Finish the manual backup/restore procedure with a database/object manifest and separate deletion journal; an unavailable journal means isolated restore review.
+- Verify: clean Windows installation, app launch, close/reopen, missing-service recovery, data-preserving upgrade and explicit uninstall data-retention behavior. Test actual desktop-host capture, journal persistence, permissions and accessibility. Execute all 32 UX cases with the desktop app and real services, including a complete 45–60 minute independently annotated CS lecture and interruption; run topic-finding/edit-effort review, concurrent worker/edit/deletion drills, and backup restore without resurrecting deleted content. Include keyboard, assistive technology, zoom, narrow layout and code readability checks. Never call the HTML architecture artifact a tested application.
+- Exit evidence: expected/observed outcomes per UX case, all G01–G06 gates resolved with evidence, calibrated quality/performance criteria, supported exact Windows app/runtime versions and install artifact, residual limitations, and zero unflagged critical errors or fabricated lecturer attribution in release fixtures. Failed gates block release, not investigation or fixes.
 
 ## Qualification gates and ownership
 
@@ -78,12 +78,12 @@ Roles identify who supplies evidence, not people already assigned. The implement
 
 | Gate | Required evidence / decision | Accountable role | Due milestone | Current state |
 | --- | --- | --- | --- | --- |
-| G01 | Human-reviewed development excerpts plus independently annotated held-out recordings, including a 45–60 minute lecture; separate development and held-out material. | Subject reviewer with evaluation implementer | M03, M04, M08 | Open: only assistant-authored synthetic text exists. |
-| G02 | Real STT baseline and calibrated term/timestamp/meaning-error criteria; human assessment of detailed-note coverage, support, retractions, organization and editing effort. | Subject reviewer with AI implementer | M03, M04, M08 | Open: no real STT trial; 90% coverage and 95% support remain proposed gates. |
+| G01 | Human-reviewed development excerpts plus independently annotated held-out recordings, including a 45–60 minute lecture; separate development and held-out material. | Subject reviewer with evaluation implementer | M03, M04, M08 | Open: assistant-authored synthetic text and generated speech exist; independently annotated real lectures and human review remain. |
+| G02 | Real STT baseline and calibrated term/timestamp/meaning-error criteria; human assessment of detailed-note coverage, support, retractions, organization and editing effort. | Subject reviewer with AI implementer | M03, M04, M08 | Open: M03 local STT passes short synthetic speech checks; real-lecture term/timestamp/meaning calibration and human note review remain. 90% coverage and 95% support remain proposed gates. |
 | G03 | Chosen hardware/model settings meet predeclared live/final delay criteria under simultaneous STT/notes; sample counts, backlog, cold/warm timings and peak memory recorded. | AI/runtime implementer with student workflow review | M05, M08 | Open: note-only trials took 66–214 seconds; no live default qualified. |
 | G04 | Real browser/storage/DB failure tests validate acknowledgement, gap reporting, edit/version fences, restart/recovery and scoped deletion. | Application implementer | M02, M06, M07, M08 | Open: M02 synthetic browser recovery, real IndexedDB, PostgreSQL capture tests and storage-restart checks pass; actual device failures and later edit/deletion qualification remain. |
 | G05 | Review a representative course for visual-only material; retain disclosed limitations or explicitly move materials/visual capture forward if notes cannot be useful without it. | Subject reviewer with product owner | M04, M08 | Open: synthetic missing-board warnings do not establish course suitability. |
-| G06 | Exact supported environment, accessibility walkthrough, local privacy checks, full-lecture UX results and backup/restore limits documented. | Application implementer with student reviewer | M01, M08 | Open: M01 Windows/container foundation and basic browser walkthrough pass; recording, assistive technology, full lectures and backup/restore remain unqualified. |
+| G06 | Exact supported environment, accessibility walkthrough, Windows installation/upgrade and desktop-host checks, local privacy checks, full-lecture UX results and backup/restore limits documented. | Application implementer with student reviewer | M01, M08 | Open: M01 Windows/container foundation and basic browser walkthrough pass; recording, assistive technology, full lectures and backup/restore remain unqualified. |
 
 Do not reduce gates simply to obtain a passing report. Any threshold or scope change needs a recorded reason, reference data, and a new evaluation; changing runtime candidates does not authorize sending lectures externally.
 

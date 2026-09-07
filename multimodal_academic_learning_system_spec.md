@@ -1,8 +1,8 @@
 # Notetaker App: consolidated product and technical specification
 
-Version: 0.3 • Date: 2026-09-06 • Status: implementation baseline; M01 preview available.
+Version: 0.4 • Date: 2026-09-07 • Status: recording and saved-audio transcription implemented; Windows desktop delivery required before release.
 
-Implementation update: [Phase 6 / M01](docs/implementation/phase-6-m01.md) now implements the private course/lecture foundation in an explicitly selected local preview mode. Full service qualification is pending. Recording and AI notes remain unimplemented; the specification below continues to define the target rather than claim all behavior is present.
+Implementation update: M01 private workspace and M02 recording/recovery have real-service evidence. Phase 6.3 / M03 adds local saved-audio transcription, source playback and protected corrections with synthetic speech verification. Detailed notes and the installable Windows shell remain planned. Actual microphone, representative lecture quality and full release qualification remain open.
 
 **Primary promise:** turn dense lectures into detailed, trustworthy, editable notes that a student can study from. Transcription and note quality are the project's highest priorities.
 
@@ -12,17 +12,17 @@ Implementation update: [Phase 6 / M01](docs/implementation/phase-6-m01.md) now i
 
 This specification consolidates product-development Phases 1–5. It supersedes the first-release scope and zero-based build phases in the [original v0.2 specification](docs/archive/original-spec-v0.2.md) and [original architecture](docs/archive/original-architecture-v0.2.html). Those files are preserved unchanged as historical references. Their broader learning/platform ambitions remain future options, not a mandatory first-release checklist.
 
-Use this document for current scope and decisions, the [implementation roadmap](docs/implementation/phase-5-roadmap.md) for execution order and gates, and the [architecture artifact](multimodal_academic_learning_system_architecture_v2.html) for a visual overview. The artifact retains its existing filename for link continuity but displays consolidated version 0.3. The [reconciliation record](docs/implementation/phase-5-reconciliation.md) records conflicts and resolutions.
+Use this document for current scope and decisions, the [implementation roadmap](docs/implementation/phase-5-roadmap.md) for execution order and gates, and the [architecture artifact](multimodal_academic_learning_system_architecture_v2.html) for a visual overview. The artifact retains its existing filename for link continuity but displays consolidated version 0.4. The [reconciliation record](docs/implementation/phase-5-reconciliation.md) records conflicts and resolutions.
 
 The detailed [student workflows](docs/product/phase-2-student-experience.md), [architecture contracts](docs/architecture/phase-3-architecture.md), [data model](docs/architecture/phase-3-data-model.md), [API/event contracts](docs/architecture/phase-3-api-events.md), and [AI pipeline](docs/ai/phase-4-pipeline.md) are incorporated by reference. Their historical phase-status observations are superseded by measured later evidence; they do not imply an implementation exists. If an implementation needs to change a contract, record the decision and update its affected specification, tests and acceptance mapping together.
 
-Executed evidence consists of architecture/AI contract tests and local synthetic note trials. [Phase 4 results](docs/ai/phase-4-results.md) record two structurally valid outputs out of three v1 cases, a rejected coverage mismatch, and an improved correction-only v2 trial. Note generation took 66–214 seconds per short case. No local live configuration, real-audio STT accuracy, human acceptance, or complete lecture workflow has been qualified. G01–G06 in the roadmap preserve these unresolved requirements.
+Executed evidence now includes real PostgreSQL application tests, synthetic browser/audio recovery, storage restart checks and local synthetic speech trials, alongside architecture/AI contract tests and earlier note trials. [Phase 4 results](docs/ai/phase-4-results.md) record two structurally valid outputs out of three v1 cases, a rejected coverage mismatch, and an improved correction-only v2 trial. Note generation took 66–214 seconds per short case. No local live configuration, real-audio STT accuracy, human acceptance, or complete lecture workflow has been qualified. G01–G06 in the roadmap preserve these unresolved requirements.
 
 ## 2. Audience, environment and operating boundaries
 
 - Initial domain: computer science, algorithms and code, selected by the user. English, one student's private workspace and 45–60 minute endurance fixtures are initial assumptions, not permanent course/language/duration limits.
-- Design target: Windows 11, desktop Edge/Chrome, local development using Docker's Linux-container path. Pin exact tested versions during M01. Narrow screens must support reading/editing; phone recording and pairing are deferred.
-- Observed host: Intel i7-13700H, 20 logical processors and approximately 32 GB RAM. The note trial reported zero VRAM residency. This is not a minimum hardware specification or proof that no GPU exists. Docker/Python availability and sustained simultaneous workloads still require preflight verification.
+- Delivery target: an installable Windows desktop application with its own window and Start menu entry, required by the user on 2026-09-07. The browser app is the development preview. M08 owns desktop packaging, local service startup/shutdown, storage locations, upgrade preservation and clean-machine installation checks. Select and record the desktop host and service-distribution approach before packaging; no desktop runtime is qualified yet. Narrow layouts must support reading/editing; phone recording and pairing remain deferred.
+- Observed host: Intel i7-13700H, 20 logical processors and approximately 32 GB RAM. The note trial reported zero VRAM residency. This is not a minimum hardware specification or proof that no GPU exists. Docker/Python availability has been verified for the local development setup; sustained simultaneous model workloads remain unqualified.
 - First supported privacy mode: Fully Local. Record now, process later changes scheduling, not privacy. Downloading a model is provisioning; lecture processing uses only configured local providers. Never silently switch to external inference.
 - Start a new lecture/capture only with an authenticated server-created run and working persistence admission. An already authorized run can journal locally during a connection outage. Starting a brand-new offline lecture is outside the first release.
 - No device-sleep capture promise, host-loss redundancy, automatic backup, or unlimited browser storage claim. Show measured capacity, gaps, backlog and actual retained data.
@@ -42,7 +42,7 @@ Executed evidence consists of architecture/AI contract tests and local synthetic
 | OUT-01 | Portable export | Readable Markdown from a chosen saved revision with source excerpts/intervals/version IDs, issue and completeness labels, code and equations; no private media URLs or credentials. |
 | PRIV-01 | Privacy/deletion | Authorized content access, local processing visibility, scoped audio/lecture removal, fenced background work and accurate deletion progress. |
 
-These ten requirements retain their Phase 1 IDs. The [32 UX acceptance scenarios](docs/product/phase-2-acceptance-scenarios.md) provide triggers and expected outcomes; they are unexecuted application cases. The roadmap assigns each a completion owner and requires a full rerun before release.
+These ten requirements retain their Phase 1 IDs. The [32 UX acceptance scenarios](docs/product/phase-2-acceptance-scenarios.md) provide triggers and expected outcomes; they are the full application qualification baseline, with component checks recorded in the implementation reports. The roadmap assigns each a completion owner and requires a full rerun before release.
 
 Detailed notes are organized compression, not a short summary or a transcript pasted under headings. Preserve a worked problem's setup, intermediate steps and result. Do not add empty boilerplate for material the lecturer never addressed. When the lecturer explicitly retracts a claim, present the corrected rule first and identify the superseded claim where needed. Unresolved contradictions remain visible. An inaudible term or unseen board proof is missing evidence, not permission to reconstruct it.
 
@@ -64,12 +64,13 @@ Use visible keyboard focus, accessible control names, non-color status cues, rea
 
 | Component | Initial responsibility | Boundary |
 | --- | --- | --- |
-| Next.js + TypeScript | Student UI, AudioWorklet/worker capture, IndexedDB journal, drafts, accessible live rendering | Browser journal is recoverable local storage, not an off-device backup. |
+| Next.js + TypeScript | Shared student UI, AudioWorklet/worker capture, IndexedDB journal, drafts, accessible rendering | Reuse within the planned Windows desktop host; qualify its actual capture/storage behavior. Local journal is not an off-device backup. |
+| Windows desktop host (M08) | Installer, app window, private service lifecycle, user data/model paths and update handling | Host technology and bundled-versus-prerequisite services remain an explicit packaging decision. Preserve one backend implementation and its authorization boundary. |
 | FastAPI / Python | One modular backend for REST/WebSocket; shared domain code in separately launched workers | Inference/object transfers never hold request-scoped database locks. |
 | PostgreSQL | Authoritative ownership, epochs, source/note versions, jobs, outbox/inbox and UI replay | Transactions govern publication; latest timestamps and broker messages do not. |
 | SeaweedFS | Immutable audio objects through a private server-side S3 adapter | Verify length/checksum; persistent data and metadata volumes; no public bucket URLs. |
 | Kafka | Reference-only work notification, replay and failure metadata | At-least-once; PostgreSQL due-job reconciliation recovers missed notifications. No lecture content in topics. |
-| faster-whisper | Local speech adapter | `small.en` live and `medium.en` final are untested candidates; version/model/resource choices require real audio. |
+| faster-whisper | Local speech adapter | `small.en` CPU/int8 is exercised for saved synthetic speech in M03; live settings and `medium.en` final processing remain unqualified. Real lecture evidence is still required. |
 | Ollama | Local structured note proposals | `qwen3:4b` measured offline candidate; `qwen3:8b` untested challenger. No live default qualified. |
 | Compose + basic diagnostics | Local services, persistent volumes, health, trace IDs, stage timing, pending-byte/backlog/job views | Full telemetry suite, Kubernetes and autoscaling are later experiments. |
 

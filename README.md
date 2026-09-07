@@ -8,20 +8,21 @@ The current product priority is **reliable lecture capture → timestamped trans
 
 Follow the [feature and architecture phase plan](docs/project-phases.md) for all future work: Phase 6.1–6.8 maps to M01–M08, with features, architecture changes, completion evidence and local commits for every increment.
 
-**Phase 6 / M02: recording and recovery implemented; qualification in progress.** The local course-and-lecture workspace now includes recording controls, browser buffering, verified audio saves, explicit recovery and saved audio excerpts. Synthetic browser/service tests pass. Actual microphone and device-failure qualification remain open; the user requested synthetic testing only. Transcription and generated notes are not implemented yet.
+**Phase 6.3 / M03: saved-audio transcription implemented and synthetically verified.** Record and recover audio, read timestamped local transcription, play its source, and correct passages without losing their original revisions. Detailed note generation is next. Actual microphone/representative-lecture qualification remains open under the user’s synthetic-only preference. The current browser interface is a development preview; an installable Windows desktop application is required before release in M08.
 
 - [Run the app and review M01 results](docs/implementation/phase-6-m01.md): local startup, implemented behavior, executed checks and remaining milestones.
+- [Transcription and source inspection / M03](docs/implementation/phase-6-m03.md): speech setup, synthetic accuracy results, source playback, correction protection and remaining qualification.
 - [Recording and recovery / M02](docs/implementation/phase-6-m02.md): current behavior, synthetic test evidence, failure handling and remaining qualification.
 
-With Docker Desktop's Linux engine running, run `pwsh -File scripts/Start-App.ps1 -NewUnlockCode`, open `http://127.0.0.1:3000`, and use `.local/unlock-code.txt`. This builds and starts the app, creates a one-use code and preserves existing courses. Subsequent starts can omit `-NewUnlockCode` while the browser session is valid. The separately selected SQLite preview remains available; its data is preserved separately and is not automatically copied to PostgreSQL.
+With Docker Desktop's Linux engine running, provision speech once with `pwsh -File scripts/Provision-Speech.ps1`, then run `pwsh -File scripts/Start-App.ps1 -WithSpeech -NewUnlockCode`, open `http://127.0.0.1:3000`, and use `.local/unlock-code.txt`. This builds and starts the app, creates a one-use code and preserves existing courses. Subsequent starts can omit `-NewUnlockCode` while the browser session is valid. The separately selected SQLite preview remains available; its data is preserved separately and is not automatically copied to PostgreSQL.
 
 - [Current product and technical specification](multimodal_academic_learning_system_spec.md): consolidated scope, selected architecture, evidence boundaries and release gates.
-- [Current architecture artifact](multimodal_academic_learning_system_architecture_v2.html): standalone visual overview, version 0.3; the existing filename is retained.
+- [Current architecture artifact](multimodal_academic_learning_system_architecture_v2.html): standalone visual overview, version 0.4; the existing filename is retained.
 - [Phase 5 implementation roadmap](docs/implementation/phase-5-roadmap.md): M01–M08, dependencies, migration/interface sequence, all 32 acceptance cases and six open qualification gates.
 - [Phase 5 reconciliation](docs/implementation/phase-5-reconciliation.md): decisions changed from the originals and unresolved evaluation work.
 - [Phase 5 verification](docs/implementation/phase-5-verification.md): checks performed on the consolidated documents and artifact.
 
-The next implementation work is **Phase 6.3 / M03 timestamped transcription**, followed by detailed notes in M04. M02 device qualification stays open under the user's synthetic-only testing preference; independent transcription engineering can proceed using synthetic speech. Human review, real-audio quality and usable live performance remain required release evidence. Earlier design records follow:
+The next implementation work is **Phase 6.4 / M04 detailed, source-linked notes**. M02 device and M03 real-lecture qualification stay open under the user’s synthetic-only testing preference; synthetic engineering results do not close those gates. Human review, real-audio quality and usable live performance remain required release evidence. Earlier design records follow:
 
 - [Phase 1 product brief](docs/product/phase-1-product-brief.md): audience, first-release scope, note requirements, quality gates, and open decisions.
 - [Phase 2 student experience](docs/product/phase-2-student-experience.md): screens, lecture workflows, recording states, source inspection, editing, export, and accessibility requirements.
