@@ -68,6 +68,23 @@ services:
       interval: 5s
       timeout: 3s
       retries: 12
+  speech:
+    profiles: ["speech"]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.speech
+    environment:
+      NOTETAKER_DATABASE_URL: postgresql+psycopg://notetaker:${POSTGRES_PASSWORD}@postgres:5432/notetaker
+      NOTETAKER_S3_ENDPOINT: http://seaweed:8333
+      NOTETAKER_S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      NOTETAKER_S3_SECRET_KEY: ${S3_SECRET_KEY}
+      NOTETAKER_SPEECH_MODEL_PATH: /models
+      NOTETAKER_KAFKA_BOOTSTRAP: kafka:29092
+      NOTETAKER_SPEECH_THREADS: "4"
+    volumes: ["./.local/models/faster-whisper-small.en:/models:ro"]
+    depends_on:
+      api: {condition: service_healthy}
+    restart: unless-stopped
   web:
     profiles: ["app"]
     build:

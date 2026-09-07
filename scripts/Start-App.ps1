@@ -1,4 +1,4 @@
-param([switch]$NewUnlockCode, [switch]$NoBuild, [string]$DockerPath)
+param([switch]$NewUnlockCode, [switch]$NoBuild, [switch]$WithSpeech, [string]$DockerPath)
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $taskRoot
@@ -20,7 +20,14 @@ if ($taskEngine -ne 'linux') { throw 'Switch Docker Desktop to Linux containers,
 if (-not (Test-Path -LiteralPath '.local/services.env')) {
     & "$PSScriptRoot/Initialize-Services.ps1"
 }
-$taskArguments = @('compose', '--env-file', '.local/services.env', '--profile', 'app', 'up', '-d', '--wait', '--wait-timeout', '120')
+$taskArguments = @('compose', '--env-file', '.local/services.env', '--profile', 'app')
+if ($WithSpeech) {
+    if (-not (Test-Path -LiteralPath '.local/models/faster-whisper-small.en/model.bin')) {
+        throw 'Provision the speech model with scripts/Provision-Speech.ps1 before using -WithSpeech.'
+    }
+    $taskArguments += @('--profile', 'speech')
+}
+$taskArguments += @('up', '-d', '--wait', '--wait-timeout', '120')
 if (-not $NoBuild) { $taskArguments += '--build' }
 & $DockerPath @taskArguments
 if ($LASTEXITCODE -ne 0) { throw 'The app did not finish starting. Inspect the container status; existing data volumes were retained.' }

@@ -1,0 +1,360 @@
+{
+  "fixture": "synthetic-cs-rapid.wav",
+  "synthetic_only": true,
+  "lecture_id": "0326bc1f-aaab-45c9-bba6-7c55d0b67428",
+  "audio_sha256": "877e69292aec5cebfceecc327f89be9c31453730e1c9b5e46d0bb7eea93744aa",
+  "sample_rate": 22050,
+  "duration_seconds": 47.04911564625851,
+  "upload_chunks": 24,
+  "elapsed_after_seal_seconds": 18.69,
+  "transcript": "Binary search requires a sorted array. Distinct elements alone are not sufficient. We keep a lower bound and an upper bound on the remaining search interval. At each step, compare the target with the middle element. If they are equal, return that position. If the target is smaller, move the upper bound to the position before the middle. Otherwise, move the lower bound to the position after the middle. The loop invariant is that any matching element must remain inside the search interval. Each iteration removes about half of the remaining candidates. Therefore the time complexity is logarithmic, and the iterative implementation uses constant extra space. A linear scan is different, it may inspect every element. Do not confuse logarithmic time with constant time. For an empty array, return not found. For repeated values, ordinary binary search may return any matching position, not necessarily the first. Finding the first occurrence requires continuing toward the left after a match.",
+  "passages": [
+    {
+      "id": "d9fbf615-0cb3-4be3-8248-3b254685e0d4",
+      "segment_id": "82f3aa33-38ac-4788-bd46-98b2c7ab5e70",
+      "revision": 1,
+      "text": "Binary search requires a sorted array.",
+      "author": "machine",
+      "run_id": "5670ecb9-d2be-46ef-9080-13b5c2fb4eb9",
+      "segment_number": 1,
+      "sample_rate": 22050,
+      "start_sample": 0,
+      "end_sample": 33516,
+      "confidence": {
+        "kind": "uncalibrated_score",
+        "value": 0.9527316192785898
+      },
+      "stability": "stable",
+      "generation_id": "0813c249-da98-475d-a24a-47adbff86e6d",
+      "audio_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/d9fbf615-0cb3-4be3-8248-3b254685e0d4/audio",
+      "source_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/d9fbf615-0cb3-4be3-8248-3b254685e0d4"
+    },
+    {
+      "id": "835d943e-9bf6-4d2c-b69c-38552f804f2e",
+      "segment_id": "4283f869-5a87-496e-9607-96367a37073f",
+      "revision": 1,
+      "text": "Distinct elements alone are not sufficient.",
+      "author": "machine",
+      "run_id": "5670ecb9-d2be-46ef-9080-13b5c2fb4eb9",
+      "segment_number": 1,
+      "sample_rate": 22050,
+      "start_sample": 49392,
+      "end_sample": 79380,
+      "confidence": {
+        "kind": "uncalibrated_score",
+        "value": 0.9949197769165039
+      },
+      "stability": "stable",
+      "generation_id": "0813c249-da98-475d-a24a-47adbff86e6d",
+      "audio_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/835d943e-9bf6-4d2c-b69c-38552f804f2e/audio",
+      "source_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/835d943e-9bf6-4d2c-b69c-38552f804f2e"
+    },
+    {
+      "id": "1c1a570a-5c80-42bc-b454-5c1a8fe034ca",
+      "segment_id": "c79cd5e3-b6d2-474e-a505-0fc51a9f5096",
+      "revision": 1,
+      "text": "We keep a lower bound and an upper bound on the remaining search interval.",
+      "author": "machine",
+      "run_id": "5670ecb9-d2be-46ef-9080-13b5c2fb4eb9",
+      "segment_number": 1,
+      "sample_rate": 22050,
+      "start_sample": 94374,
+      "end_sample": 145530,
+      "confidence": {
+        "kind": "uncalibrated_score",
+        "value": 0.9957132382052285
+      },
+      "stability": "stable",
+      "generation_id": "0813c249-da98-475d-a24a-47adbff86e6d",
+      "audio_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/1c1a570a-5c80-42bc-b454-5c1a8fe034ca/audio",
+      "source_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/1c1a570a-5c80-42bc-b454-5c1a8fe034ca"
+    },
+    {
+      "id": "63e52c3b-c0fa-41fb-bc5c-38236997ce21",
+      "segment_id": "75729c3c-910d-43a4-b4b2-7741c0774a38",
+      "revision": 1,
+      "text": "At each step, compare the target with the middle element.",
+      "author": "machine",
+      "run_id": "5670ecb9-d2be-46ef-9080-13b5c2fb4eb9",
+      "segment_number": 1,
+      "sample_rate": 22050,
+      "start_sample": 158760,
+      "end_sample": 208593,
+      "confidence": {
+        "kind": "uncalibrated_score",
+        "value": 0.9978342473506927
+      },
+      "stability": "stable",
+      "generation_id": "0813c249-da98-475d-a24a-47adbff86e6d",
+      "audio_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/63e52c3b-c0fa-41fb-bc5c-38236997ce21/audio",
+      "source_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/63e52c3b-c0fa-41fb-bc5c-38236997ce21"
+    },
+    {
+      "id": "b347cef9-f7eb-4eba-8a45-4cc7b6631818",
+      "segment_id": "631ec85b-cca4-4664-9b36-963b99de1b18",
+      "revision": 1,
+      "text": "If they are equal, return that position.",
+      "author": "machine",
+      "run_id": "5670ecb9-d2be-46ef-9080-13b5c2fb4eb9",
+      "segment_number": 1,
+      "sample_rate": 22050,
+      "start_sample": 222705,
+      "end_sample": 257544,
+      "confidence": {
+        "kind": "uncalibrated_score",
+        "value": 0.9872106484004429
+      },
+      "stability": "stable",
+      "generation_id": "0813c249-da98-475d-a24a-47adbff86e6d",
+      "audio_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/b347cef9-f7eb-4eba-8a45-4cc7b6631818/audio",
+      "source_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/b347cef9-f7eb-4eba-8a45-4cc7b6631818"
+    },
+    {
+      "id": "ab51a2c3-d171-47d8-87b1-d22f4d5d858e",
+      "segment_id": "f7456386-cb45-4f4c-8ad9-d3999e4cbbd6",
+      "revision": 1,
+      "text": "If the target is smaller, move the upper bound to the position before the middle.",
+      "author": "machine",
+      "run_id": "5670ecb9-d2be-46ef-9080-13b5c2fb4eb9",
+      "segment_number": 1,
+      "sample_rate": 22050,
+      "start_sample": 271215,
+      "end_sample": 336924,
+      "confidence": {
+        "kind": "uncalibrated_score",
+        "value": 0.9988322695096333
+      },
+      "stability": "stable",
+      "generation_id": "0813c249-da98-475d-a24a-47adbff86e6d",
+      "audio_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/ab51a2c3-d171-47d8-87b1-d22f4d5d858e/audio",
+      "source_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/ab51a2c3-d171-47d8-87b1-d22f4d5d858e"
+    },
+    {
+      "id": "c10ef03a-7716-4a7c-a710-f40afc985bdc",
+      "segment_id": "a579ed20-a499-4fea-b26b-4059be71520f",
+      "revision": 1,
+      "text": "Otherwise, move the lower bound to the position after the middle.",
+      "author": "machine",
+      "run_id": "5670ecb9-d2be-46ef-9080-13b5c2fb4eb9",
+      "segment_number": 1,
+      "sample_rate": 22050,
+      "start_sample": 349713,
+      "end_sample": 403956,
+      "confidence": {
+        "kind": "uncalibrated_score",
+        "value": 0.9989455342292786
+      },
+      "stability": "stable",
+      "generation_id": "0813c249-da98-475d-a24a-47adbff86e6d",
+      "audio_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/c10ef03a-7716-4a7c-a710-f40afc985bdc/audio",
+      "source_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/c10ef03a-7716-4a7c-a710-f40afc985bdc"
+    },
+    {
+      "id": "645842d7-4b61-466c-b453-29ac9b9c64a9",
+      "segment_id": "29657055-12d2-47f4-ae74-ceb896ebbdf6",
+      "revision": 1,
+      "text": "The loop invariant is that any matching element must remain inside the search interval.",
+      "author": "machine",
+      "run_id": "5670ecb9-d2be-46ef-9080-13b5c2fb4eb9",
+      "segment_number": 1,
+      "sample_rate": 22050,
+      "start_sample": 415863,
+      "end_sample": 482895,
+      "confidence": {
+        "kind": "uncalibrated_score",
+        "value": 0.9960866229874747
+      },
+      "stability": "stable",
+      "generation_id": "0813c249-da98-475d-a24a-47adbff86e6d",
+      "audio_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/645842d7-4b61-466c-b453-29ac9b9c64a9/audio",
+      "source_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/645842d7-4b61-466c-b453-29ac9b9c64a9"
+    },
+    {
+      "id": "5fe4dee9-160e-4008-bcfa-2fecd802dea4",
+      "segment_id": "c0c31c27-12f1-4dc8-9b93-9fa2ed66ffba",
+      "revision": 1,
+      "text": "Each iteration removes about half of the remaining candidates.",
+      "author": "machine",
+      "run_id": "5670ecb9-d2be-46ef-9080-13b5c2fb4eb9",
+      "segment_number": 1,
+      "sample_rate": 22050,
+      "start_sample": 497448,
+      "end_sample": 540666,
+      "confidence": {
+        "kind": "uncalibrated_score",
+        "value": 0.9987688395712111
+      },
+      "stability": "stable",
+      "generation_id": "0813c249-da98-475d-a24a-47adbff86e6d",
+      "audio_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/5fe4dee9-160e-4008-bcfa-2fecd802dea4/audio",
+      "source_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/5fe4dee9-160e-4008-bcfa-2fecd802dea4"
+    },
+    {
+      "id": "1dc4dc7c-3094-432e-864d-0b7778469c58",
+      "segment_id": "7339d24f-8699-434b-8219-49ce0814643f",
+      "revision": 1,
+      "text": "Therefore the time complexity is logarithmic,",
+      "author": "machine",
+      "run_id": "5670ecb9-d2be-46ef-9080-13b5c2fb4eb9",
+      "segment_number": 1,
+      "sample_rate": 22050,
+      "start_sample": 558747,
+      "end_sample": 594468,
+      "confidence": {
+        "kind": "uncalibrated_score",
+        "value": 0.9765845288832983
+      },
+      "stability": "stable",
+      "generation_id": "30b0736b-d2e7-47e9-b507-607d5c405e1d",
+      "audio_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/1dc4dc7c-3094-432e-864d-0b7778469c58/audio",
+      "source_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/1dc4dc7c-3094-432e-864d-0b7778469c58"
+    },
+    {
+      "id": "8dfc485c-11b2-4afb-8db4-9247cfd18660",
+      "segment_id": "345b789f-f0e5-45ae-9011-3d5510c52d5c",
+      "revision": 1,
+      "text": "and the iterative implementation uses constant extra space. A linear scan is different, it",
+      "author": "machine",
+      "run_id": "5670ecb9-d2be-46ef-9080-13b5c2fb4eb9",
+      "segment_number": 1,
+      "sample_rate": 22050,
+      "start_sample": 601083,
+      "end_sample": 697662,
+      "confidence": {
+        "kind": "uncalibrated_score",
+        "value": 0.9924662091902324
+      },
+      "stability": "stable",
+      "generation_id": "30b0736b-d2e7-47e9-b507-607d5c405e1d",
+      "audio_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/8dfc485c-11b2-4afb-8db4-9247cfd18660/audio",
+      "source_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/8dfc485c-11b2-4afb-8db4-9247cfd18660"
+    },
+    {
+      "id": "869abafa-d4cd-44e3-bd93-17a49c9af193",
+      "segment_id": "5ce099f9-034b-44f1-8f53-16e88b62d849",
+      "revision": 1,
+      "text": "may inspect every element. Do not confuse logarithmic time with constant time. For an",
+      "author": "machine",
+      "run_id": "5670ecb9-d2be-46ef-9080-13b5c2fb4eb9",
+      "segment_number": 1,
+      "sample_rate": 22050,
+      "start_sample": 697662,
+      "end_sample": 797328,
+      "confidence": {
+        "kind": "uncalibrated_score",
+        "value": 0.995793953537941
+      },
+      "stability": "stable",
+      "generation_id": "30b0736b-d2e7-47e9-b507-607d5c405e1d",
+      "audio_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/869abafa-d4cd-44e3-bd93-17a49c9af193/audio",
+      "source_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/869abafa-d4cd-44e3-bd93-17a49c9af193"
+    },
+    {
+      "id": "09aa706e-7a7b-4f85-8459-b717740b9d53",
+      "segment_id": "9b00d3bf-06cb-4425-8105-64941f931d64",
+      "revision": 1,
+      "text": "empty array, return not found. For repeated values, ordinary binary search may return",
+      "author": "machine",
+      "run_id": "5670ecb9-d2be-46ef-9080-13b5c2fb4eb9",
+      "segment_number": 1,
+      "sample_rate": 22050,
+      "start_sample": 797328,
+      "end_sample": 897876,
+      "confidence": {
+        "kind": "uncalibrated_score",
+        "value": 0.9683215159636277
+      },
+      "stability": "stable",
+      "generation_id": "30b0736b-d2e7-47e9-b507-607d5c405e1d",
+      "audio_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/09aa706e-7a7b-4f85-8459-b717740b9d53/audio",
+      "source_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/09aa706e-7a7b-4f85-8459-b717740b9d53"
+    },
+    {
+      "id": "eb326b81-ce8d-495c-8d7c-3449714df05d",
+      "segment_id": "4638ac41-9523-42d4-9542-989d4d42f470",
+      "revision": 1,
+      "text": "any matching position, not necessarily the first. Finding the first occurrence requires",
+      "author": "machine",
+      "run_id": "5670ecb9-d2be-46ef-9080-13b5c2fb4eb9",
+      "segment_number": 1,
+      "sample_rate": 22050,
+      "start_sample": 897876,
+      "end_sample": 990486,
+      "confidence": {
+        "kind": "uncalibrated_score",
+        "value": 0.9968002835909525
+      },
+      "stability": "stable",
+      "generation_id": "30b0736b-d2e7-47e9-b507-607d5c405e1d",
+      "audio_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/eb326b81-ce8d-495c-8d7c-3449714df05d/audio",
+      "source_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/eb326b81-ce8d-495c-8d7c-3449714df05d"
+    },
+    {
+      "id": "a80f90b2-a3d1-4f69-ac7b-dafd149a4c52",
+      "segment_id": "a4e81b13-f251-4a08-a650-2002e1196746",
+      "revision": 1,
+      "text": "continuing toward the left after a match.",
+      "author": "machine",
+      "run_id": "5670ecb9-d2be-46ef-9080-13b5c2fb4eb9",
+      "segment_number": 1,
+      "sample_rate": 22050,
+      "start_sample": 990486,
+      "end_sample": 1023561,
+      "confidence": {
+        "kind": "uncalibrated_score",
+        "value": 0.997317544051579
+      },
+      "stability": "stable",
+      "generation_id": "30b0736b-d2e7-47e9-b507-607d5c405e1d",
+      "audio_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/a80f90b2-a3d1-4f69-ac7b-dafd149a4c52/audio",
+      "source_url": "/api/lectures/0326bc1f-aaab-45c9-bba6-7c55d0b67428/sources/a80f90b2-a3d1-4f69-ac7b-dafd149a4c52"
+    }
+  ],
+  "issues": [],
+  "playback_verified": 15,
+  "generations": [
+    {
+      "provider": "faster-whisper",
+      "version": "1.2.1",
+      "runtime_version": "4.8.2",
+      "model_sha256": "62b2a45b05ee59acb4a5341b33ee35e041395d378d418a18acfe4c9e768ee37a",
+      "device": "cpu",
+      "compute_type": "int8",
+      "threads": 4,
+      "language": "en",
+      "beam_size": 5,
+      "word_timestamps": true,
+      "vad_filter": true,
+      "condition_on_previous_text": false,
+      "elapsed_seconds": 4.315,
+      "boundary_review": false,
+      "window_policy": "pause-aware-24s-core-2s-context-v1",
+      "audio_seconds": 27.0
+    },
+    {
+      "provider": "faster-whisper",
+      "version": "1.2.1",
+      "runtime_version": "4.8.2",
+      "model_sha256": "62b2a45b05ee59acb4a5341b33ee35e041395d378d418a18acfe4c9e768ee37a",
+      "device": "cpu",
+      "compute_type": "int8",
+      "threads": 4,
+      "language": "en",
+      "beam_size": 5,
+      "word_timestamps": true,
+      "vad_filter": true,
+      "condition_on_previous_text": false,
+      "elapsed_seconds": 3.494,
+      "boundary_review": false,
+      "window_policy": "pause-aware-24s-core-2s-context-v1",
+      "audio_seconds": 24.049115646258503
+    }
+  ],
+  "quality_scope": "Synthetic engineering baseline; not real-lecture or human-reviewed qualification.",
+  "word_error": {
+    "reference_words": 158,
+    "recognized_words": 158,
+    "edit_distance": 0,
+    "wer": 0.0
+  }
+}

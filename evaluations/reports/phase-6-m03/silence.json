@@ -1,0 +1,35 @@
+{
+  "fixture": "synthetic-silence.wav",
+  "synthetic_only": true,
+  "lecture_id": "1b1e81af-885d-4c0e-b6aa-7eddcd5b905f",
+  "audio_sha256": "653acb3a59a078c3461f144575a5ad2402877be6e7ef72515401caf3372a5da9",
+  "sample_rate": 22050,
+  "duration_seconds": 6.0,
+  "upload_chunks": 3,
+  "elapsed_after_seal_seconds": 2.05,
+  "transcript": "",
+  "passages": [],
+  "issues": [],
+  "playback_verified": 0,
+  "generations": [
+    {
+      "provider": "faster-whisper",
+      "version": "1.2.1",
+      "runtime_version": "4.8.2",
+      "model_sha256": "62b2a45b05ee59acb4a5341b33ee35e041395d378d418a18acfe4c9e768ee37a",
+      "device": "cpu",
+      "compute_type": "int8",
+      "threads": 4,
+      "language": "en",
+      "beam_size": 5,
+      "word_timestamps": true,
+      "vad_filter": true,
+      "condition_on_previous_text": false,
+      "elapsed_seconds": 0.082,
+      "boundary_review": false,
+      "window_policy": "pause-aware-24s-core-2s-context-v1",
+      "audio_seconds": 6.0
+    }
+  ],
+  "quality_scope": "Synthetic engineering baseline; not real-lecture or human-reviewed qualification."
+}

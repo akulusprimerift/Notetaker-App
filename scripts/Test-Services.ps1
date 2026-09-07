@@ -27,4 +27,4 @@ if ($Restart) {
     & .venv/Scripts/python.exe -m notetaker.verify_restart --docker $DockerPath
     if ($LASTEXITCODE -ne 0) { throw 'Persistent-volume restart verification failed.' }
 }
-Write-Output 'Real PostgreSQL application tests and synthetic object/broker probes passed. Capture durability still requires M02.'
+Write-Output 'Real PostgreSQL application tests and synthetic object/broker probes passed. Device-failure and real-lecture qualification remain separate.'
