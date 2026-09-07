@@ -63,7 +63,7 @@ The [development verification page](../../apps/web/app/capture-check/check.tsx) 
 | Simulated suspension stop | The stop handler flushed a partial tail, saved all 1,668,480 samples, sealed the third segment and retained its sleep/suspension issue. No actual Windows sleep or microphone interruption was induced. |
 | Browser-generated jobs | After the three synthetic segments, PostgreSQL contained 91 verified chunks, 91 speech jobs and 91 matching audio outbox records for the test lecture. All browser buffers were empty. Jobs remain pending for the unimplemented speech worker. |
 | Real storage restart | A synthetic canonical WAV passed through the capture API, received a verified ACK and sealed manifest, then remained byte-identical and readable after the three real service containers restarted. Ordinary object and Kafka record checks also passed. |
-| Builds and UI | TypeScript checking and both production Docker builds passed. The normal student page showed recovered audio and enabled recording; a fetch-binding startup bug found there was fixed. The UI continues to state that notes/transcription are unavailable. |
+| Builds and UI | TypeScript checking and both production Docker builds passed. The normal student page showed recovered audio and enabled recording; a fetch-binding startup bug found there was fixed. A saved two-second synthetic excerpt played to its end with media ready state 4 and no media error. The development verification route returned 404 in production. The UI continues to state that notes/transcription are unavailable. |
 
 ## Remaining qualification
 
