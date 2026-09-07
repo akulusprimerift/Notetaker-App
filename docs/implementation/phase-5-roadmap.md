@@ -6,6 +6,8 @@ Implementation checkpoint: [Phase 6 / M01](phase-6-m01.md) is complete for the p
 
 This is the build backlog for product-development Phase 6. Milestone IDs M01–M08 are build increments, not a restart of the phase numbering. The [consolidated specification](../../multimodal_academic_learning_system_spec.md) controls scope; the [reconciliation record](phase-5-reconciliation.md) explains changes from the originals. Every milestone requires its stated evidence before being called complete.
 
+The [feature and architecture phase plan](../project-phases.md) calls these increments Phase 6.1–6.8 and defines the ongoing build, verify and local-commit workflow. M02's deferred real-device qualification remains open while independent M03 engineering proceeds with synthetic speech; its dependency on working capture/storage remains unchanged, and synthetic evidence cannot satisfy real-lecture release gates.
+
 ## Ordered backlog
 
 Priority P0 means required for the first release. P1 means a desired extension after all core gates pass. Dependencies describe merge/integration order; fixture annotation and feasibility research can start during M01. No dates or effort estimates are implied.

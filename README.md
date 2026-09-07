@@ -6,6 +6,8 @@ The current product priority is **reliable lecture capture → timestamped trans
 
 ## Current phase
 
+Follow the [feature and architecture phase plan](docs/project-phases.md) for all future work: Phase 6.1–6.8 maps to M01–M08, with features, architecture changes, completion evidence and local commits for every increment.
+
 **Phase 6 / M02: recording and recovery implemented; qualification in progress.** The local course-and-lecture workspace now includes recording controls, browser buffering, verified audio saves, explicit recovery and saved audio excerpts. Synthetic browser/service tests pass. Actual microphone and device-failure qualification remain open; the user requested synthetic testing only. Transcription and generated notes are not implemented yet.
 
 - [Run the app and review M01 results](docs/implementation/phase-6-m01.md): local startup, implemented behavior, executed checks and remaining milestones.
@@ -19,7 +21,7 @@ With Docker Desktop's Linux engine running, run `pwsh -File scripts/Start-App.ps
 - [Phase 5 reconciliation](docs/implementation/phase-5-reconciliation.md): decisions changed from the originals and unresolved evaluation work.
 - [Phase 5 verification](docs/implementation/phase-5-verification.md): checks performed on the consolidated documents and artifact.
 
-The next work is completing **M02 device qualification** and then **M03 timestamped transcription**, followed by detailed notes in M04. Human review, real-audio quality and usable live performance remain required release evidence. Earlier design records follow:
+The next implementation work is **Phase 6.3 / M03 timestamped transcription**, followed by detailed notes in M04. M02 device qualification stays open under the user's synthetic-only testing preference; independent transcription engineering can proceed using synthetic speech. Human review, real-audio quality and usable live performance remain required release evidence. Earlier design records follow:
 
 - [Phase 1 product brief](docs/product/phase-1-product-brief.md): audience, first-release scope, note requirements, quality gates, and open decisions.
 - [Phase 2 student experience](docs/product/phase-2-student-experience.md): screens, lecture workflows, recording states, source inspection, editing, export, and accessibility requirements.
