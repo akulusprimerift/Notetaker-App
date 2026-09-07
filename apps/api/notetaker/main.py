@@ -20,6 +20,7 @@ from .models import Bootstrap, Owner, Session, Course, Lecture, SettingsVersion,
 from .security import authenticate, mutation, digest, error
 from .audio_store import AudioStore
 from .capture import install_capture
+from .transcription import install_transcription, transcript_json
 
 log = logging.getLogger("notetaker")
 
@@ -219,9 +220,8 @@ def create_app(settings: Settings | None = None):
             error(404,"unavailable","This lecture is unavailable.")
         lecture,prefs,course_name=row
         return {"lecture":lecture_json(lecture),"course_name":course_name,"settings":{"depth":prefs.depth,"format":prefs.format,"ai_explanations":prefs.ai_explanations,"version":prefs.version},
-                "capture":{"status":"not_started" if lecture.status=='prepared' else lecture.status,"available":app.state.audio_store.available},"transcript":{"status":"not_started","segments":[]},"notes":{"status":"not_started","blocks":[]},"processing_location":"local","update_cursor":lecture.update_seq}
+                "capture":{"status":"not_started" if lecture.status=='prepared' else lecture.status,"available":app.state.audio_store.available},"transcript":transcript_json(db,lecture),"notes":{"status":"not_started","blocks":[]},"processing_location":"local","update_cursor":lecture.update_seq}
 
-    @app.get("/lectures/{lecture_id}/sources/{version}")
     @app.get("/lectures/{lecture_id}/audio/{version}")
     def unavailable_source(lecture_id: str,version: str,session=Depends(current),db=Depends(db_session)):
         owned_lecture(db,session.owner_id,lecture_id)
@@ -253,6 +253,7 @@ def create_app(settings: Settings | None = None):
             pass
 
     install_capture(app, current, db_session, owned_lecture, receipt)
+    install_transcription(app, current, db_session, owned_lecture, receipt)
     return app
 
 

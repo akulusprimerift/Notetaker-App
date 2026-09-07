@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     s3_access_key: str = ""
     s3_secret_key: str = ""
     audio_bucket: str = "notetaker-audio"
+    speech_model_path: str = ".local/models/faster-whisper-small.en"
+    speech_threads: int = 4
+    kafka_bootstrap: str = "127.0.0.1:9092"
 
     @model_validator(mode="after")
     def validate_mode(self):

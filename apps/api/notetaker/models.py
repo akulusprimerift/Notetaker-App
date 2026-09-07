@@ -102,6 +102,7 @@ class Job(Base):
     attempt_token: Mapped[str | None] = mapped_column(String(36))
     lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime)
     error_code: Mapped[str | None] = mapped_column(String(50))
+    attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
 
 class Outbox(Base):
@@ -186,3 +187,82 @@ class AudioManifestRevision(Base):
     content: Mapped[dict] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
     __table_args__ = (ForeignKeyConstraint(["run_id", "lecture_id"], ["capture_runs.id", "capture_runs.lecture_id"]), UniqueConstraint("run_id", "version"))
+
+
+class SpeechWindow(Base):
+    __tablename__ = "speech_windows"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(String(36), index=True)
+    run_id: Mapped[str] = mapped_column(String(36))
+    manifest_version: Mapped[int] = mapped_column(Integer)
+    core_start: Mapped[int] = mapped_column(BigInteger)
+    core_end: Mapped[int] = mapped_column(BigInteger)
+    context_start: Mapped[int] = mapped_column(BigInteger)
+    context_end: Mapped[int] = mapped_column(BigInteger)
+    outcome: Mapped[str | None] = mapped_column(String(20))
+    __table_args__ = (ForeignKeyConstraint(["run_id", "lecture_id"], ["capture_runs.id", "capture_runs.lecture_id"]),
+        UniqueConstraint("id", "lecture_id"), UniqueConstraint("run_id", "manifest_version", "core_start"),
+        CheckConstraint("context_start <= core_start AND core_start < core_end AND core_end <= context_end", name="speech_window_bounds"))
+
+
+class SpeechGeneration(Base):
+    __tablename__ = "speech_generations"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(String(36))
+    window_id: Mapped[str] = mapped_column(String(36))
+    attempt_token: Mapped[str] = mapped_column(String(36), unique=True)
+    metadata_json: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    __table_args__ = (ForeignKeyConstraint(["window_id", "lecture_id"], ["speech_windows.id", "speech_windows.lecture_id"]), UniqueConstraint("id", "lecture_id"))
+
+
+class TranscriptSegment(Base):
+    __tablename__ = "transcript_segments"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(String(36))
+    window_id: Mapped[str] = mapped_column(String(36))
+    position: Mapped[int] = mapped_column(Integer)
+    current_revision: Mapped[int] = mapped_column(Integer, default=1)
+    __table_args__ = (ForeignKeyConstraint(["window_id", "lecture_id"], ["speech_windows.id", "speech_windows.lecture_id"]),
+        UniqueConstraint("id", "lecture_id"), UniqueConstraint("window_id", "position"))
+
+
+class TranscriptVersion(Base):
+    __tablename__ = "transcript_versions"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(String(36))
+    segment_id: Mapped[str] = mapped_column(String(36))
+    revision: Mapped[int] = mapped_column(Integer)
+    text: Mapped[str] = mapped_column(String(12000))
+    author: Mapped[str] = mapped_column(String(20))
+    start_sample: Mapped[int] = mapped_column(BigInteger)
+    end_sample: Mapped[int] = mapped_column(BigInteger)
+    confidence: Mapped[dict] = mapped_column(JSON)
+    generation_id: Mapped[str] = mapped_column(String(36))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    __table_args__ = (ForeignKeyConstraint(["segment_id", "lecture_id"], ["transcript_segments.id", "transcript_segments.lecture_id"]),
+        ForeignKeyConstraint(["generation_id", "lecture_id"], ["speech_generations.id", "speech_generations.lecture_id"]),
+        UniqueConstraint("id", "lecture_id"), UniqueConstraint("segment_id", "revision"),
+        CheckConstraint("start_sample >= 0 AND end_sample > start_sample", name="transcript_span"))
+
+
+class TranscriptSnapshot(Base):
+    __tablename__ = "transcript_snapshots"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(ForeignKey("lectures.id"), index=True)
+    sequence: Mapped[int] = mapped_column(Integer)
+    audio_epoch: Mapped[int] = mapped_column(Integer)
+    manifests: Mapped[list] = mapped_column(JSON)
+    issues: Mapped[list] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    __table_args__ = (UniqueConstraint("id", "lecture_id"), UniqueConstraint("lecture_id", "sequence"))
+
+
+class TranscriptSnapshotItem(Base):
+    __tablename__ = "transcript_snapshot_items"
+    snapshot_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    position: Mapped[int] = mapped_column(Integer, primary_key=True)
+    lecture_id: Mapped[str] = mapped_column(String(36))
+    version_id: Mapped[str] = mapped_column(String(36))
+    __table_args__ = (ForeignKeyConstraint(["snapshot_id", "lecture_id"], ["transcript_snapshots.id", "transcript_snapshots.lecture_id"]),
+        ForeignKeyConstraint(["version_id", "lecture_id"], ["transcript_versions.id", "transcript_versions.lecture_id"]))
