@@ -10,7 +10,7 @@ from test_capture import capture, upload, seal
 from notetaker.models import (Lecture, Job, SpeechWindow, SpeechGeneration, TranscriptVersion,
     TranscriptSnapshot, CaptureRun, Outbox, Inbox, Session, Owner, now)
 from notetaker.transcription import lock_lecture, schedule
-from notetaker.speech_worker import plan_pending, claim, execute, publish, renew, dispatch, consume_event, event_payload
+from notetaker.speech_worker import plan_pending, claim, execute, publish, renew, dispatch, consume_event, event_payload, pause_cut
 from notetaker.speech_provider import SpeechFailure, validate_result, owned_words, WhisperProvider
 
 
@@ -109,6 +109,36 @@ def test_lease_renewal_keeps_current_attempt(speech):
     assert renew(app.state.sessions,*chosen)
     assert not renew(app.state.sessions,chosen[0],str(uuid4()))
     assert claim(app.state.sessions) is None
+
+
+def test_worker_process_exit_leaves_reclaimable_job(speech):
+    import os,subprocess,sys
+    app,*_=speech
+    child_code='''
+import json,time,os
+from notetaker.db import database
+from notetaker.speech_worker import claim
+_,sessions=database(os.environ['SYNTHETIC_TEST_DATABASE'])
+chosen=claim(sessions)
+print(json.dumps(chosen),flush=True)
+time.sleep(120)
+'''
+    child=subprocess.Popen([sys.executable,'-c',child_code],env={**os.environ,
+        'SYNTHETIC_TEST_DATABASE':app.state.settings.database_url},stdout=subprocess.PIPE,text=True)
+    try:
+        import threading,queue
+        output=queue.Queue()
+        threading.Thread(target=lambda:output.put(child.stdout.readline()),daemon=True).start()
+        old=json.loads(output.get(timeout=20))
+        assert old
+    finally:
+        child.terminate();child.wait(timeout=10);child.stdout.close()
+    # Accelerate lease expiry in the isolated test DB; this is not a wall-clock timeout measurement.
+    with app.state.sessions() as db:
+        job=db.get(Job,old[0]);assert job.status=='running'
+        job.lease_expires_at=now()-timedelta(seconds=1);db.commit()
+    new=claim(app.state.sessions,old[0]);assert new and new[1]!=old[1]
+    assert execute(app.state.sessions,app.state.audio_store,FakeSpeech(),new,heartbeat=False)
 
 
 @pytest.mark.parametrize('change',['delete','audio_epoch','manifest'])
@@ -238,6 +268,17 @@ def test_provider_normalizes_numeric_scalars_before_strict_validation():
     segments=owned_words([SimpleNamespace(words=[word])],window,48000)
     assert type(segments[0]['confidence']['value']) is float
     validate_result({'outcome':'speech','segments':segments},window)
+
+
+def test_pause_planning_uses_audio_and_keeps_word_repetitions():
+    import io,wave,array
+    rate=8000;pcm=array.array('h',[5000]*32000)
+    pcm[12000:15200]=array.array('h',[0]*3200)
+    audio=io.BytesIO()
+    with wave.open(audio,'wb') as wav:
+        wav.setnchannels(1);wav.setsampwidth(2);wav.setframerate(rate);wav.writeframes(pcm.tobytes())
+    cut=pause_cut(audio.getvalue(),rate,24*rate,22*rate)
+    assert 23.5*rate<cut<23.9*rate
 
 
 @pytest.mark.parametrize('change',['reversed','outside','nan','empty','silence_text'])

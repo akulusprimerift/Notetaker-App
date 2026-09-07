@@ -10,9 +10,9 @@ from sqlalchemy import select, update
 from .config import Settings
 from .db import database
 from .audio_store import AudioStore
-from .models import (Lecture, Job, Outbox, Inbox, SpeechWindow, SpeechGeneration, CaptureRun,
+from .models import (Lecture, Job, Outbox, Inbox, SpeechWindow, SpeechGeneration, CaptureRun, AudioManifestRevision,
     TranscriptSegment, TranscriptVersion, UploadReservation, now)
-from .transcription import lock_lecture, schedule, read_audio, freeze_transcript, windows_for
+from .transcription import lock_lecture, schedule, read_audio, freeze_transcript, windows_for, current_runs
 from .speech_provider import WhisperProvider, SpeechFailure, validate_result
 
 LEASE_SECONDS=60
@@ -20,14 +20,63 @@ TOPIC='notetaker.speech.v1'
 log=logging.getLogger('notetaker.speech')
 
 
-def plan_pending(sessions):
+def pause_cut(audio, rate, target, offset):
+    """Prefer >=200 ms near-silence around a nominal seam; never compare/delete words."""
+    import io, wave, array, sys
+    with wave.open(io.BytesIO(audio),'rb') as wav: pcm=array.array('h',wav.readframes(wav.getnframes()))
+    if sys.byteorder!='little':pcm.byteswap()
+    frame=max(1,rate//50);quiet=[];start=None
+    for at in range(0,len(pcm),frame):
+        silent=max((abs(v) for v in pcm[at:at+frame]),default=0)<=64
+        if silent and start is None:start=at
+        if start is not None and (not silent or at+frame>=len(pcm)):
+            end=at if not silent else len(pcm)
+            if end-start>=rate//5:quiet.append((offset+start,offset+end))
+            start=None
+    # Use the middle of the pause, not its edge: recognition timestamps can drift
+    # into silence, causing the same boundary word to be owned by both windows.
+    candidates=[(a+b)//2 for a,b in quiet]
+    return min(candidates,key=lambda value:abs(value-target)) if candidates else target
+
+
+def plan_pending(sessions, store=None):
     with sessions() as db:
         ids=db.scalars(select(Job.lecture_id).where(Job.kind=='speech.chunk',Job.status=='due').distinct()).all()
     for lecture_id in ids:
+        cuts=None
+        if store is not None:
+            cuts={}
+            with sessions() as db:
+                lecture=db.get(Lecture,lecture_id)
+                runs=current_runs(db,lecture) if lecture and not lecture.tombstoned else []
+                prepared=[]
+                for run in runs:
+                    revision=db.scalar(select(AudioManifestRevision).where(AudioManifestRevision.run_id==run.id,
+                        AudioManifestRevision.version==run.manifest_version))
+                    existing=db.scalar(select(SpeechWindow.id).where(SpeechWindow.run_id==run.id,
+                        SpeechWindow.manifest_version==run.manifest_version).limit(1))
+                    if revision and revision.content['complete'] and not existing:
+                        db.expunge(run);prepared.append(run)
+            for run in prepared:
+                selected=[]
+                boundaries=sorted({0,run.final_sample_count,*[g['after_sample'] for g in run.gaps]})
+                try:
+                    for left,right in zip(boundaries,boundaries[1:]):
+                        # Successive cores are at most 26 s; context stays <=30 s and never crosses gaps.
+                        previous=left
+                        while right-previous>26*run.sample_rate:
+                            target=previous+24*run.sample_rate
+                            a=max(left,target-2*run.sample_rate);b=min(right,target+2*run.sample_rate)
+                            with sessions() as db:audio=read_audio(db,store,run,a,b)
+                            previous=pause_cut(audio,run.sample_rate,target,a)
+                            selected.append(previous)
+                    cuts[(run.id,run.manifest_version)]=selected
+                except Exception:
+                    log.warning('speech_plan_audio_unavailable run_id=%s',run.id)
         with sessions() as db:
             lecture=lock_lecture(db,lecture_id)
             if lecture and not lecture.tombstoned:
-                schedule(db,lecture)
+                schedule(db,lecture,cuts)
             db.commit()
 
 
@@ -201,7 +250,7 @@ def main():
         consumer.subscribe([TOPIC])
     try:
         while True:
-            plan_pending(sessions)
+            plan_pending(sessions,store)
             hint=None
             if producer:
                 try:
@@ -228,4 +277,3 @@ def main():
 if __name__=='__main__':
     logging.basicConfig(level=logging.INFO,format='%(levelname)s %(message)s')
     main()
-

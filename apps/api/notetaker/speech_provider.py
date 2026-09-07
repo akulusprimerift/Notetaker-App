@@ -94,9 +94,16 @@ class WhisperProvider:
         except Exception as exc: raise SpeechFailure('speech_inference_failed') from exc
         with wave.open(io.BytesIO(audio),'rb') as wav:
             pcm=wav.readframes(wav.getnframes())
+        import array,sys
+        amplitudes=array.array('h',pcm)
+        if sys.byteorder!='little':amplitudes.byteswap()
+        seams=[cut for cut in (window.core_start,window.core_end) if window.context_start<cut<window.context_end]
+        boundary_review=any(max((abs(v) for v in amplitudes[max(0,cut-window.context_start-rate//50):
+            min(len(amplitudes),cut-window.context_start+rate//50)]),default=0)>64 for cut in seams)
         # Only digital silence is asserted here. VAD rejection of noise/quiet speech is uncertain.
         outcome='speech' if selected else 'silence' if not any(pcm) else 'uncertain'
-        if any(s['confidence']['value']<0.6 for s in selected): outcome='uncertain'
+        if boundary_review or any(s['confidence']['value']<0.6 for s in selected): outcome='uncertain'
         return validate_result({'outcome':outcome,'segments':selected,
             'metadata':{**self.metadata,'elapsed_seconds':round(perf_counter()-started,3),
+                'boundary_review':boundary_review,'window_policy':'pause-aware-24s-core-2s-context-v1',
                 'audio_seconds':(window.context_end-window.context_start)/rate}},window)

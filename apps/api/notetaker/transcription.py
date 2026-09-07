@@ -25,7 +25,7 @@ def current_runs(db, lecture):
         .order_by(CaptureRun.capture_epoch)).all()
 
 
-def schedule(db, lecture):
+def schedule(db, lecture, planned_cuts=None):
     """Called under the lecture lock. Only complete sealed snapshots are inference inputs."""
     made = 0
     for run in current_runs(db, lecture):
@@ -33,13 +33,16 @@ def schedule(db, lecture):
             AudioManifestRevision.run_id == run.id, AudioManifestRevision.version == run.manifest_version))
         if not revision or not revision.content['complete']:
             continue
+        if planned_cuts is not None and (run.id,run.manifest_version) not in planned_cuts:
+            continue
         boundaries = sorted({0, run.final_sample_count, *[g['after_sample'] for g in run.gaps]})
         for left, right in zip(boundaries, boundaries[1:]):
-            for start in range(left, right, CORE_SECONDS * run.sample_rate):
+            cuts = [left, *[cut for cut in (planned_cuts or {}).get((run.id,run.manifest_version),
+                range(left+CORE_SECONDS*run.sample_rate,right,CORE_SECONDS*run.sample_rate)) if left<cut<right], right]
+            for start,end in zip(cuts,cuts[1:]):
                 if db.scalar(select(SpeechWindow.id).where(SpeechWindow.run_id == run.id,
                     SpeechWindow.manifest_version == run.manifest_version, SpeechWindow.core_start == start)):
                     continue
-                end = min(right, start + CORE_SECONDS * run.sample_rate)
                 window = SpeechWindow(lecture_id=lecture.id, run_id=run.id, manifest_version=run.manifest_version,
                     core_start=start, core_end=end, context_start=max(left, start-CONTEXT_SECONDS*run.sample_rate),
                     context_end=min(right, end+CONTEXT_SECONDS*run.sample_rate))
@@ -185,7 +188,7 @@ def install_transcription(app, current, db_session, owned_lecture, receipt):
         mutation(request, session); owned_lecture(db, session.owner_id, lecture_id)
         lecture = lock_lecture(db, lecture_id)
         if lecture.tombstoned: error(404, 'unavailable', 'This lecture is unavailable.')
-        schedule(db, lecture)
+        # The worker plans pause-aware windows outside request/database locks.
         for _, job, _ in windows_for(db, lecture):
             if job.status == 'failed' or (job.status == 'due' and job.error_code):
                 job.status='due'; job.error_code=None; job.attempts=0; job.due_at=now()
