@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     allowed_hosts: list[str] = ["127.0.0.1", "localhost", "api"]
     secure_cookies: bool = False
     session_hours: int = 24
+    s3_endpoint: str = "http://127.0.0.1:8333"
+    s3_access_key: str = ""
+    s3_secret_key: str = ""
+    audio_bucket: str = "notetaker-audio"
 
     @model_validator(mode="after")
     def validate_mode(self):

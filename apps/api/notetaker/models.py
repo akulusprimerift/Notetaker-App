@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from uuid import uuid4
-from sqlalchemy import String, Integer, Boolean, DateTime, ForeignKey, UniqueConstraint, JSON, CheckConstraint
+from sqlalchemy import String, Integer, BigInteger, Boolean, DateTime, ForeignKey, ForeignKeyConstraint, UniqueConstraint, JSON, CheckConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -130,3 +130,59 @@ class LectureUpdate(Base):
     kind: Mapped[str] = mapped_column(String(40))
     entity_id: Mapped[str] = mapped_column(String(36))
     entity_version: Mapped[int] = mapped_column(Integer)
+
+
+class CaptureRun(Base):
+    __tablename__ = "capture_runs"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(ForeignKey("lectures.id"), index=True)
+    capture_epoch: Mapped[int] = mapped_column(Integer)
+    lifecycle_epoch: Mapped[int] = mapped_column(Integer)
+    audio_epoch: Mapped[int] = mapped_column(Integer)
+    grant_hash: Mapped[str] = mapped_column(String(64))
+    grant_expires_at: Mapped[datetime] = mapped_column(DateTime)
+    sample_rate: Mapped[int] = mapped_column(Integer)
+    state: Mapped[str] = mapped_column(String(20), default="recording")
+    recovery: Mapped[bool] = mapped_column(Boolean, default=False)
+    manifest_version: Mapped[int] = mapped_column(Integer, default=0)
+    last_sequence: Mapped[int | None] = mapped_column(Integer)
+    final_sample_count: Mapped[int | None] = mapped_column(BigInteger)
+    gaps: Mapped[list] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    heartbeat_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    __table_args__ = (UniqueConstraint("id", "lecture_id"), UniqueConstraint("lecture_id", "capture_epoch"),
+        CheckConstraint("sample_rate >= 8000 AND sample_rate <= 192000", name="capture_sample_rate"))
+
+
+class UploadReservation(Base):
+    __tablename__ = "upload_reservations"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(String(36), index=True)
+    run_id: Mapped[str] = mapped_column(String(36))
+    sequence: Mapped[int] = mapped_column(Integer)
+    identity: Mapped[dict] = mapped_column(JSON)
+    object_key: Mapped[str] = mapped_column(String(240), unique=True)
+    state: Mapped[str] = mapped_column(String(20), default="reserved")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    __table_args__ = (ForeignKeyConstraint(["run_id", "lecture_id"], ["capture_runs.id", "capture_runs.lecture_id"]),
+        UniqueConstraint("run_id", "sequence"), UniqueConstraint("id", "lecture_id"),
+        CheckConstraint("sequence >= 0", name="reservation_sequence"))
+
+
+class AudioChunk(Base):
+    __tablename__ = "audio_chunks"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    lecture_id: Mapped[str] = mapped_column(String(36), index=True)
+    verified_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    __table_args__ = (ForeignKeyConstraint(["id", "lecture_id"], ["upload_reservations.id", "upload_reservations.lecture_id"]),)
+
+
+class AudioManifestRevision(Base):
+    __tablename__ = "audio_manifest_revisions"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(String(36))
+    run_id: Mapped[str] = mapped_column(String(36))
+    version: Mapped[int] = mapped_column(Integer)
+    content: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    __table_args__ = (ForeignKeyConstraint(["run_id", "lecture_id"], ["capture_runs.id", "capture_runs.lecture_id"]), UniqueConstraint("run_id", "version"))

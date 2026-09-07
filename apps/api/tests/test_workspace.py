@@ -133,7 +133,7 @@ def test_create_reopen_and_restart_persist_course_lecture_settings(setup):
     result=client.get(f"/lectures/{saved['id']}/snapshot").json()
     assert result['lecture']['title']=='Binary search'
     assert result['settings']=={'depth':'detailed','format':'topic_outline','ai_explanations':False,'version':1}
-    assert result['capture']=={'status':'not_started','available':False}
+    assert result['capture']=={'status':'not_started','available':app.state.audio_store.available}
     assert result['notes']['blocks']==[]
     with app.state.sessions() as db:
         assert db.scalar(select(func.count()).select_from(Outbox))==1

@@ -18,6 +18,8 @@ from .config import Settings
 from .db import database
 from .models import Bootstrap, Owner, Session, Course, Lecture, SettingsVersion, CommandReceipt, Outbox, LectureUpdate, Job, now
 from .security import authenticate, mutation, digest, error
+from .audio_store import AudioStore
+from .capture import install_capture
 
 log = logging.getLogger("notetaker")
 
@@ -91,6 +93,7 @@ def create_app(settings: Settings | None = None):
 
     app = FastAPI(title="Notetaker API", version="0.1.0", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
     app.state.settings, app.state.engine, app.state.sessions = settings, engine, sessions
+    app.state.audio_store = AudioStore(settings)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
 
     @app.middleware("http")
@@ -154,11 +157,11 @@ def create_app(settings: Settings | None = None):
         db.add(Session(token_hash=digest(token),owner_id=owner.id,csrf_hash=digest(csrf),expires_at=now()+timedelta(hours=settings.session_hours)))
         db.commit()
         response.set_cookie("nt_session",token,httponly=True,secure=settings.secure_cookies,samesite="strict",max_age=settings.session_hours*3600,path="/")
-        return {"csrf_token":csrf,"preview":settings.preview}
+        return {"csrf_token":csrf,"preview":settings.preview,"owner_id":owner.id}
 
     @app.get("/session")
     def session_info(request: Request, session=Depends(current)):
-        return {"csrf_token":digest("csrf:"+request.cookies["nt_session"]),"preview":settings.preview}
+        return {"csrf_token":digest("csrf:"+request.cookies["nt_session"]),"preview":settings.preview,"owner_id":session.owner_id}
 
     @app.post("/session/logout",status_code=204)
     def logout(request: Request,response: Response,session=Depends(current),db=Depends(db_session)):
@@ -216,7 +219,7 @@ def create_app(settings: Settings | None = None):
             error(404,"unavailable","This lecture is unavailable.")
         lecture,prefs,course_name=row
         return {"lecture":lecture_json(lecture),"course_name":course_name,"settings":{"depth":prefs.depth,"format":prefs.format,"ai_explanations":prefs.ai_explanations,"version":prefs.version},
-                "capture":{"status":"not_started","available":False},"transcript":{"status":"not_started","segments":[]},"notes":{"status":"not_started","blocks":[]},"processing_location":"local","update_cursor":lecture.update_seq}
+                "capture":{"status":"not_started" if lecture.status=='prepared' else lecture.status,"available":app.state.audio_store.available},"transcript":{"status":"not_started","segments":[]},"notes":{"status":"not_started","blocks":[]},"processing_location":"local","update_cursor":lecture.update_seq}
 
     @app.get("/lectures/{lecture_id}/sources/{version}")
     @app.get("/lectures/{lecture_id}/audio/{version}")
@@ -249,6 +252,7 @@ def create_app(settings: Settings | None = None):
         except WebSocketDisconnect:
             pass
 
+    install_capture(app, current, db_session, owned_lecture, receipt)
     return app
 
 

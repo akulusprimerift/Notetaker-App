@@ -14,6 +14,8 @@ $env:NOTETAKER_TEST_DATABASE_URL=$env:NOTETAKER_DATABASE_URL
 $env:NOTETAKER_PREVIEW='false'
 $env:S3_ACCESS_KEY=$taskValues.S3_ACCESS_KEY
 $env:S3_SECRET_KEY=$taskValues.S3_SECRET_KEY
+$env:NOTETAKER_S3_ACCESS_KEY=$taskValues.S3_ACCESS_KEY
+$env:NOTETAKER_S3_SECRET_KEY=$taskValues.S3_SECRET_KEY
 $env:PYTHONPATH='apps/api'
 & .venv/Scripts/python.exe -m notetaker.verify_services
 if ($LASTEXITCODE -ne 0) { throw 'Real service probe failed. Do not mark M01 services verified.' }

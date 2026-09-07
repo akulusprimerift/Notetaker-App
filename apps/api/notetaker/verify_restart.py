@@ -1,11 +1,13 @@
 """Restart drill using only newly created synthetic resources, never application data."""
 import argparse
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
 import subprocess
 import time
+import wave
 from datetime import timedelta
 from uuid import uuid4
 
@@ -36,6 +38,7 @@ def main():
     suffix = uuid4().hex
     schema = 'verify_restart_' + suffix
     bucket = 'notetaker-verify-' + suffix
+    capture_bucket = 'notetaker-capture-verify-' + suffix
     topic = 'notetaker.verify.' + suffix
     payload = b'Synthetic restart verification; no recorded lecture content.'
     engine = create_engine(settings.database_url)
@@ -45,14 +48,19 @@ def main():
         connect_timeout=3, read_timeout=3, retries={'max_attempts':1}))
     address = os.environ.get('KAFKA_BOOTSTRAP', '127.0.0.1:9092')
     admin = AdminClient({'bootstrap.servers':address})
-    schema_created = bucket_created = topic_created = False
+    schema_created = bucket_created = topic_created = capture_bucket_created = False
+    audio_key = None
     app = consumer = None
     try:
         with engine.begin() as connection:
             connection.execute(text(f'CREATE SCHEMA "{schema}"'))
         schema_created = True
         url = make_url(settings.database_url).update_query_dict({'options':f'-csearch_path={schema}'}).render_as_string(hide_password=False)
-        app = create_app(Settings(database_url=url, preview=False, allowed_hosts=['testserver']))
+        app = create_app(Settings(database_url=url, preview=False, allowed_hosts=['testserver'], audio_bucket=capture_bucket))
+        if not app.state.audio_store.available:
+            raise RuntimeError('Recording restart drill requires configured audio storage')
+        s3.create_bucket(Bucket=capture_bucket)
+        capture_bucket_created = True
         with app.state.engine.begin() as connection:
             config = Config(str(root / 'alembic.ini'))
             config.attributes['connection'] = connection
@@ -72,6 +80,27 @@ def main():
             assert response.status_code == 201
             lecture = response.json()
             cookie = client.cookies.get('nt_session')
+            grant = uuid4().hex + uuid4().hex
+            response = client.post(f"/lectures/{lecture['id']}/capture-runs", json={'sample_rate':48000,'grant':grant,'expected_capture_epoch':0}, headers=headers)
+            assert response.status_code == 201, response.text
+            run = response.json()
+            wave_file = io.BytesIO()
+            with wave.open(wave_file, 'wb') as wav:
+                wav.setnchannels(1); wav.setsampwidth(2); wav.setframerate(48000)
+                wav.writeframes(b'\x01\x00'*960)
+            audio = wave_file.getvalue()
+            identity = {'run_id':run['id'],'capture_epoch':run['capture_epoch'],'sequence':0,'start_sample':0,
+                'sample_count':960,'sample_rate':48000,'channels':1,'encoding':'pcm_s16le_wav',
+                'sha256':hashlib.sha256(audio).hexdigest(),'byte_length':len(audio)}
+            audio_key = f"{lecture['id']}/{run['id']}/0/{identity['sha256']}.wav"
+            capture_headers = {**headers,'x-capture-grant':grant,'x-chunk-identity':json.dumps(identity)}
+            response = client.put(f"/lectures/{lecture['id']}/capture-runs/{run['id']}/chunks/0", content=audio, headers=capture_headers)
+            assert response.status_code == 200, response.text
+            ack = response.json()
+            assert ack['storage_state'] == 'verified'
+            response = client.post(f"/lectures/{lecture['id']}/capture-runs/{run['id']}/seal",json={'expected_version':ack['manifest_version'],'last_sequence':0,'final_sample_count':960},headers=capture_headers)
+            assert response.status_code == 200 and response.json()['complete']
+            lecture = client.get(f"/lectures/{lecture['id']}/snapshot").json()['lecture']
         s3.create_bucket(Bucket=bucket)
         bucket_created = True
         s3.put_object(Bucket=bucket, Key='probe.txt', Body=payload)
@@ -101,6 +130,10 @@ def main():
             assert client.get('/courses').json()[0] == course
             snapshot = client.get(f"/lectures/{lecture['id']}/snapshot").json()
             assert snapshot['lecture'] == lecture and snapshot['settings']['depth'] == 'detailed'
+            response = client.get(f"/lectures/{lecture['id']}/audio-chunks/{ack['chunk_id']}")
+            assert response.status_code == 200 and response.content == audio
+            saved = client.get(f"/lectures/{lecture['id']}/capture-runs/{run['id']}/manifest").json()
+            assert saved['complete'] and saved['saved_through_samples'] == 960
         consumer = Consumer({'bootstrap.servers':address, 'group.id':topic, 'auto.offset.reset':'earliest', 'enable.auto.commit':False})
         consumer.subscribe([topic])
         deadline = time.monotonic() + 45
@@ -112,7 +145,8 @@ def main():
                 break
         assert message is not None and message.value() == payload
         print(json.dumps({'course_and_lecture_after_restart':'passed', 'object_length_and_sha256_after_restart':'passed',
-            'broker_record_after_restart':'passed', 'scope':'orderly container restart with persistent volumes; not power-loss or capture qualification'}, indent=2))
+            'broker_record_after_restart':'passed', 'acknowledged_wav_and_sealed_manifest_after_restart':'passed',
+            'scope':'synthetic audio through capture API and orderly container restart; not microphone, power-loss or endurance qualification'}, indent=2))
     finally:
         if consumer:
             consumer.close()
@@ -124,6 +158,10 @@ def main():
         if bucket_created:
             s3.delete_object(Bucket=bucket, Key='probe.txt')
             s3.delete_bucket(Bucket=bucket)
+        if capture_bucket_created:
+            if audio_key:
+                s3.delete_object(Bucket=capture_bucket, Key=audio_key)
+            s3.delete_bucket(Bucket=capture_bucket)
         if schema_created:
             with engine.begin() as connection:
                 connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
