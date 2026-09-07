@@ -266,3 +266,45 @@ class TranscriptSnapshotItem(Base):
     version_id: Mapped[str] = mapped_column(String(36))
     __table_args__ = (ForeignKeyConstraint(["snapshot_id", "lecture_id"], ["transcript_snapshots.id", "transcript_snapshots.lecture_id"]),
         ForeignKeyConstraint(["version_id", "lecture_id"], ["transcript_versions.id", "transcript_versions.lecture_id"]))
+
+
+class NotePreference(Base):
+    __tablename__ = 'note_preferences'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(ForeignKey('lectures.id'), index=True)
+    version: Mapped[int] = mapped_column(Integer)
+    model: Mapped[str] = mapped_column(String(160))
+    model_digest: Mapped[str] = mapped_column(String(64))
+    enabled: Mapped[bool] = mapped_column(Boolean)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    __table_args__ = (UniqueConstraint('lecture_id', 'version'), UniqueConstraint('id', 'lecture_id'))
+
+
+class NoteRequest(Base):
+    __tablename__ = 'note_requests'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(String(36), index=True)
+    preference_id: Mapped[str] = mapped_column(String(36))
+    snapshot_id: Mapped[str] = mapped_column(String(36))
+    settings_id: Mapped[str] = mapped_column(ForeignKey('settings_versions.id'))
+    base_revision: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    __table_args__ = (UniqueConstraint('id', 'lecture_id'),
+        UniqueConstraint('snapshot_id', 'preference_id', 'settings_id'),
+        ForeignKeyConstraint(['snapshot_id', 'lecture_id'], ['transcript_snapshots.id', 'transcript_snapshots.lecture_id']),
+        ForeignKeyConstraint(['preference_id', 'lecture_id'], ['note_preferences.id', 'note_preferences.lecture_id']))
+
+
+class NoteRevision(Base):
+    __tablename__ = 'note_revisions'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(String(36), index=True)
+    request_id: Mapped[str] = mapped_column(String(36), unique=True)
+    revision: Mapped[int] = mapped_column(Integer)
+    attempt_token: Mapped[str] = mapped_column(String(36), unique=True)
+    content: Mapped[dict] = mapped_column(JSON)
+    resolved_citations: Mapped[list] = mapped_column(JSON)
+    metadata_json: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    __table_args__ = (UniqueConstraint('lecture_id', 'revision'),
+        ForeignKeyConstraint(['request_id', 'lecture_id'], ['note_requests.id', 'note_requests.lecture_id']))

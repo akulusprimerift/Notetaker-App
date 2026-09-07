@@ -70,7 +70,7 @@ export default function Transcript({owner,lecture,csrf,onBusy,onSessionExpired}:
   const current=data?.snapshot?.segments.find(p=>p.segment_id===draft?.segment);
   return <section className="transcript-panel" aria-labelledby="transcript-title">
     <div className="section-row"><h2 id="transcript-title">Lecture transcript</h2><span className="prepared-badge">On this device</span></div>
-    <p className="muted">Follow the lecturer’s words, listen to their source, and correct recognition errors. Detailed study notes come next.</p>
+    <p className="muted">Follow the lecturer’s words, listen to their source, and correct recognition errors. Your note model uses these passages as evidence.</p>
     <div className="transcript-status"><p role="status">{data?statuses[data.status]??'Checking transcript':'Checking saved speech…'}{data&&data.counts.completed>0?' · '+data.counts.completed+' of '+Object.values(data.counts).reduce((a,b)=>a+b,0)+' audio sections processed':''}</p>
       <button className="secondary" disabled={saving||!!draft} onClick={()=>void retry()}>Retry transcription</button></div>
     {data?.errors.includes('model_unavailable')&&<p className="error">The local speech model is unavailable. Your audio is saved and will wait until the model is ready.</p>}

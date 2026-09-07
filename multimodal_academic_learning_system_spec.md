@@ -18,6 +18,8 @@ The detailed [student workflows](docs/product/phase-2-student-experience.md), [a
 
 Executed evidence now includes real PostgreSQL application tests, synthetic browser/audio recovery, storage restart checks and local synthetic speech trials, alongside architecture/AI contract tests and earlier note trials. [Phase 4 results](docs/ai/phase-4-results.md) record two structurally valid outputs out of three v1 cases, a rejected coverage mismatch, and an improved correction-only v2 trial. Note generation took 66–214 seconds per short case. No local live configuration, real-audio STT accuracy, human acceptance, or complete lecture workflow has been qualified. G01–G06 in the roadmap preserve these unresolved requirements.
 
+Implementation update (2026-09-07): the [M04 increment](docs/implementation/phase-6-m04.md) makes a user-selected local LLM write notes automatically from the saved transcript and refresh them after corrections. Students do not have to manually author the notes. Long-lecture topic processing remains required; the bounded first increment does not close M04. Optional OpenAI/ChatGPT and Claude connections are planned in Phase 7 through supported provider credentials, with explicit cloud processing and protected Windows secret storage; consumer account/subscription compatibility is not assumed.
+
 ## 2. Audience, environment and operating boundaries
 
 - Initial domain: computer science, algorithms and code, selected by the user. English, one student's private workspace and 45–60 minute endurance fixtures are initial assumptions, not permanent course/language/duration limits.

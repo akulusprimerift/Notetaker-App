@@ -5,4 +5,6 @@ COPY apps/api/requirements.lock /app/requirements.lock
 RUN pip install --no-cache-dir --require-hashes -r requirements.lock
 COPY alembic.ini /app/alembic.ini
 COPY apps/api /app/apps/api
+COPY contracts/ai /app/contracts/ai
+COPY prompts /app/prompts
 CMD ["python", "-m", "uvicorn", "notetaker.main:app", "--host", "0.0.0.0", "--port", "8010", "--no-access-log"]

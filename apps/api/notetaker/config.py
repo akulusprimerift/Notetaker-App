@@ -18,9 +18,14 @@ class Settings(BaseSettings):
     speech_model_path: str = ".local/models/faster-whisper-small.en"
     speech_threads: int = 4
     kafka_bootstrap: str = "127.0.0.1:9092"
+    ollama_url: str = "http://127.0.0.1:11434"
 
     @model_validator(mode="after")
     def validate_mode(self):
+        model_url = urlsplit(self.ollama_url)
+        if (model_url.scheme != 'http' or model_url.hostname not in ('127.0.0.1', 'localhost', 'host.docker.internal')
+                or model_url.username or model_url.password or model_url.path or model_url.query or model_url.fragment):
+            raise ValueError('The local note provider must use a local Ollama endpoint')
         origin=urlsplit(self.web_origin)
         if origin.scheme not in ('http','https') or not origin.hostname or origin.path or origin.query or origin.fragment:
             raise ValueError('Set a single web origin without a path')

@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select, update, func
 from .models import (Lecture, CaptureRun, AudioManifestRevision, UploadReservation, Job,
     SpeechWindow, TranscriptSegment, TranscriptVersion, TranscriptSnapshot,
-    TranscriptSnapshotItem, CommandReceipt, LectureUpdate, Outbox, now)
+    TranscriptSnapshotItem, CommandReceipt, LectureUpdate, Outbox, NoteRevision, now)
 from .security import error, mutation
 
 CORE_SECONDS = 24
@@ -137,7 +137,7 @@ def transcript_json(db, lecture):
     return {'status':status, 'counts':counts, 'waiting_for_audio':waiting,
         'errors':sorted({job.error_code for _,job,_ in windows if job.error_code}),
         'snapshot':snapshot_json(db, snapshot) if snapshot else None,
-        'mode':'saved_audio', 'notes_available':False}
+        'mode':'saved_audio', 'notes_available':db.scalar(select(NoteRevision.id).where(NoteRevision.lecture_id == lecture.id).limit(1)) is not None}
 
 
 def read_audio(db, store, run, start, end):

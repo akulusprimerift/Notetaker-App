@@ -3,6 +3,7 @@
 import {FormEvent, useCallback, useEffect, useRef, useState} from 'react';
 import Recording from './recording';
 import Transcript from './transcript';
+import Notes from './notes';
 
 type Course={id:string;name:string;code:string;created_at:string};
 type Lecture={id:string;course_id:string;title:string;status:string;created_at:string;update_cursor:number};
@@ -116,19 +117,18 @@ export default function Workspace(){
     </aside>
     <div className="workspace-body"><div className="topbar"><span>YOUR SPACE TO LEARN</span><button className="text-button mobile-lock" onClick={()=>void logout()} disabled={busy||captureBusy||transcriptBusy}>Lock workspace</button><span className="privacy-badge"><span className="status-dot"/>{session.preview?'Local preview':'Private library'}</span></div>
     <main id="main-content" tabIndex={-1}>
-      <div className="preview-notice">{session.preview?'Local preview · ':''}Record lectures, read their transcripts, and check the original audio. Detailed study notes are coming next.</div>
+      <div className="preview-notice">{session.preview?'Local preview · ':''}Your model takes notes from the lecture. Review the ideas, check the sources, and keep learning.</div>
       {error&&!form&&<div className="error" role="alert">{error} <a href="#">Return to library</a></div>}
       {viewLoading?<p role="status" className="page-loading">Opening lecture library…</p>:snapshot?<>
         <a className="back-link" href={`#course/${snapshot.lecture.course_id}`}>← {snapshot.course_name}</a>
         <div className="page-heading"><div><p className="eyebrow">LECTURE WORKSPACE</p><h1>{snapshot.lecture.title}</h1><p className="muted">Created {date(snapshot.lecture.created_at)} <span className="separator">/</span> Saved to your course</p></div><span className="prepared-badge">Saved workspace</span></div>
         <Recording owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setCaptureBusy}/>
+        <Notes key={snapshot.lecture.id+'-notes'} lecture={snapshot.lecture.id} csrf={session.csrf_token} onSessionExpired={sessionExpired}/>
         <Transcript key={snapshot.lecture.id} owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setTranscriptBusy} onSessionExpired={sessionExpired}/>
-        <div className="note-layout"><section className="note-paper"><div className="paper-heading"><h2>Your lecture notes</h2><span>DETAILED · TOPIC OUTLINE</span></div><div className="note-placeholder"><span className="paper-icon" aria-hidden="true">≡</span><h3>A fresh page for new ideas.</h3><p>Record the lecturer’s explanations above. Review and correct the transcript above. Detailed notes from this evidence are the next build milestone.</p><p className="small">No notes have been generated for this lecture yet.</p></div></section>
-        <aside className="lecture-details"><h2>Lecture details</h2><dl><dt>Course</dt><dd>{snapshot.course_name}</dd><dt>Note depth</dt><dd>Detailed</dd><dt>Format</dt><dd>Topic outline</dd><dt>Processing</dt><dd>On this device</dd></dl><div className="source-empty"><span className="status-dot neutral"/>Audio save progress appears above</div></aside></div>
       </>:route.startsWith('course/')&&selected?<>
         <a className="back-link" href="#">← Your library</a><div className="page-heading"><div><p className="eyebrow">{selected.code||'YOUR COURSE'}</p><h1>{selected.name}</h1><p className="muted">Your lectures, together in one place.</p></div><button className="primary" onClick={()=>openForm('lecture')}>+ New lecture</button></div>
         <div className="section-row"><h2>Lectures <span className="count">{lectures.length}</span></h2><span>Most recent first</span></div>
-        {lectures.length===0?<section className="empty-state"><span className="empty-art" aria-hidden="true">≡</span><p className="eyebrow">START WITH A LECTURE</p><h2>Your next idea belongs here.</h2><p>Create a lecture to give your next class a home.<br/>You can reopen it any time.</p><button className="secondary" onClick={()=>openForm('lecture')}>Create your first lecture <span aria-hidden="true">↗</span></button></section>:<div className="lecture-list">{lectures.map(lecture=><a className="lecture-row" key={lecture.id} href={`#lecture/${lecture.id}`}><span className="lecture-icon" aria-hidden="true">≡</span><div><h3>{lecture.title}</h3><p>{date(lecture.created_at)} · {lecture.status==='prepared'?'No recording yet':'Audio capture · Notes pending'}</p></div><span className="prepared-badge">{lecture.status==='prepared'?'Prepared':lecture.status==='recording'?'Recording open':'Notes pending'}</span><span aria-hidden="true">↗</span></a>)}</div>}
+        {lectures.length===0?<section className="empty-state"><span className="empty-art" aria-hidden="true">≡</span><p className="eyebrow">START WITH A LECTURE</p><h2>Your next idea belongs here.</h2><p>Create a lecture to give your next class a home.<br/>You can reopen it any time.</p><button className="secondary" onClick={()=>openForm('lecture')}>Create your first lecture <span aria-hidden="true">↗</span></button></section>:<div className="lecture-list">{lectures.map(lecture=><a className="lecture-row" key={lecture.id} href={`#lecture/${lecture.id}`}><span className="lecture-icon" aria-hidden="true">≡</span><div><h3>{lecture.title}</h3><p>{date(lecture.created_at)} · {lecture.status==='prepared'?'No recording yet':'Open transcript and study notes'}</p></div><span className="prepared-badge">{lecture.status==='prepared'?'Prepared':lecture.status==='recording'?'Recording open':'Saved audio'}</span><span aria-hidden="true">↗</span></a>)}</div>}
       </>:!route?<>
         <div className="page-heading"><div><p className="eyebrow">A LITTLE STRUCTURE. MORE ROOM TO THINK.</p><h1>Your lecture library.</h1><p className="muted">Keep each course close. Pick up where you left off.</p></div><button className="primary" onClick={()=>openForm('course')}>+ New course</button></div>
         <div className="section-row"><h2>Your courses <span className="count">{courses.length}</span></h2><span>Only visible to you</span></div>
