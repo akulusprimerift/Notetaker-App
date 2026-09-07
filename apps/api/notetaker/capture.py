@@ -208,7 +208,7 @@ def install_capture(app, current, db_session, owned_lecture, receipt):
     def capture_status(lecture_id: str, session=Depends(current), db=Depends(db_session)):
         lecture = lock(db, session.owner_id, lecture_id)
         runs = db.scalars(select(CaptureRun).where(CaptureRun.lecture_id == lecture.id).order_by(CaptureRun.capture_epoch)).all()
-        return {'available':app.state.audio_store.available, 'capture_epoch':lecture.capture_epoch, 'runs':[manifest(db, run) for run in runs], 'processing':'not_implemented'}
+        return {'available':app.state.audio_store.available, 'capture_epoch':lecture.capture_epoch, 'runs':[manifest(db, run) for run in runs], 'processing':'saved_audio'}
 
     @app.post('/lectures/{lecture_id}/capture-runs', status_code=201)
     def start(lecture_id: str, body: Start, request: Request, session=Depends(current), db=Depends(db_session)):
