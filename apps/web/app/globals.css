@@ -8,3 +8,21 @@
 .preview-notice,.sidebar-empty,.sidebar-bottom p,.topbar>span:first-child,.section-row>span,.card-footer,.library-footer,.lecture-row p,.lecture-details dt,.source-empty,.paper-heading span,.note-placeholder p,.note-placeholder .small,.empty-state p:not(.eyebrow){color:#63725b}
 @media(max-width:700px){.mobile-lock{display:inline-block;font-size:.68rem}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+/* Recording and recovery stay adjacent to the lecture notes they will support. */
+.capture-panel{background:#fffdf7;border:1px solid #deded0;border-radius:16px;padding:24px;margin:0 0 24px}
+.capture-panel .section-row{margin-top:0;gap:12px;flex-wrap:wrap}
+.capture-controls{display:flex;align-items:center;flex-wrap:wrap;gap:16px;margin-top:20px}
+.capture-clock{font-size:28px;font-variant-numeric:tabular-nums;min-width:76px}
+.recording-badge{color:#a82e23;background:#fbe7e1;padding:7px 12px;border-radius:20px;font-size:12px;font-weight:700}
+.capture-message{font-size:14px;line-height:1.6;color:#354c3c;margin:18px 0 0;overflow-wrap:anywhere}
+.recovery-box{background:#faf0d8;border:1px solid #dbc68f;padding:18px;border-radius:10px;margin-top:18px}
+.recovery-box p{font-size:14px;line-height:1.6;color:#62502c}
+.recovery-box button{margin:8px 8px 0 0}
+.recording-segments{padding:0;list-style:none;margin:22px 0 0}
+.recording-segments li{border-top:1px solid #e3e3d7;padding:16px 0 4px;font-size:14px}
+.recording-segments p{line-height:1.5;color:#526052;margin:7px 0}
+.recording-segments .gap-notice{color:#886019;font-size:13px}
+.recording-segments summary{cursor:pointer;color:#32573d;padding:8px 0}
+.audio-parts{display:flex;flex-wrap:wrap;gap:10px;max-height:180px;overflow-y:auto}
+.audio-player{width:100%;margin-top:16px}
+@media(max-width:600px){.capture-panel{padding:18px}.capture-panel h2{font-size:20px}.capture-controls .primary{width:100%}}

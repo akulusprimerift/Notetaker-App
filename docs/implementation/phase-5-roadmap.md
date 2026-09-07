@@ -2,7 +2,7 @@
 
 Date: 2026-09-06. Status: implementation started; milestone exits require the evidence below.
 
-Implementation checkpoint: [Phase 6 / M01](phase-6-m01.md) is complete for the private course/lecture foundation. The real PostgreSQL application suite, S3/Kafka probes, container builds, persistent-volume restart drill and container-app browser walkthrough passed on 2026-09-06. M02–M08 remain planned; the full note-taking product is not qualified. The exit criteria below remain the baseline.
+Implementation checkpoint: [Phase 6 / M01](phase-6-m01.md) is complete for the private course/lecture foundation. [M02 recording and recovery](phase-6-m02.md) is implemented with synthetic browser and real-service evidence; actual microphone/device-failure qualification remains open under the user's synthetic-only testing preference. M03–M08 remain planned; the full note-taking product is not qualified. The exit criteria below remain the baseline.
 
 This is the build backlog for product-development Phase 6. Milestone IDs M01–M08 are build increments, not a restart of the phase numbering. The [consolidated specification](../../multimodal_academic_learning_system_spec.md) controls scope; the [reconciliation record](phase-5-reconciliation.md) explains changes from the originals. Every milestone requires its stated evidence before being called complete.
 

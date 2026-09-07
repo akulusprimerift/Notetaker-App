@@ -6,9 +6,10 @@ The current product priority is **reliable lecture capture → timestamped trans
 
 ## Current phase
 
-**Phase 6 / M01 complete: private workspace and service foundation.** The Next.js/FastAPI course-and-lecture workspace runs in Docker with PostgreSQL, SeaweedFS and Kafka. Real-service tests, container builds and persistent-volume restart checks pass. Recording and generated notes are not implemented yet.
+**Phase 6 / M02: recording and recovery implemented; qualification in progress.** The local course-and-lecture workspace now includes recording controls, browser buffering, verified audio saves, explicit recovery and saved audio excerpts. Synthetic browser/service tests pass. Actual microphone and device-failure qualification remain open; the user requested synthetic testing only. Transcription and generated notes are not implemented yet.
 
 - [Run the app and review M01 results](docs/implementation/phase-6-m01.md): local startup, implemented behavior, executed checks and remaining milestones.
+- [Recording and recovery / M02](docs/implementation/phase-6-m02.md): current behavior, synthetic test evidence, failure handling and remaining qualification.
 
 With Docker Desktop's Linux engine running, run `pwsh -File scripts/Start-App.ps1 -NewUnlockCode`, open `http://127.0.0.1:3000`, and use `.local/unlock-code.txt`. This builds and starts the app, creates a one-use code and preserves existing courses. Subsequent starts can omit `-NewUnlockCode` while the browser session is valid. The separately selected SQLite preview remains available; its data is preserved separately and is not automatically copied to PostgreSQL.
 
@@ -18,7 +19,7 @@ With Docker Desktop's Linux engine running, run `pwsh -File scripts/Start-App.ps
 - [Phase 5 reconciliation](docs/implementation/phase-5-reconciliation.md): decisions changed from the originals and unresolved evaluation work.
 - [Phase 5 verification](docs/implementation/phase-5-verification.md): checks performed on the consolidated documents and artifact.
 
-The next build milestone is **M02 microphone capture and recovery**. Human review, real-audio quality and usable live performance remain required release evidence. Earlier design records follow:
+The next work is completing **M02 device qualification** and then **M03 timestamped transcription**, followed by detailed notes in M04. Human review, real-audio quality and usable live performance remain required release evidence. Earlier design records follow:
 
 - [Phase 1 product brief](docs/product/phase-1-product-brief.md): audience, first-release scope, note requirements, quality gates, and open decisions.
 - [Phase 2 student experience](docs/product/phase-2-student-experience.md): screens, lecture workflows, recording states, source inspection, editing, export, and accessibility requirements.

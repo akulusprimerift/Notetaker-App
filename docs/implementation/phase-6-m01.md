@@ -2,6 +2,8 @@
 
 Date: 2026-09-06. Status: M01 complete for the private workspace and service foundation; M02 capture is next.
 
+This document records the M01 checkpoint. The current app now includes the [M02 recording implementation](phase-6-m02.md); descriptions below of unavailable recording refer to the earlier M01 interface. M02's device qualification remains open.
+
 ## What works
 
 The [Next.js interface](../../apps/web/app/page.tsx) and [FastAPI backend](../../apps/api/notetaker/main.py) provide a private course library, course creation, lecture creation/listing, a saved lecture workspace and reload/reopen behavior. The UI explicitly says that recording, transcription and generated notes are not available yet. The Docker application now contains a Computer Science course and a lecture named **Binary search — workspace verification**, created through the browser and reopened after restarting both app containers. No lecture audio or generated notes were used in this check. The earlier SQLite preview and its separate sample course remain intact.
