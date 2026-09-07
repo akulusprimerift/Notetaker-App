@@ -28,7 +28,7 @@ export default function Recording({owner,lecture,csrf,onBusy}:{owner:string;lect
   const recoveryIds=[...new Set([...unresolved.map(run=>run.id),...state.server.runs.filter(run=>!run.sealed||!run.complete).map(run=>run.id)])];
   return <section className="capture-panel" aria-labelledby="capture-title">
     <div className="section-row"><h2 id="capture-title">Lecture recording</h2><span className={state.active?'recording-badge':'prepared-badge'}>{state.active?'● Recording':'Record now · Notes later'}</span></div>
-    <p className="muted">Capture your lecturer’s explanations and worked examples. Audio stays on this device. Transcription and detailed notes are coming next.</p>
+    <p className="muted">Capture your lecturer’s explanations and worked examples. Audio stays on this device. Saved audio can be transcribed below. Detailed notes are coming next.</p>
     <div className="capture-controls">
       {state.active?<><strong className="capture-clock">{local?duration(local.samples,local.sample_rate):'0:00'}</strong><button className="primary" onClick={()=>void recorder.current?.stop()}>■ Stop recording</button></>:
         <button className="primary" disabled={state.working||state.emergency.length>0||!state.server.available||unresolved.length>0||!!activeRun} onClick={()=>void recorder.current?.start()}>● {state.server.runs.length?'Record another segment':'Start recording'}</button>}

@@ -26,3 +26,13 @@
 .audio-parts{display:flex;flex-wrap:wrap;gap:10px;max-height:180px;overflow-y:auto}
 .audio-player{width:100%;margin-top:16px}
 @media(max-width:600px){.capture-panel{padding:18px}.capture-panel h2{font-size:20px}.capture-controls .primary{width:100%}}
+.transcript-panel{margin:28px 0;padding:28px;border:1px solid var(--line,#dce1d6);border-radius:18px;background:#fffef8}
+.transcript-status,.passage-heading,.passage-actions{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.transcript-status p{margin:10px 0}.transcript-empty{padding:24px 0;color:#6b7469}
+.transcript-passages{list-style:none;padding:0;margin:20px 0;max-height:560px;overflow:auto;scrollbar-gutter:stable}
+.transcript-passages>li{padding:20px 4px;border-top:1px solid #e1e5d9}
+.passage-text{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.75;font-size:16px}
+.passage-actions{justify-content:flex-start}.transcript-editor,.transcript-history{padding:20px;background:#f1f4eb;border-radius:12px;margin-top:20px}
+.transcript-editor textarea{display:block;width:100%;min-height:150px;padding:14px;border:1px solid #9ba996;border-radius:8px;font:inherit;line-height:1.6;resize:vertical;background:#fffef8}
+.transcript-history>div+div{border-top:1px solid #d8dfcf;padding-top:14px;margin-top:14px}
+@media(max-width:600px){.transcript-panel{padding:18px}.transcript-status{align-items:flex-start}.transcript-editor,.transcript-history{padding:14px}}

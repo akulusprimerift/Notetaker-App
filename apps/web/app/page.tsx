@@ -2,6 +2,7 @@
 
 import {FormEvent, useCallback, useEffect, useRef, useState} from 'react';
 import Recording from './recording';
+import Transcript from './transcript';
 
 type Course={id:string;name:string;code:string;created_at:string};
 type Lecture={id:string;course_id:string;title:string;status:string;created_at:string;update_cursor:number};
@@ -24,6 +25,8 @@ export default function Workspace(){
   const [error,setError]=useState('');
   const [busy,setBusy]=useState(false);
   const [captureBusy,setCaptureBusy]=useState(false);
+  const [transcriptBusy,setTranscriptBusy]=useState(false);
+  const sessionExpired=useCallback(()=>setSession(null),[]);
   const [code,setCode]=useState('');
   const [courses,setCourses]=useState<Course[]>([]);
   const [route,setRoute]=useState('');
@@ -72,7 +75,7 @@ export default function Workspace(){
     try{const info=await request<Session>('/session/bootstrap',{method:'POST',body:JSON.stringify({token:code})});setCode('');setSession(info);setCourses(await request<Course[]>('/courses'))}catch(err){report(err)}finally{setBusy(false)}
   }
   function openForm(kind:'course'|'lecture'){
-    if(captureBusy)return;
+    if(captureBusy||transcriptBusy)return;
     returnFocus.current=document.activeElement as HTMLElement;setError('');setName('');setCourseCode('');command.current=null;setForm(kind);
   }
   function closeForm(){setForm(null);setError('');returnFocus.current?.focus()}
@@ -89,7 +92,7 @@ export default function Workspace(){
     }catch(err){report(err)}finally{setBusy(false)}
   }
   async function logout(){
-    if(!session||captureBusy)return;setBusy(true);
+    if(!session||captureBusy||transcriptBusy)return;setBusy(true);
     try{await request('/session/logout',{method:'POST',headers:{'X-CSRF-Token':session.csrf_token}});setSession(null);setCourses([]);setSnapshot(null);setForm(null);setNotice('Workspace locked. Use a new local unlock code to return.')}catch(err){report(err)}finally{setBusy(false)}
   }
 
@@ -109,17 +112,18 @@ export default function Workspace(){
     <aside className="sidebar"><a className="brand" href="#"><span className="brand-icon">n</span>notetaker<span className="brand-dot">.</span></a>
       <nav aria-label="Workspace"><a href="#" className={`nav-library ${!route?'active':''}`}><span aria-hidden="true">▦</span> Your library</a><div className="nav-title"><span>YOUR COURSES</span><button aria-label="Add a course" onClick={()=>openForm('course')}>+</button></div>
         {courses.length===0?<p className="sidebar-empty">Your courses will appear here.</p>:courses.map(course=><a key={course.id} href={`#course/${course.id}`} className={`course-link ${selectedId===course.id?'active':''}`}><span className="course-initial">{initial(course.name)}</span><span>{course.name}</span></a>)}
-      </nav><div className="sidebar-bottom"><div className="local-note"><span className="status-dot"/>Local workspace</div><p>Saved on this device</p><button onClick={()=>void logout()} disabled={busy||captureBusy} className="text-button">Lock workspace</button></div>
+      </nav><div className="sidebar-bottom"><div className="local-note"><span className="status-dot"/>Local workspace</div><p>Saved on this device</p><button onClick={()=>void logout()} disabled={busy||captureBusy||transcriptBusy} className="text-button">Lock workspace</button></div>
     </aside>
-    <div className="workspace-body"><div className="topbar"><span>YOUR SPACE TO LEARN</span><button className="text-button mobile-lock" onClick={()=>void logout()} disabled={busy||captureBusy}>Lock workspace</button><span className="privacy-badge"><span className="status-dot"/>{session.preview?'Local preview':'Private library'}</span></div>
+    <div className="workspace-body"><div className="topbar"><span>YOUR SPACE TO LEARN</span><button className="text-button mobile-lock" onClick={()=>void logout()} disabled={busy||captureBusy||transcriptBusy}>Lock workspace</button><span className="privacy-badge"><span className="status-dot"/>{session.preview?'Local preview':'Private library'}</span></div>
     <main id="main-content" tabIndex={-1}>
-      <div className="preview-notice">{session.preview?'Local preview · ':''}Record lectures and keep their audio safely. Transcription and detailed notes are coming next.</div>
+      <div className="preview-notice">{session.preview?'Local preview · ':''}Record lectures, read their transcripts, and check the original audio. Detailed study notes are coming next.</div>
       {error&&!form&&<div className="error" role="alert">{error} <a href="#">Return to library</a></div>}
       {viewLoading?<p role="status" className="page-loading">Opening lecture library…</p>:snapshot?<>
         <a className="back-link" href={`#course/${snapshot.lecture.course_id}`}>← {snapshot.course_name}</a>
         <div className="page-heading"><div><p className="eyebrow">LECTURE WORKSPACE</p><h1>{snapshot.lecture.title}</h1><p className="muted">Created {date(snapshot.lecture.created_at)} <span className="separator">/</span> Saved to your course</p></div><span className="prepared-badge">Saved workspace</span></div>
         <Recording owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setCaptureBusy}/>
-        <div className="note-layout"><section className="note-paper"><div className="paper-heading"><h2>Your lecture notes</h2><span>DETAILED · TOPIC OUTLINE</span></div><div className="note-placeholder"><span className="paper-icon" aria-hidden="true">≡</span><h3>A fresh page for new ideas.</h3><p>Record the lecturer’s explanations above. Saved audio will be ready for transcription and detailed notes in the next build milestones.</p><p className="small">No notes have been generated for this lecture yet.</p></div></section>
+        <Transcript key={snapshot.lecture.id} owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setTranscriptBusy} onSessionExpired={sessionExpired}/>
+        <div className="note-layout"><section className="note-paper"><div className="paper-heading"><h2>Your lecture notes</h2><span>DETAILED · TOPIC OUTLINE</span></div><div className="note-placeholder"><span className="paper-icon" aria-hidden="true">≡</span><h3>A fresh page for new ideas.</h3><p>Record the lecturer’s explanations above. Review and correct the transcript above. Detailed notes from this evidence are the next build milestone.</p><p className="small">No notes have been generated for this lecture yet.</p></div></section>
         <aside className="lecture-details"><h2>Lecture details</h2><dl><dt>Course</dt><dd>{snapshot.course_name}</dd><dt>Note depth</dt><dd>Detailed</dd><dt>Format</dt><dd>Topic outline</dd><dt>Processing</dt><dd>On this device</dd></dl><div className="source-empty"><span className="status-dot neutral"/>Audio save progress appears above</div></aside></div>
       </>:route.startsWith('course/')&&selected?<>
         <a className="back-link" href="#">← Your library</a><div className="page-heading"><div><p className="eyebrow">{selected.code||'YOUR COURSE'}</p><h1>{selected.name}</h1><p className="muted">Your lectures, together in one place.</p></div><button className="primary" onClick={()=>openForm('lecture')}>+ New lecture</button></div>

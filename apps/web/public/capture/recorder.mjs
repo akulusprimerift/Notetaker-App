@@ -213,7 +213,7 @@ export class Recorder {
       this.run=await this.journal.patch(this.owner,this.run.id,{server_sealed:true});
     }
     await this.refresh();
-    if(this.run.stopped&&this.run.server_sealed&&!this.volatile.length)this.message='This recording segment is saved. Transcription and notes are the next build milestones.';
+    if(this.run.stopped&&this.run.server_sealed&&!this.volatile.length)this.message='This recording segment is saved. Follow transcription progress below.';
     else if(this.active)this.message='Recording. Audio is being saved on this device.';
     this.emit();
   }
