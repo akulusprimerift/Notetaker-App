@@ -46,6 +46,8 @@ def draft_messages(request):
     layout = {'topic_outline': 'Organize the notes under descriptive topic headings.',
         'cornell': 'Use Cornell notes: each topic must be a concise study question ending in a question mark; its passages answer that cue.',
         'question_answer': 'Use a question-and-answer study guide: EVERY topic must be a direct question ending in a question mark, and each passage must answer that question.'}[profile['format']]
+    depth = profile.get('detail_prompt', '').strip() or depth
+    layout = profile.get('layout_prompt', '').strip() or layout
     return [{'role': 'system', 'content': DRAFT_PROMPT + '\nJSON_SCHEMA:\n' + compact(DRAFT_SCHEMA)},
         {'role': 'user', 'content': 'LECTURE TRANSCRIPT:\n' + compact(request['sources']) +
             '\n\nWRITE THE NOTES NOW. ' + depth + ' ' + layout +

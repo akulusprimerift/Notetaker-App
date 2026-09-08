@@ -132,7 +132,7 @@ def test_create_reopen_and_restart_persist_course_lecture_settings(setup):
     saved=lecture(client,headers,created['id'])
     result=client.get(f"/lectures/{saved['id']}/snapshot").json()
     assert result['lecture']['title']=='Binary search'
-    assert result['settings']=={'depth':'detailed','format':'topic_outline','ai_explanations':False,'version':1}
+    assert result['settings']=={'depth':'detailed','format':'topic_outline','ai_explanations':False,'version':1,'detail_prompt':'','layout_prompt':''}
     assert result['capture']=={'status':'not_started','available':app.state.audio_store.available}
     assert result['notes']['revision'] is None and result['notes']['status']=='choose_model'
     with app.state.sessions() as db:
@@ -248,7 +248,7 @@ def test_websocket_requires_session_origin_and_lecture_authority(setup):
     with pytest.raises(WebSocketDisconnect):
         with client.websocket_connect(f"/lectures/{saved['id']}/updates",headers={'origin':'https://attacker.invalid'}):pass
     with client.websocket_connect(f"/lectures/{saved['id']}/updates",headers={'origin':ORIGIN}) as socket:
-        assert socket.receive_json()=={'kind':'snapshot_required','lecture_id':saved['id']}
+        assert socket.receive_json()=={'schema_version':1,'kind':'snapshot_required','cursor':1}
 
 
 def test_database_rejects_orphan_lecture(setup):

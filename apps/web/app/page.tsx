@@ -1,4 +1,5 @@
 'use client';
+import LiveUpdates from './live';
 
 import {FormEvent, useCallback, useEffect, useRef, useState} from 'react';
 import Recording from './recording';
@@ -123,6 +124,7 @@ export default function Workspace(){
         <a className="back-link" href={`#course/${snapshot.lecture.course_id}`}>← {snapshot.course_name}</a>
         <div className="page-heading"><div><p className="eyebrow">LECTURE WORKSPACE</p><h1>{snapshot.lecture.title}</h1><p className="muted">Created {date(snapshot.lecture.created_at)} <span className="separator">/</span> Saved to your course</p></div><span className="prepared-badge">Saved workspace</span></div>
         <Recording owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setCaptureBusy}/>
+        <LiveUpdates key={snapshot.lecture.id+'-live'} lecture={snapshot.lecture.id} onSessionExpired={sessionExpired}/>
         <Notes key={snapshot.lecture.id+'-notes'} lecture={snapshot.lecture.id} csrf={session.csrf_token} onSessionExpired={sessionExpired}/>
         <Transcript key={snapshot.lecture.id} owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setTranscriptBusy} onSessionExpired={sessionExpired}/>
       </>:route.startsWith('course/')&&selected?<>

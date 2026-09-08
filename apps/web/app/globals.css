@@ -42,3 +42,7 @@
 .note-controls textarea{display:block;width:100%;box-sizing:border-box;resize:vertical;padding:12px;border:1px solid #cdd4c9;border-radius:8px;background:#fff;color:#253d31;font:inherit;margin:8px 0 16px}.note-controls label{display:block;margin-top:12px}
 
 .cornell-block{display:grid;grid-template-columns:minmax(120px,1fr) minmax(0,2fr);column-gap:24px}.cornell-block .study-block-title{grid-column:1}.cornell-block .study-passage{grid-column:2}.cornell-block h3{font-size:18px}@media(max-width:620px){.cornell-block{display:block}}
+
+.live-progress{display:flex;flex-direction:column;gap:.4rem;margin:1rem 0;padding:1rem;border:1px solid var(--border,#d5ded9);border-radius:12px;}
+.note-controls select,.note-controls textarea{width:100%;min-width:0;}
+@media(min-width:1101px){.generated-notes{grid-template-columns:minmax(0,1fr) 320px;}}

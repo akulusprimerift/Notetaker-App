@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import secrets
@@ -20,7 +21,7 @@ from .models import Bootstrap, Owner, Session, Course, Lecture, SettingsVersion,
 from .security import authenticate, mutation, digest, error
 from .audio_store import AudioStore
 from .capture import install_capture
-from .transcription import install_transcription, transcript_json
+from .transcription import install_transcription, transcript_json, lock_lecture
 from .notes import install_notes, notes_json
 
 log = logging.getLogger("notetaker")
@@ -221,7 +222,10 @@ def create_app(settings: Settings | None = None):
         if not row:
             error(404,"unavailable","This lecture is unavailable.")
         lecture,prefs,course_name=row
-        return {"lecture":lecture_json(lecture),"course_name":course_name,"settings":{"depth":prefs.depth,"format":prefs.format,"ai_explanations":prefs.ai_explanations,"version":prefs.version},
+        lecture=lock_lecture(db, lecture.id)
+        if lecture.tombstoned: error(404,"unavailable","This lecture is unavailable.")
+        prefs=db.scalar(select(SettingsVersion).where(SettingsVersion.lecture_id==lecture_id).order_by(SettingsVersion.version.desc()).limit(1))
+        return {"lecture":lecture_json(lecture),"course_name":course_name,"settings":{"depth":prefs.depth,"format":prefs.format,"detail_prompt":prefs.detail_prompt,"layout_prompt":prefs.layout_prompt,"ai_explanations":prefs.ai_explanations,"version":prefs.version},
                 "capture":{"status":"not_started" if lecture.status=='prepared' else lecture.status,"available":app.state.audio_store.available},"transcript":transcript_json(db,lecture),"notes":notes_json(db,lecture),"processing_location":"local","update_cursor":lecture.update_seq}
 
     @app.get("/lectures/{lecture_id}/audio/{version}")
@@ -239,20 +243,31 @@ def create_app(settings: Settings | None = None):
 
     @app.websocket("/lectures/{lecture_id}/updates")
     async def updates(socket: WebSocket,lecture_id: str):
-        # M01 provides authenticated snapshot notification, not the M05 replay stream.
+        from starlette.concurrency import run_in_threadpool
+        from .live import replay
         try:
             if socket.headers.get("origin") != settings.web_origin:
                 raise HTTPException(403)
-            with sessions() as db:
-                session=authenticate(db,socket.cookies.get("nt_session"))
-                owned_lecture(db,session.owner_id,lecture_id)
+            raw = socket.query_params.get('after')
+            cursor = int(raw) if raw and raw.isascii() and raw.isdigit() and len(raw) <= 18 else None
+            payload = await run_in_threadpool(replay, sessions, socket.cookies.get('nt_session'), lecture_id, cursor, owned_lecture)
             await socket.accept()
-            await socket.send_json({"kind":"snapshot_required","lecture_id":lecture_id})
-            await socket.close(code=1000)
+            while True:
+                await socket.send_json(payload)
+                cursor = payload['cursor']
+                # Drain replay pages immediately. Recheck sessions/ownership on every page.
+                if len(payload.get('events', [])) < 100:
+                    try:
+                        await asyncio.wait_for(socket.receive_text(), timeout=2)
+                    except asyncio.TimeoutError:
+                        pass
+                payload = await run_in_threadpool(replay, sessions, socket.cookies.get('nt_session'), lecture_id, cursor, owned_lecture)
         except HTTPException:
             await socket.close(code=1008)
         except WebSocketDisconnect:
             pass
+        except SQLAlchemyError:
+            await socket.close(code=1013)
 
     install_capture(app, current, db_session, owned_lecture, receipt)
     install_transcription(app, current, db_session, owned_lecture, receipt)

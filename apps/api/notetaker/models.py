@@ -75,6 +75,8 @@ class SettingsVersion(Base):
     format: Mapped[str] = mapped_column(String(24), default="topic_outline")
     ai_explanations: Mapped[bool] = mapped_column(Boolean, default=False)
     instructions: Mapped[str] = mapped_column(String(1000), default='', server_default='')
+    detail_prompt: Mapped[str] = mapped_column(String(2000), default="", server_default="")
+    layout_prompt: Mapped[str] = mapped_column(String(2000), default="", server_default="")
     __table_args__ = (UniqueConstraint("lecture_id", "version"),)
 
 
@@ -200,6 +202,7 @@ class SpeechWindow(Base):
     core_end: Mapped[int] = mapped_column(BigInteger)
     context_start: Mapped[int] = mapped_column(BigInteger)
     context_end: Mapped[int] = mapped_column(BigInteger)
+    live: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     outcome: Mapped[str | None] = mapped_column(String(20))
     __table_args__ = (ForeignKeyConstraint(["run_id", "lecture_id"], ["capture_runs.id", "capture_runs.lecture_id"]),
         UniqueConstraint("id", "lecture_id"), UniqueConstraint("run_id", "manifest_version", "core_start"),
@@ -253,6 +256,7 @@ class TranscriptSnapshot(Base):
     lecture_id: Mapped[str] = mapped_column(ForeignKey("lectures.id"), index=True)
     sequence: Mapped[int] = mapped_column(Integer)
     audio_epoch: Mapped[int] = mapped_column(Integer)
+    stability: Mapped[str] = mapped_column(String(20), default="stable", server_default="stable")
     manifests: Mapped[list] = mapped_column(JSON)
     issues: Mapped[list] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)

@@ -1,8 +1,8 @@
 # Project phases
 
-Updated: 2026-09-07. This is the working phase plan for future development. Each build phase delivers student-facing features, the architecture needed to support them, and recorded completion evidence.
+Updated: 2026-09-08. This is the working phase plan for future development. Each build phase delivers student-facing features, the architecture needed to support them, and recorded completion evidence.
 
-This roadmap reflects the current priority: the user-selected LLM automatically writes excellent notes from lecture transcripts, for any subject and content-heavy course. CS is a test anchor, not a product restriction. Manual editing is optional review. A bounded saved-transcript implementation now exists in [M04](implementation/phase-6-m04.md); long-lecture topic processing remains next.
+This roadmap reflects the current priority: the user-selected LLM automatically writes excellent notes from lecture transcripts, for any subject and content-heavy course. CS is a test anchor, not a product restriction. Manual editing is optional review. A bounded saved-transcript implementation now exists in [M04](implementation/phase-6-m04.md); long-lecture topic processing remains open. At the user’s request, [M05 live assistance](implementation/phase-6-m05.md) now extends that working pipeline, with synthetic macOS verification and Windows qualification still open.
 
 These are product-development phases. They are distinct from the older, zero-based implementation phases in the archived specification and HTML artifact. Phase 5 replaces that original build order with M01–M08 inside product-development Phase 6.
 
@@ -68,7 +68,9 @@ Routine implementation choices and reversible fixes can proceed within the reque
 | 6.1 / M01 | Complete for the private workspace foundation, with real-service evidence. | Preserve its behavior as later features are added. |
 | 6.2 / M02 | Recording and recovery implemented; synthetic browser and real storage checks verified. Full device qualification is open. | Retain the actual microphone, physical failure and endurance checks as explicit remaining evidence. |
 | 6.3 / M03 | Saved-audio transcription, source playback and corrections implemented; synthetic engineering checks verified. | Use the M03 verification report; retain representative real-speech and human review requirements as open. |
-| 6.4–6.8 / M04–M08 | Planned. | Proceed in the order above; prioritize detailed note quality before live optimization and optional learning features. |
+| 6.4 / M04 | Bounded automatic notes and source-linked exports implemented; accepted as working by the user. | Retain long-lecture topic/context handling and human quality qualification as open evidence. |
+| 6.5 / M05 | Live assistance and custom note style descriptions implemented; synthetic backend/browser checks passed on macOS. | See [M05 evidence](implementation/phase-6-m05.md); real-service integration, long-lecture notes and Windows latency/memory qualification remain open. |
+| 6.6–6.8 / M06–M08 | Planned. | Protected editing, finalization/data control and Windows delivery follow the existing phase scope. |
 
 The user's current testing preference is **synthetic audio only**. No real microphone access is authorized by this plan. Controlled synthetic speech can support M03 engineering; representative real recordings and human review remain necessary to qualify transcription and educational quality. Missing real-device evidence does not prevent building that synthetic pipeline, but it prevents claiming those checks passed.
 

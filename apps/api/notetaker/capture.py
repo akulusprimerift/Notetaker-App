@@ -341,6 +341,8 @@ def install_capture(app, current, db_session, owned_lecture, receipt):
         result = freeze(db, run)
         update_capture_status(db, lecture)
         notify(db, lecture, 'capture.stopped', run.id, run.manifest_version)
+        from .transcription import freeze_transcript
+        freeze_transcript(db, lecture)
         db.commit()
         return result
 
@@ -374,6 +376,8 @@ def install_capture(app, current, db_session, owned_lecture, receipt):
         update_capture_status(db, lecture)
         db.add(CommandReceipt(owner_id=session.owner_id, action='capture_recovery:'+lecture_id, key=key, fingerprint=fingerprint, result_id=run.id))
         notify(db, lecture, 'capture.recovered', run.id, run.manifest_version)
+        from .transcription import freeze_transcript
+        freeze_transcript(db, lecture)
         db.commit()
         return result
 

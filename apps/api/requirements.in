@@ -9,3 +9,4 @@ pytest
 boto3
 confluent-kafka
 jsonschema==4.26.0
+websockets
