@@ -5,7 +5,7 @@ from pathlib import Path
 from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[3]
-SCHEMA = json.loads((ROOT / 'contracts/ai/note-output.schema.json').read_text(encoding='utf-8'))
+SCHEMA = json.loads((ROOT / 'contracts/ai/note-output-materials.schema.json').read_text(encoding='utf-8'))
 PROMPT = (ROOT / 'prompts/note-generation-v3.txt').read_text(encoding='utf-8')
 VALIDATOR = Draft202012Validator(SCHEMA)
 AGGREGATE_SCHEMA = deepcopy(SCHEMA)

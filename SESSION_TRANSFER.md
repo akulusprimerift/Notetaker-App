@@ -1,6 +1,10 @@
 # Session transfer
 
-Updated: 2026-09-08. Current increment: **Phase 6.7 / M07**.
+Updated: 2026-09-08. Current increment: **course materials brought forward before Phase 6.8 / M08**.
+
+## Latest checkpoint
+
+The user now requests syllabus/curriculum and PowerPoint uploads before Electron Windows delivery, with streaming regeneration, local model discovery, tests and local commits. Materials implementation was captured by shared-workspace commit `8580df1`; follow-up fixes preserve actual PPTX slide order and bound long text. See [materials evidence](docs/implementation/course-materials.md). Next: finish the materials checks, then implement and verify the Electron host/installer with disclosed local-service prerequisites. No microphone, model download or push.
 
 ## User request and working rules
 

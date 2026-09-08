@@ -76,6 +76,8 @@ def test_material_authority_and_tombstone(notes):
 def test_pptx_text_and_archive_failures():
     data = io.BytesIO()
     with zipfile.ZipFile(data, 'w') as archive:
+        archive.writestr('ppt/presentation.xml', '<p:presentation xmlns:p="urn:p" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><p:sldId r:id="a"/><p:sldId r:id="b"/></p:presentation>')
+        archive.writestr('ppt/_rels/presentation.xml.rels', '<Relationships><Relationship Id="a" Target="slides/slide1.xml"/><Relationship Id="b" Target="slides/slide2.xml"/></Relationships>')
         archive.writestr('ppt/slides/slide2.xml', '<s xmlns:a="urn:a"><a:p><a:r><a:t>Second</a:t></a:r></a:p></s>')
         archive.writestr('ppt/slides/slide1.xml', '<s xmlns:a="urn:a"><a:p><a:r><a:t>First</a:t></a:r></a:p></s>')
     assert [p['text'] for p in extract('slides.pptx', data.getvalue())] == ['First', 'Second']

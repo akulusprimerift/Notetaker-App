@@ -136,6 +136,10 @@ def test_custom_preferences_and_reconnect_preserve_reading(capture, tmp_path):
                 expect(page.get_by_role('button',name='Restore draft from')).to_be_visible(timeout=20000)
                 page.get_by_role('button',name='Restore draft from').first.click()
                 expect(page.get_by_label('Passage 1',exact=True)).to_have_value('My protected explanation.\n    lo = mid + 1\nE = mc²')
+                page.get_by_label('Upload material', exact=True).set_input_files({'name':'Course-outline.txt','mimeType':'text/plain','buffer':b'Binary search: sorted input, logarithmic comparisons.'})
+                expect(page.get_by_text('Material saved.', exact=False)).to_be_visible(timeout=10000)
+                page.get_by_text('Course-outline.txt · syllabus', exact=False).click()
+                expect(page.get_by_text('Binary search: sorted input, logarithmic comparisons.', exact=True)).to_be_visible()
                 # Hold the provider open until the real SSE browser receives partial text.
                 release=threading.Event()
                 class Streaming(FakeNotes):

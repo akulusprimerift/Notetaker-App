@@ -3,6 +3,7 @@ import base64
 import hashlib
 import io
 import re
+import posixpath
 import zipfile
 from pathlib import PurePosixPath
 from typing import Literal
@@ -14,6 +15,12 @@ from .models import CourseMaterial, Course, Lecture, SettingsVersion, CommandRec
 from .security import error
 
 MAX_BYTES = 8 * 1024 * 1024
+
+
+def xml(data):
+    if b'<!DOCTYPE' in data.upper() or b'<!ENTITY' in data.upper():
+        raise ValueError('unsafe_xml')
+    return ET.fromstring(data)
 
 
 def extract(name, raw):
@@ -28,17 +35,21 @@ def extract(name, raw):
                 raise ValueError('archive_limit')
             if len({e.filename for e in entries}) != len(entries):
                 raise ValueError('duplicate_entries')
-            names = archive.namelist()
             if extension == '.pptx':
-                selected = sorted((n for n in names if re.fullmatch(r'ppt/slides/slide\d+\.xml', n)),
-                    key=lambda n: int(re.search(r'(\d+)\.xml', n)[1]))
+                # Presentation order is defined by relationships, not slide filenames.
+                presentation = xml(archive.read('ppt/presentation.xml'))
+                relationships = xml(archive.read('ppt/_rels/presentation.xml.rels'))
+                targets = {r.attrib['Id']: posixpath.normpath('ppt/'+r.attrib['Target'])
+                    for r in relationships if r.attrib.get('TargetMode') != 'External'}
+                selected = [targets[n.attrib['{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id']]
+                    for n in presentation.iter() if n.tag.endswith('}sldId')]
+                if any(not re.fullmatch(r'ppt/slides/[^/]+\.xml', n) for n in selected):
+                    raise ValueError('invalid_slide_target')
             else:
                 selected = ['word/document.xml']
             for index, entry in enumerate(selected):
                 data = archive.read(entry)
-                if b'<!DOCTYPE' in data.upper() or b'<!ENTITY' in data.upper():
-                    raise ValueError('unsafe_xml')
-                root = ET.fromstring(data)
+                root = xml(data)
                 paragraphs = [' '.join(n.text or '' for n in p.iter() if n.tag.endswith('}t'))
                     for p in root.iter() if p.tag.endswith('}p')]
                 pages.append((f'Slide {index+1}' if extension == '.pptx' else 'Document', '\n'.join(paragraphs)))
@@ -48,7 +59,9 @@ def extract(name, raw):
         raise ValueError('text_limit')
     if not any(text.strip() for _, text in pages):
         raise ValueError('no_readable_text')
-    return [{'label': label, 'text': text.strip()} for label, text in pages]
+    # Stable excerpts keep long document paragraphs within the note context budget.
+    return [{'label': label + (f' · excerpt {start//3000+1}' if len(text)>3000 else ''),
+        'text': text[start:start+3000].strip()} for label, text in pages for start in range(0, max(1, len(text)), 3000)]
 
 
 def material_sources(db, ids):

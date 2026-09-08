@@ -1,5 +1,7 @@
 # Project phases
 
+Sequencing update (2026-09-08): the user accepts M07 implementation and explicitly brings syllabus/curriculum and PowerPoint uploads forward before M08. Active increment: course materials (formerly 7.2), then Electron Windows application and installed local model discovery. See [materials evidence](implementation/course-materials.md). Existing synthetic-only testing and release gates remain unchanged.
+
 Updated: 2026-09-08. This is the working phase plan for future development. Each build phase delivers student-facing features, the architecture needed to support them, and recorded completion evidence.
 
 This roadmap reflects the current priority: the user-selected LLM automatically writes excellent notes from lecture transcripts, for any subject and content-heavy course. CS is a test anchor, not a product restriction. Manual editing is optional review. The user accepts the [M05 live workflow](implementation/phase-6-m05.md). The [M06 increment](implementation/phase-6-m06.md) improves speech latency, contextual batching and streaming, removes redundant preference dropdowns, and implements protected editing/regeneration. The active [M07 increment](implementation/phase-6-m07.md) adds finalization and data control after saved prompt profiles and automatic local access. Actual model performance, semantic topic quality and Windows release qualification remain open.

@@ -1,5 +1,7 @@
 # Notetaker App
 
+Current work: course materials were brought forward from Phase 7.2 by the user before Phase 6.8. PPTX, DOCX, TXT and Markdown uploads now pin source text into streamed, protected note regeneration. See [materials evidence](docs/implementation/course-materials.md). Electron Windows delivery follows this increment. Earlier qualification gaps remain open.
+
 A Windows lecture note-taking application for any course or subject, focused on turning dense, content-heavy lectures into detailed, organized, trustworthy notes.
 
 The current product priority is **reliable lecture capture → timestamped transcription → high-quality, source-linked notes**. Notes should preserve definitions, explanations, worked examples, reasoning, qualifications, and professor emphasis. A short summary is an optional companion to the detailed notes.
