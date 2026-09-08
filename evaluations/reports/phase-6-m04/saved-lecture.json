@@ -1,0 +1,613 @@
+{
+  "origin": "synthetic_speech",
+  "lecture_id": "0326bc1f-aaab-45c9-bba6-7c55d0b67428",
+  "checked_at": "2026-09-08T02:19:49.583777Z",
+  "state": {
+    "status": "ready",
+    "preference": {
+      "version": 2,
+      "model": "qwen3:4b",
+      "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+      "enabled": true
+    },
+    "stale": false,
+    "profile": {
+      "depth": "detailed",
+      "format": "topic_outline",
+      "instructions": "Write coherent study notes in your own words. Combine sentence fragments across adjacent passages. Explain the search procedure as numbered steps; retain the sorted-array condition, complexity comparison, and duplicate and empty-array cases."
+    },
+    "error_code": null,
+    "revision": {
+      "id": "906f76fd-9cc2-47da-a2f9-ff47bb1cbaca",
+      "revision": 2,
+      "content": {
+        "schema_version": 1,
+        "source_snapshot_id": "d96d4f95-cd6d-41bd-bb00-1ca4d6dbfe9b",
+        "settings_version": 2,
+        "blocks": [
+          {
+            "id": "b1",
+            "topic": "Binary Search Fundamentals",
+            "kind": "definition",
+            "passages": [
+              {
+                "id": "b1p1",
+                "text": "Binary search is a search algorithm that operates on a sorted array to efficiently locate a target value by repeatedly dividing the search interval in half.",
+                "evidence_kind": "lecture_paraphrase",
+                "sources": [
+                  {
+                    "source_id": "d9fbf615-0cb3-4be3-8248-3b254685e0d4",
+                    "quote": "Binary search requires a sorted array.",
+                    "occurrence": 0
+                  },
+                  {
+                    "source_id": "835d943e-9bf6-4d2c-b69c-38552f804f2e",
+                    "quote": "Distinct elements alone are not sufficient.",
+                    "occurrence": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "b2",
+            "topic": "Search Procedure",
+            "kind": "procedure",
+            "passages": [
+              {
+                "id": "b2p1",
+                "text": "The binary search procedure maintains a lower bound and an upper bound that define the current search interval. At each iteration, the algorithm compares the target value with the middle element of the interval. If the target matches, it returns the position. If the target is smaller, the upper bound is adjusted to the position before the middle; otherwise, the lower bound is adjusted to the position after the middle. This process continues until the target is found or the interval is exhausted.",
+                "evidence_kind": "lecture_paraphrase",
+                "sources": [
+                  {
+                    "source_id": "1c1a570a-5c80-42bc-b454-5c1a8fe034ca",
+                    "quote": "We keep a lower bound and an upper bound on the remaining search interval.",
+                    "occurrence": 0
+                  },
+                  {
+                    "source_id": "63e52c3b-c0fa-41fb-bc5c-38236997ce21",
+                    "quote": "At each step, compare the target with the middle element.",
+                    "occurrence": 0
+                  },
+                  {
+                    "source_id": "b347cef9-f7eb-4eba-8a45-4cc7b6631818",
+                    "quote": "If they are equal, return that position.",
+                    "occurrence": 0
+                  },
+                  {
+                    "source_id": "ab51a2c3-d171-47d8-87b1-d22f4d5d858e",
+                    "quote": "If the target is smaller, move the upper bound to the position before the middle.",
+                    "occurrence": 0
+                  },
+                  {
+                    "source_id": "c10ef03a-7716-4a7c-a710-f40afc985bdc",
+                    "quote": "Otherwise, move the lower bound to the position after the middle.",
+                    "occurrence": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "b3",
+            "topic": "Loop Invariant and Time Complexity",
+            "kind": "explanation",
+            "passages": [
+              {
+                "id": "b3p1",
+                "text": "The loop invariant ensures that any matching element, if it exists, remains within the current search interval. This invariant guarantees that the algorithm will find the target if it is present. The time complexity of binary search is logarithmic (O(log n)), as each iteration reduces the search space by approximately half. This is significantly more efficient than a linear scan, which may inspect every element in the worst case.",
+                "evidence_kind": "lecture_paraphrase",
+                "sources": [
+                  {
+                    "source_id": "645842d7-4b61-466c-b453-29ac9b9c64a9",
+                    "quote": "The loop invariant is that any matching element must remain inside the search interval.",
+                    "occurrence": 0
+                  },
+                  {
+                    "source_id": "5fe4dee9-160e-4008-bcfa-2fecd802dea4",
+                    "quote": "Each iteration removes about half of the remaining candidates.",
+                    "occurrence": 0
+                  },
+                  {
+                    "source_id": "1dc4dc7c-3094-432e-864d-0b7778469c58",
+                    "quote": "Therefore the time complexity is logarithmic,",
+                    "occurrence": 0
+                  },
+                  {
+                    "source_id": "8dfc485c-11b2-4afb-8db4-9247cfd18660",
+                    "quote": "and the iterative implementation uses constant extra space. A linear scan is different, it",
+                    "occurrence": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "b4",
+            "topic": "Edge Cases and Special Cases",
+            "kind": "qualification",
+            "passages": [
+              {
+                "id": "b4p1",
+                "text": "For an empty array, binary search returns 'not found'. When dealing with repeated values, the standard binary search may return any matching position, not necessarily the first occurrence. To find the first occurrence of a value, the algorithm must continue searching toward the left after a match.",
+                "evidence_kind": "lecture_paraphrase",
+                "sources": [
+                  {
+                    "source_id": "09aa706e-7a7b-4f85-8459-b717740b9d53",
+                    "quote": "empty array, return not found. For repeated values, ordinary binary search may return",
+                    "occurrence": 0
+                  },
+                  {
+                    "source_id": "eb326b81-ce8d-495c-8d7c-3449714df05d",
+                    "quote": "any matching position, not necessarily the first. Finding the first occurrence requires",
+                    "occurrence": 0
+                  },
+                  {
+                    "source_id": "bb8c65e5-9133-4ff4-95ab-28d8dd05f447",
+                    "quote": "continuing toward the left after a match.",
+                    "occurrence": 0
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "issues": [],
+        "coverage": [
+          {
+            "source_id": "d9fbf615-0cb3-4be3-8248-3b254685e0d4",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          },
+          {
+            "source_id": "835d943e-9bf6-4d2c-b69c-38552f804f2e",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          },
+          {
+            "source_id": "1c1a570a-5c80-42bc-b454-5c1a8fe034ca",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          },
+          {
+            "source_id": "63e52c3b-c0fa-41fb-bc5c-38236997ce21",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          },
+          {
+            "source_id": "b347cef9-f7eb-4eba-8a45-4cc7b6631818",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          },
+          {
+            "source_id": "ab51a2c3-d171-47d8-87b1-d22f4d5d858e",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          },
+          {
+            "source_id": "c10ef03a-7716-4a7c-a710-f40afc985bdc",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          },
+          {
+            "source_id": "645842d7-4b61-466c-b453-29ac9b9c64a9",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          },
+          {
+            "source_id": "5fe4dee9-160e-4008-bcfa-2fecd802dea4",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          },
+          {
+            "source_id": "1dc4dc7c-3094-432e-864d-0b7778469c58",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          },
+          {
+            "source_id": "8dfc485c-11b2-4afb-8db4-9247cfd18660",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          },
+          {
+            "source_id": "869abafa-d4cd-44e3-bd93-17a49c9af193",
+            "disposition": "omitted",
+            "reason": "This generated draft did not use this passage; review the source for missing detail."
+          },
+          {
+            "source_id": "09aa706e-7a7b-4f85-8459-b717740b9d53",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          },
+          {
+            "source_id": "eb326b81-ce8d-495c-8d7c-3449714df05d",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          },
+          {
+            "source_id": "bb8c65e5-9133-4ff4-95ab-28d8dd05f447",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          }
+        ]
+      },
+      "profile": {
+        "depth": "detailed",
+        "format": "topic_outline",
+        "instructions": "Write coherent study notes in your own words. Combine sentence fragments across adjacent passages. Explain the search procedure as numbered steps; retain the sorted-array condition, complexity comparison, and duplicate and empty-array cases."
+      },
+      "resolved_citations": [
+        {
+          "passage_id": "b1p1",
+          "source_id": "d9fbf615-0cb3-4be3-8248-3b254685e0d4",
+          "start": 0,
+          "end": 38
+        },
+        {
+          "passage_id": "b1p1",
+          "source_id": "835d943e-9bf6-4d2c-b69c-38552f804f2e",
+          "start": 0,
+          "end": 43
+        },
+        {
+          "passage_id": "b2p1",
+          "source_id": "1c1a570a-5c80-42bc-b454-5c1a8fe034ca",
+          "start": 0,
+          "end": 74
+        },
+        {
+          "passage_id": "b2p1",
+          "source_id": "63e52c3b-c0fa-41fb-bc5c-38236997ce21",
+          "start": 0,
+          "end": 57
+        },
+        {
+          "passage_id": "b2p1",
+          "source_id": "b347cef9-f7eb-4eba-8a45-4cc7b6631818",
+          "start": 0,
+          "end": 40
+        },
+        {
+          "passage_id": "b2p1",
+          "source_id": "ab51a2c3-d171-47d8-87b1-d22f4d5d858e",
+          "start": 0,
+          "end": 81
+        },
+        {
+          "passage_id": "b2p1",
+          "source_id": "c10ef03a-7716-4a7c-a710-f40afc985bdc",
+          "start": 0,
+          "end": 65
+        },
+        {
+          "passage_id": "b3p1",
+          "source_id": "645842d7-4b61-466c-b453-29ac9b9c64a9",
+          "start": 0,
+          "end": 87
+        },
+        {
+          "passage_id": "b3p1",
+          "source_id": "5fe4dee9-160e-4008-bcfa-2fecd802dea4",
+          "start": 0,
+          "end": 62
+        },
+        {
+          "passage_id": "b3p1",
+          "source_id": "1dc4dc7c-3094-432e-864d-0b7778469c58",
+          "start": 0,
+          "end": 45
+        },
+        {
+          "passage_id": "b3p1",
+          "source_id": "8dfc485c-11b2-4afb-8db4-9247cfd18660",
+          "start": 0,
+          "end": 90
+        },
+        {
+          "passage_id": "b4p1",
+          "source_id": "09aa706e-7a7b-4f85-8459-b717740b9d53",
+          "start": 0,
+          "end": 85
+        },
+        {
+          "passage_id": "b4p1",
+          "source_id": "eb326b81-ce8d-495c-8d7c-3449714df05d",
+          "start": 0,
+          "end": 87
+        },
+        {
+          "passage_id": "b4p1",
+          "source_id": "bb8c65e5-9133-4ff4-95ab-28d8dd05f447",
+          "start": 0,
+          "end": 41
+        }
+      ],
+      "metadata": {
+        "provider": "ollama_local",
+        "model": "qwen3:4b",
+        "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+        "ollama_version": "0.33.3",
+        "prompt_version": "draft-v1",
+        "prompt_sha256": "561a7dd81cb9628093e292dcacb0e1f38d94046afa78b5dc53c01203112a441f",
+        "schema_sha256": "0f038bf652bbe1699f963e74c18f179f53373c216caa76462eac9ef1a2fab51c",
+        "provider_schema_sha256": "21b0bb30ccd91723427a8a7997ca674e633e45efd96cea77ce83ed797b25e10f",
+        "input_sha256": "6ad04b9a7c8ffd95970edbdfbc82f8a5e2b88775488a57790b41466dec2fcaae",
+        "source_aliases": {
+          "s1": {
+            "source_id": "d9fbf615-0cb3-4be3-8248-3b254685e0d4",
+            "quote": "Binary search requires a sorted array.",
+            "occurrence": 0
+          },
+          "s2": {
+            "source_id": "835d943e-9bf6-4d2c-b69c-38552f804f2e",
+            "quote": "Distinct elements alone are not sufficient.",
+            "occurrence": 0
+          },
+          "s3": {
+            "source_id": "1c1a570a-5c80-42bc-b454-5c1a8fe034ca",
+            "quote": "We keep a lower bound and an upper bound on the remaining search interval.",
+            "occurrence": 0
+          },
+          "s4": {
+            "source_id": "63e52c3b-c0fa-41fb-bc5c-38236997ce21",
+            "quote": "At each step, compare the target with the middle element.",
+            "occurrence": 0
+          },
+          "s5": {
+            "source_id": "b347cef9-f7eb-4eba-8a45-4cc7b6631818",
+            "quote": "If they are equal, return that position.",
+            "occurrence": 0
+          },
+          "s6": {
+            "source_id": "ab51a2c3-d171-47d8-87b1-d22f4d5d858e",
+            "quote": "If the target is smaller, move the upper bound to the position before the middle.",
+            "occurrence": 0
+          },
+          "s7": {
+            "source_id": "c10ef03a-7716-4a7c-a710-f40afc985bdc",
+            "quote": "Otherwise, move the lower bound to the position after the middle.",
+            "occurrence": 0
+          },
+          "s8": {
+            "source_id": "645842d7-4b61-466c-b453-29ac9b9c64a9",
+            "quote": "The loop invariant is that any matching element must remain inside the search interval.",
+            "occurrence": 0
+          },
+          "s9": {
+            "source_id": "5fe4dee9-160e-4008-bcfa-2fecd802dea4",
+            "quote": "Each iteration removes about half of the remaining candidates.",
+            "occurrence": 0
+          },
+          "s10": {
+            "source_id": "1dc4dc7c-3094-432e-864d-0b7778469c58",
+            "quote": "Therefore the time complexity is logarithmic,",
+            "occurrence": 0
+          },
+          "s11": {
+            "source_id": "8dfc485c-11b2-4afb-8db4-9247cfd18660",
+            "quote": "and the iterative implementation uses constant extra space. A linear scan is different, it",
+            "occurrence": 0
+          },
+          "s12": {
+            "source_id": "869abafa-d4cd-44e3-bd93-17a49c9af193",
+            "quote": "may inspect every element. Do not confuse logarithmic time with constant time. For an",
+            "occurrence": 0
+          },
+          "s13": {
+            "source_id": "09aa706e-7a7b-4f85-8459-b717740b9d53",
+            "quote": "empty array, return not found. For repeated values, ordinary binary search may return",
+            "occurrence": 0
+          },
+          "s14": {
+            "source_id": "eb326b81-ce8d-495c-8d7c-3449714df05d",
+            "quote": "any matching position, not necessarily the first. Finding the first occurrence requires",
+            "occurrence": 0
+          },
+          "s15": {
+            "source_id": "bb8c65e5-9133-4ff4-95ab-28d8dd05f447",
+            "quote": "continuing toward the left after a match.",
+            "occurrence": 0
+          }
+        },
+        "request_sha256": "fad870c451c58aa09e31b0e13d78a95886cf18781b0fc58a350fbae58214d95f",
+        "messages_sha256": "2239ce4314a44e5f8fc5988e7ce49a8109911b1539358a1d6f8f59ca79aa4cbe",
+        "adapter_version": "draft-profile-v1",
+        "options": {
+          "temperature": 0,
+          "seed": 42,
+          "num_ctx": 32768,
+          "num_predict": 6000
+        },
+        "preflight_prompt_tokens": 1124,
+        "prompt_byte_upper_bound": 7780,
+        "metrics": {
+          "prompt_eval_count": 1124,
+          "eval_count": 505,
+          "total_duration": 53402963200
+        },
+        "semantic_support": "not_evaluated",
+        "human_review": "pending"
+      },
+      "source_issues": [],
+      "created_at": "2026-09-08T02:17:36.358142Z"
+    }
+  },
+  "input": {
+    "source_snapshot_id": "d96d4f95-cd6d-41bd-bb00-1ca4d6dbfe9b",
+    "settings_version": 2,
+    "allow_ai_explanations": false,
+    "profile": {
+      "depth": "detailed",
+      "format": "topic_outline",
+      "instructions": "Write coherent study notes in your own words. Combine sentence fragments across adjacent passages. Explain the search procedure as numbered steps; retain the sorted-array condition, complexity comparison, and duplicate and empty-array cases."
+    },
+    "sources": [
+      {
+        "id": "d9fbf615-0cb3-4be3-8248-3b254685e0d4",
+        "text": "Binary search requires a sorted array.",
+        "start_ms": 0,
+        "end_ms": 1520
+      },
+      {
+        "id": "835d943e-9bf6-4d2c-b69c-38552f804f2e",
+        "text": "Distinct elements alone are not sufficient.",
+        "start_ms": 2240,
+        "end_ms": 3600
+      },
+      {
+        "id": "1c1a570a-5c80-42bc-b454-5c1a8fe034ca",
+        "text": "We keep a lower bound and an upper bound on the remaining search interval.",
+        "start_ms": 4280,
+        "end_ms": 6600
+      },
+      {
+        "id": "63e52c3b-c0fa-41fb-bc5c-38236997ce21",
+        "text": "At each step, compare the target with the middle element.",
+        "start_ms": 7200,
+        "end_ms": 9460
+      },
+      {
+        "id": "b347cef9-f7eb-4eba-8a45-4cc7b6631818",
+        "text": "If they are equal, return that position.",
+        "start_ms": 10100,
+        "end_ms": 11680
+      },
+      {
+        "id": "ab51a2c3-d171-47d8-87b1-d22f4d5d858e",
+        "text": "If the target is smaller, move the upper bound to the position before the middle.",
+        "start_ms": 12300,
+        "end_ms": 15280
+      },
+      {
+        "id": "c10ef03a-7716-4a7c-a710-f40afc985bdc",
+        "text": "Otherwise, move the lower bound to the position after the middle.",
+        "start_ms": 15860,
+        "end_ms": 18320
+      },
+      {
+        "id": "645842d7-4b61-466c-b453-29ac9b9c64a9",
+        "text": "The loop invariant is that any matching element must remain inside the search interval.",
+        "start_ms": 18860,
+        "end_ms": 21900
+      },
+      {
+        "id": "5fe4dee9-160e-4008-bcfa-2fecd802dea4",
+        "text": "Each iteration removes about half of the remaining candidates.",
+        "start_ms": 22560,
+        "end_ms": 24520
+      },
+      {
+        "id": "1dc4dc7c-3094-432e-864d-0b7778469c58",
+        "text": "Therefore the time complexity is logarithmic,",
+        "start_ms": 25340,
+        "end_ms": 26960
+      },
+      {
+        "id": "8dfc485c-11b2-4afb-8db4-9247cfd18660",
+        "text": "and the iterative implementation uses constant extra space. A linear scan is different, it",
+        "start_ms": 27260,
+        "end_ms": 31640
+      },
+      {
+        "id": "869abafa-d4cd-44e3-bd93-17a49c9af193",
+        "text": "may inspect every element. Do not confuse logarithmic time with constant time. For an",
+        "start_ms": 31640,
+        "end_ms": 36160
+      },
+      {
+        "id": "09aa706e-7a7b-4f85-8459-b717740b9d53",
+        "text": "empty array, return not found. For repeated values, ordinary binary search may return",
+        "start_ms": 36160,
+        "end_ms": 40720
+      },
+      {
+        "id": "eb326b81-ce8d-495c-8d7c-3449714df05d",
+        "text": "any matching position, not necessarily the first. Finding the first occurrence requires",
+        "start_ms": 40720,
+        "end_ms": 44920
+      },
+      {
+        "id": "bb8c65e5-9133-4ff4-95ab-28d8dd05f447",
+        "text": "continuing toward the left after a match.",
+        "start_ms": 44920,
+        "end_ms": 46420
+      }
+    ]
+  },
+  "canonical_valid": true,
+  "audio_checks": [
+    {
+      "source_id": "d9fbf615-0cb3-4be3-8248-3b254685e0d4",
+      "frames": 33516,
+      "sample_rate": 22050
+    },
+    {
+      "source_id": "835d943e-9bf6-4d2c-b69c-38552f804f2e",
+      "frames": 29988,
+      "sample_rate": 22050
+    },
+    {
+      "source_id": "1c1a570a-5c80-42bc-b454-5c1a8fe034ca",
+      "frames": 51156,
+      "sample_rate": 22050
+    },
+    {
+      "source_id": "63e52c3b-c0fa-41fb-bc5c-38236997ce21",
+      "frames": 49833,
+      "sample_rate": 22050
+    },
+    {
+      "source_id": "b347cef9-f7eb-4eba-8a45-4cc7b6631818",
+      "frames": 34839,
+      "sample_rate": 22050
+    },
+    {
+      "source_id": "ab51a2c3-d171-47d8-87b1-d22f4d5d858e",
+      "frames": 65709,
+      "sample_rate": 22050
+    },
+    {
+      "source_id": "c10ef03a-7716-4a7c-a710-f40afc985bdc",
+      "frames": 54243,
+      "sample_rate": 22050
+    },
+    {
+      "source_id": "645842d7-4b61-466c-b453-29ac9b9c64a9",
+      "frames": 67032,
+      "sample_rate": 22050
+    },
+    {
+      "source_id": "5fe4dee9-160e-4008-bcfa-2fecd802dea4",
+      "frames": 43218,
+      "sample_rate": 22050
+    },
+    {
+      "source_id": "1dc4dc7c-3094-432e-864d-0b7778469c58",
+      "frames": 35721,
+      "sample_rate": 22050
+    },
+    {
+      "source_id": "8dfc485c-11b2-4afb-8db4-9247cfd18660",
+      "frames": 96579,
+      "sample_rate": 22050
+    },
+    {
+      "source_id": "09aa706e-7a7b-4f85-8459-b717740b9d53",
+      "frames": 100548,
+      "sample_rate": 22050
+    },
+    {
+      "source_id": "eb326b81-ce8d-495c-8d7c-3449714df05d",
+      "frames": 92610,
+      "sample_rate": 22050
+    },
+    {
+      "source_id": "bb8c65e5-9133-4ff4-95ab-28d8dd05f447",
+      "frames": 33075,
+      "sample_rate": 22050
+    }
+  ],
+  "export_bytes": 4574,
+  "human_review": "pending",
+  "release_eligible": false
+}

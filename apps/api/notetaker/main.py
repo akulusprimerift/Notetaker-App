@@ -10,7 +10,7 @@ from fastapi import FastAPI, Depends, Request, Response, WebSocket, WebSocketDis
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select, update, text
+from sqlalchemy import select, update, text, func
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
@@ -216,7 +216,8 @@ def create_app(settings: Settings | None = None):
     @app.get("/lectures/{lecture_id}/snapshot")
     def snapshot(lecture_id: str,session=Depends(current),db=Depends(db_session)):
         # One joined read keeps lecture/settings/cursor consistent even at READ COMMITTED.
-        row=db.execute(select(Lecture,SettingsVersion,Course.name).join(Course).join(SettingsVersion,SettingsVersion.lecture_id==Lecture.id).where(Lecture.id==lecture_id,Course.owner_id==session.owner_id,Lecture.tombstoned.is_(False),SettingsVersion.version==1)).first()
+        newest_settings=select(func.max(SettingsVersion.version)).where(SettingsVersion.lecture_id==Lecture.id).correlate(Lecture).scalar_subquery()
+        row=db.execute(select(Lecture,SettingsVersion,Course.name).join(Course).join(SettingsVersion,SettingsVersion.lecture_id==Lecture.id).where(Lecture.id==lecture_id,Course.owner_id==session.owner_id,Lecture.tombstoned.is_(False),SettingsVersion.version==newest_settings)).first()
         if not row:
             error(404,"unavailable","This lecture is unavailable.")
         lecture,prefs,course_name=row

@@ -1,0 +1,169 @@
+{
+  "origin": "synthetic_text",
+  "model": {
+    "name": "qwen3:4b",
+    "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+    "size": 2497293931,
+    "family": "qwen3"
+  },
+  "prompt_sha256": "561a7dd81cb9628093e292dcacb0e1f38d94046afa78b5dc53c01203112a441f",
+  "dataset_sha256": "c31487911a18547dd3b4de57e31eeb98997206104a4dedc857bea40404fcf7c9",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "cases": [
+    {
+      "id": "biology-cornell",
+      "contract_valid": true,
+      "output": {
+        "schema_version": 1,
+        "source_snapshot_id": "biology-snapshot-v1",
+        "settings_version": 2,
+        "blocks": [
+          {
+            "id": "b1",
+            "topic": "What is osmosis?",
+            "kind": "definition",
+            "passages": [
+              {
+                "id": "b1p1",
+                "text": "Osmosis is the net movement of water across a selectively permeable membrane. In our examples, the solute cannot cross the membrane. Water moves toward the side with the higher concentration of that solute.",
+                "evidence_kind": "lecture_paraphrase",
+                "sources": [
+                  {
+                    "source_id": "bio-1",
+                    "quote": "Osmosis is the net movement of water across a selectively permeable membrane. In our examples, the solute cannot cross the membrane. Water moves toward the side with the higher concentration of that solute.",
+                    "occurrence": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "b2",
+            "topic": "What happens to animal cells in different solute concentrations?",
+            "kind": "explanation",
+            "passages": [
+              {
+                "id": "b2p1",
+                "text": "If an animal cell is placed in a solution with a higher solute concentration than its cytoplasm, water leaves the cell and the cell shrinks. In a solution with a lower solute concentration, water enters and the cell can swell or burst. These comparisons are relative to the cell, not absolute labels for a solution.",
+                "evidence_kind": "lecture_paraphrase",
+                "sources": [
+                  {
+                    "source_id": "bio-2",
+                    "quote": "If an animal cell is placed in a solution with a higher solute concentration than its cytoplasm, water leaves the cell and the cell shrinks. In a solution with a lower solute concentration, water enters and the cell can swell or burst. These comparisons are relative to the cell, not absolute labels for a solution.",
+                    "occurrence": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "b3",
+            "topic": "What occurs at equilibrium in osmosis?",
+            "kind": "explanation",
+            "passages": [
+              {
+                "id": "b3p1",
+                "text": "At equilibrium, water molecules still move in both directions. Equal rates mean no net movement; equilibrium does not mean that molecules stop moving. A plant cell also has a cell wall, which resists expansion as water enters.",
+                "evidence_kind": "lecture_paraphrase",
+                "sources": [
+                  {
+                    "source_id": "bio-3",
+                    "quote": "At equilibrium, water molecules still move in both directions. Equal rates mean no net movement; equilibrium does not mean that molecules stop moving. A plant cell also has a cell wall, which resists expansion as water enters.",
+                    "occurrence": 0
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "issues": [],
+        "coverage": [
+          {
+            "source_id": "bio-1",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          },
+          {
+            "source_id": "bio-2",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          },
+          {
+            "source_id": "bio-3",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          }
+        ]
+      },
+      "metadata": {
+        "provider": "ollama_local",
+        "model": "qwen3:4b",
+        "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+        "ollama_version": "0.33.3",
+        "prompt_version": "draft-v1",
+        "prompt_sha256": "561a7dd81cb9628093e292dcacb0e1f38d94046afa78b5dc53c01203112a441f",
+        "schema_sha256": "0f038bf652bbe1699f963e74c18f179f53373c216caa76462eac9ef1a2fab51c",
+        "provider_schema_sha256": "21b0bb30ccd91723427a8a7997ca674e633e45efd96cea77ce83ed797b25e10f",
+        "input_sha256": "79b8f3c6a77387ff632bf0f03c8929e8ff06f67c2a24acb8b29c228c1d5ca816",
+        "source_aliases": {
+          "s1": {
+            "source_id": "bio-1",
+            "quote": "Osmosis is the net movement of water across a selectively permeable membrane. In our examples, the solute cannot cross the membrane. Water moves toward the side with the higher concentration of that solute.",
+            "occurrence": 0
+          },
+          "s2": {
+            "source_id": "bio-2",
+            "quote": "If an animal cell is placed in a solution with a higher solute concentration than its cytoplasm, water leaves the cell and the cell shrinks. In a solution with a lower solute concentration, water enters and the cell can swell or burst. These comparisons are relative to the cell, not absolute labels for a solution.",
+            "occurrence": 0
+          },
+          "s3": {
+            "source_id": "bio-3",
+            "quote": "At equilibrium, water molecules still move in both directions. Equal rates mean no net movement; equilibrium does not mean that molecules stop moving. A plant cell also has a cell wall, which resists expansion as water enters.",
+            "occurrence": 0
+          }
+        },
+        "request_sha256": "6040d8e87b4922799186d3d70629ed970453057ff00a7930b09c7be31e59aa3c",
+        "messages_sha256": "b4e0528fedd5ca09840fdc5dc225b0ba37c5ad32ace122402ca18f694a6b2d29",
+        "adapter_version": "draft-profile-v1",
+        "options": {
+          "temperature": 0,
+          "seed": 42,
+          "num_ctx": 32768,
+          "num_predict": 6000
+        },
+        "preflight_prompt_tokens": 980,
+        "prompt_byte_upper_bound": 7193,
+        "metrics": {
+          "prompt_eval_count": 980,
+          "eval_count": 321,
+          "total_duration": 34060015000
+        },
+        "semantic_support": "not_evaluated",
+        "human_review": "pending"
+      },
+      "resolved_citations": [
+        {
+          "passage_id": "b1p1",
+          "source_id": "bio-1",
+          "start": 0,
+          "end": 206
+        },
+        {
+          "passage_id": "b2p1",
+          "source_id": "bio-2",
+          "start": 0,
+          "end": 315
+        },
+        {
+          "passage_id": "b3p1",
+          "source_id": "bio-3",
+          "start": 0,
+          "end": 226
+        }
+      ],
+      "seconds": 49.75
+    }
+  ],
+  "human_review": "pending",
+  "release_eligible": false
+}

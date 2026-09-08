@@ -2,33 +2,12 @@
 import json
 import re
 import httpx
-from .note_contract import compact, messages, GRAMMAR, SCHEMA, PROMPT
+from .note_contract import compact, SCHEMA
+from .note_draft import prepare, draft_messages, canonical, DRAFT_GRAMMAR, DRAFT_PROMPT, DRAFT_SCHEMA
 from .security import digest
 
 CONTEXT = 32768
 OUTPUT = 6000
-
-
-def alias_evidence(evidence):
-    # Short request-local labels identify immutable versions through a server-owned map.
-    # This avoids asking a small model to repeatedly reproduce opaque UUIDs.
-    aliases = {f's{i+1}': source['id'] for i, source in enumerate(evidence['sources'])}
-    sources = [{**source, 'id': alias} for alias, source in zip(aliases, evidence['sources'])]
-    return {**evidence, 'sources': sources}, aliases
-
-
-def expand_sources(output, aliases):
-    def resolve(source):
-        if source not in aliases: raise NoteFailure('invalid_output')
-        return aliases[source]
-    try:
-        for block in output['blocks']:
-            for passage in block['passages']:
-                for citation in passage['sources']: citation['source_id'] = resolve(citation['source_id'])
-        for issue in output['issues']: issue['source_ids'] = [resolve(source) for source in issue['source_ids']]
-        for entry in output['coverage']: entry['source_id'] = resolve(entry['source_id'])
-    except (KeyError, TypeError): raise NoteFailure('invalid_output') from None
-    return output
 
 
 class NoteFailure(Exception):
@@ -75,8 +54,8 @@ class OllamaNotes:
 
     def generate(self, evidence, preference):
         installed, details = self.verify(preference.model, preference.model_digest)
-        request_evidence, aliases = alias_evidence(evidence)
-        request_messages = messages(request_evidence)
+        request_evidence, citations = prepare(evidence)
+        request_messages = draft_messages(request_evidence)
         # Qwen byte-level BPE cannot produce more ordinary tokens than input UTF-8 bytes.
         # Include the entire template plus a 1024-token reserve for special tokens. Do not
         # apply this guard to other tokenizers. Reject whole input rather than truncate it.
@@ -84,7 +63,7 @@ class OllamaNotes:
         if bound + OUTPUT > CONTEXT or len(evidence['sources']) > 200:
             raise NoteFailure('context_limit')
         options = {'temperature': 0, 'seed': 42, 'num_ctx': CONTEXT, 'num_predict': OUTPUT}
-        body = {'model': preference.model, 'messages': request_messages, 'format': GRAMMAR,
+        body = {'model': preference.model, 'messages': request_messages, 'format': DRAFT_GRAMMAR,
             'stream': False, 'think': False, 'keep_alive': '2m', 'options': options}
         # Ask this model to evaluate the identical prompt with one throwaway output token.
         # This gives an actual tokenizer count before the note-generation request.
@@ -99,11 +78,12 @@ class OllamaNotes:
         if response.get('message', {}).get('tool_calls'): raise NoteFailure('invalid_output')
         try: output = json.loads(response['message']['content'])
         except (KeyError, TypeError, ValueError): raise NoteFailure('invalid_output') from None
-        return expand_sources(output, aliases), {'provider': 'ollama_local', 'model': preference.model, 'model_digest': installed['digest'],
-            'ollama_version': self.request('version').get('version'), 'prompt_version': 'v3',
-            'prompt_sha256': digest(PROMPT), 'schema_sha256': digest(compact(SCHEMA)),
-            'provider_schema_sha256': digest(compact(GRAMMAR)), 'input_sha256': digest(compact(evidence)),
-            'source_aliases': aliases, 'request_sha256': digest(compact(request_evidence)),
+        return canonical(output, evidence, citations), {'provider': 'ollama_local', 'model': preference.model, 'model_digest': installed['digest'],
+            'ollama_version': self.request('version').get('version'), 'prompt_version': 'draft-v1',
+            'prompt_sha256': digest(DRAFT_PROMPT), 'schema_sha256': digest(compact(SCHEMA)),
+            'provider_schema_sha256': digest(compact(DRAFT_GRAMMAR)), 'input_sha256': digest(compact(evidence)),
+            'source_aliases': citations, 'request_sha256': digest(compact(request_evidence)),
+            'messages_sha256': digest(compact(request_messages)), 'adapter_version': 'draft-profile-v1',
             'options': options, 'preflight_prompt_tokens': tokens, 'prompt_byte_upper_bound': bound,
             'metrics': {k: response.get(k) for k in ('prompt_eval_count', 'eval_count', 'total_duration')},
             'semantic_support': 'not_evaluated', 'human_review': 'pending'}

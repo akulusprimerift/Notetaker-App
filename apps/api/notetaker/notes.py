@@ -1,5 +1,6 @@
 """Saved, source-backed notes and versioned model choices."""
 import html
+from typing import Literal
 from fastapi import Depends, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
@@ -23,14 +24,16 @@ def inputs(db, request):
     settings = db.get(SettingsVersion, request.settings_id)
     return {'source_snapshot_id': request.snapshot_id, 'settings_version': settings.version,
         'allow_ai_explanations': settings.ai_explanations,
-        'profile': {'depth': settings.depth, 'format': settings.format},
+        'profile': {'depth': settings.depth, 'format': settings.format, 'instructions': settings.instructions},
         'sources': [{'id': s['id'], 'text': s['text'], 'start_ms': round(s['start_sample'] * 1000 / s['sample_rate']),
             'end_ms': round(s['end_sample'] * 1000 / s['sample_rate'])} for s in snapshot['segments']]}
 
 
 def revision_json(db, revision):
     request = db.get(NoteRequest, revision.request_id)
+    settings = db.get(SettingsVersion, request.settings_id)
     return {'id': revision.id, 'revision': revision.revision, 'content': revision.content,
+        'profile': {'depth': settings.depth, 'format': settings.format, 'instructions': settings.instructions},
         'resolved_citations': revision.resolved_citations, 'metadata': revision.metadata_json,
         'source_issues': db.get(TranscriptSnapshot, request.snapshot_id).issues,
         'created_at': revision.created_at.isoformat() + 'Z'}
@@ -52,6 +55,7 @@ def notes_json(db, lecture):
     elif current_request: status = {'due': 'queued', 'running': 'generating', 'completed': 'ready', 'failed': 'needs_attention', 'cancelled': 'waiting_for_transcript'}[job.status]
     else: status = 'waiting_for_transcript'
     return {'status': status, 'preference': preference_json(pref), 'stale': stale,
+        'profile': {'depth': settings.depth, 'format': settings.format, 'instructions': settings.instructions},
         'error_code': job.error_code if current_request else None,
         'revision': revision_json(db, revision) if revision else None}
 
@@ -119,6 +123,9 @@ class ModelChoice(BaseModel):
     expected_version: int = Field(ge=0)
     model: str = Field(min_length=1, max_length=160)
     enabled: bool = True
+    depth: Literal['detailed', 'standard', 'brief'] | None = None
+    format: Literal['topic_outline', 'cornell', 'question_answer'] | None = None
+    instructions: str | None = Field(default=None, max_length=1000)
 
 
 def install_notes(app, current, db_session, owned_lecture, receipt):
@@ -156,6 +163,12 @@ def install_notes(app, current, db_session, owned_lecture, receipt):
         old = latest(db, NotePreference, lecture.id, NotePreference.version)
         if body.expected_version != (old.version if old else 0): error(409, 'settings_conflict', 'The model choice changed in another window. Refresh and try again.')
         if not body.enabled and (not old or body.model != old.model): error(422, 'model_required', 'Choose a model before pausing automatic notes.')
+        current_settings = latest(db, SettingsVersion, lecture.id, SettingsVersion.version)
+        changes = {key: value for key, value in {'depth': body.depth, 'format': body.format, 'instructions': body.instructions}.items() if value is not None}
+        if body.enabled and any(getattr(current_settings, key) != value for key, value in changes.items()):
+            fields = {key: getattr(current_settings, key) for key in ('depth', 'format', 'instructions', 'ai_explanations')}
+            db.add(SettingsVersion(lecture_id=lecture.id, version=current_settings.version + 1, **{**fields, **changes}))
+            db.flush()
         pref = NotePreference(lecture_id=lecture.id, version=body.expected_version + 1, model=body.model,
             model_digest=installed['digest'] if body.enabled else old.model_digest, enabled=body.enabled)
         db.add(pref); db.flush()

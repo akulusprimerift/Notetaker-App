@@ -6,15 +6,18 @@ type Citation={source_id:string;quote:string;occurrence:number};
 type Passage={id:string;evidence_kind:string;text:string;sources:Citation[]};
 type Block={id:string;topic:string;kind:string;passages:Passage[]};
 type Preference={version:number;model:string;digest:string;enabled:boolean};
-type Revision={id:string;revision:number;created_at:string;content:{blocks:Block[];issues:{code:string;detail:string;source_ids:string[]}[];coverage:{source_id:string;disposition:string;reason:string}[]};metadata:{model:string};source_issues:unknown[]};
-type State={status:string;preference:Preference|null;stale:boolean;error_code:string|null;revision:Revision|null};
+type Revision={profile:Profile;id:string;revision:number;created_at:string;content:{blocks:Block[];issues:{code:string;detail:string;source_ids:string[]}[];coverage:{source_id:string;disposition:string;reason:string}[]};metadata:{model:string};source_issues:unknown[]};
+type Profile={depth:string;format:string;instructions:string};
+type State={profile:Profile;status:string;preference:Preference|null;stale:boolean;error_code:string|null;revision:Revision|null};
 type Model={name:string;digest:string;size:number};
 type Source={id:string;text:string;audio_url:string;segment_number:number;start_sample:number;sample_rate:number};
 const labels:Record<string,string>={choose_model:'Choose who takes your notes.',waiting_for_transcript:'Waiting for a saved transcript.',queued:'Your notes are queued.',generating:'Your model is writing study notes…',ready:'Your study notes are saved.',needs_attention:'Your notes need another attempt.',paused:'Automatic notes are paused.'};
-const errors:Record<string,string>={model_unavailable:'Open Ollama and check that your selected model is installed.',model_changed:'The installed model changed. Select it again to use its new version.',invalid_output:'The model returned notes that failed the source or format checks. Try again; your last saved notes are still here.',truncated_output:'The model stopped before finishing the notes. Your last saved notes are still here.',context_limit:'This transcript exceeds the current note-generation capacity. It has been kept in full. Support for longer lectures is still being built.',worker_error:'The local note service could not finish. Try again.',model_context_unsupported:'This model does not support the required input capacity.'};
+const errors:Record<string,string>={model_unavailable:'Open Ollama and check that your selected model is installed.',model_changed:'The installed model changed. Select it again to use its new version.',invalid_output:'The model returned notes that failed the source or format checks. Try again; any previously saved notes are preserved.',truncated_output:'The model stopped before finishing the notes. Your last saved notes are still here.',context_limit:'This transcript exceeds the current note-generation capacity. It has been kept in full. Support for longer lectures is still being built.',worker_error:'The local note service could not finish. Try again.',model_context_unsupported:'This model does not support the required input capacity.'};
 
 export default function Notes({lecture,csrf,onSessionExpired}:{lecture:string;csrf:string;onSessionExpired:()=>void}){
   const [state,setState]=useState<State|null>(null),[models,setModels]=useState<Model[]>([]),[selected,setSelected]=useState('');
+  const [custom,setCustom]=useState<Profile|null>(null);
+  const profile=custom??state?.profile??{depth:'detailed',format:'topic_outline',instructions:''};
   const [available,setAvailable]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
   const [source,setSource]=useState<Source|null>(null),[quote,setQuote]=useState(''),[audio,setAudio]=useState(0);
   const alive=useRef(true),sourceRequest=useRef(0),sequence=useRef(0),command=useRef<{body:string;key:string}|null>(null);
@@ -47,10 +50,10 @@ export default function Notes({lecture,csrf,onSessionExpired}:{lecture:string;cs
     if(!state)return;
     const model=enabled?(selected||state.preference?.model):state.preference?.model;
     if(!model)return;
-    const body=JSON.stringify({expected_version:state.preference?.version??0,model,enabled});
+    const body=JSON.stringify({expected_version:state.preference?.version??0,model,enabled,...(enabled?profile:{})});
     if(command.current?.body!==body)command.current={body,key:crypto.randomUUID()};
     setBusy(true);setError('');
-    try{await request(path+'/model',{method:'POST',body,headers:{'X-CSRF-Token':csrf,'Idempotency-Key':command.current.key}});command.current=null;setSelected('');await refresh()}
+    try{await request(path+'/model',{method:'POST',body,headers:{'X-CSRF-Token':csrf,'Idempotency-Key':command.current.key}});command.current=null;setSelected('');if(enabled)setCustom(null);await refresh()}
     catch(err){setError(err instanceof Error?err.message:'Could not save the model choice.');await refresh().catch(()=>{})}
     finally{if(alive.current)setBusy(false)}
   }
@@ -66,8 +69,9 @@ export default function Notes({lecture,csrf,onSessionExpired}:{lecture:string;cs
     catch(err){if(alive.current&&ticket===sourceRequest.current)setError(err instanceof Error?err.message:'Source unavailable.')}
   }
   const revision=state?.revision;
+  const savedProfile=revision?.profile??state?.profile;
   return <div className="note-layout generated-notes"><section className="note-paper" aria-labelledby="notes-title">
-    <div className="paper-heading"><h2 id="notes-title">Your lecture notes</h2><span>DETAILED · TOPIC OUTLINE</span></div>
+    <div className="paper-heading"><h2 id="notes-title">Your lecture notes</h2><span>{(savedProfile?.depth??'detailed').toUpperCase()} · {(savedProfile?.format??'topic_outline').replaceAll('_',' ').toUpperCase()}</span></div>
     <div className="note-status"><p role="status">{state?labels[state.status]:'Opening your notes…'}</p>
       <p className="small muted">Your selected model turns the transcript into explanations, definitions and worked steps. You can check the evidence below.</p>
       {state?.status==='generating'&&<p className="small muted">Local generation can take several minutes. You can leave this page while it finishes.</p>}
@@ -78,7 +82,7 @@ export default function Notes({lecture,csrf,onSessionExpired}:{lecture:string;cs
     </div>
     {revision?<div className="generated-content"><div className="note-revision"><span>Revision {revision.revision} · {revision.metadata.model}</span><a className="text-button" href={`/api${path}/revisions/${revision.id}/export`}>Export Markdown</a></div>
       <p className="small muted">AI-generated notes. Source links verify where the evidence came from; review important claims for accuracy.</p>
-      {revision.content.blocks.map(block=><section className="study-block" key={block.id}><p className="eyebrow">{block.kind}</p><h3>{block.topic}</h3>{block.passages.map(passage=><div className="study-passage" key={passage.id}>
+      {revision.content.blocks.map(block=><section className={`study-block ${revision.profile?.format==='cornell'?'cornell-block':''}`} key={block.id}><div className="study-block-title"><p className="eyebrow">{block.kind}</p><h3>{block.topic}</h3></div>{block.passages.map(passage=><div className="study-passage" key={passage.id}>
         <span className="evidence-label">{passage.evidence_kind==='lecture_paraphrase'?'From the lecture':passage.evidence_kind==='exact_quote'?'Exact lecture quote':passage.evidence_kind==='ai_explanation'?'Additional AI explanation':'Uncertain'}</span>
         {block.kind==='code'||block.kind==='equation'?<pre><code>{passage.text}</code></pre>:<p className="study-text">{passage.text}</p>}
         <div className="citation-list">{passage.sources.map((citation,index)=><button key={index} className="text-button" onClick={()=>void openSource(citation)}>Source {index+1} ↗<span className="sr-only"> for {block.topic}, passage {passage.id}</span></button>)}</div>
@@ -89,10 +93,13 @@ export default function Notes({lecture,csrf,onSessionExpired}:{lecture:string;cs
         {revision.content.coverage.filter(c=>c.disposition!=='used').map(item=><p key={item.source_id}>{item.disposition==='unclear'?'Unclear passage':'Omitted passage'}: {item.reason} <button className="text-button" onClick={()=>void openSource({source_id:item.source_id,quote:'',occurrence:0})}>Review source</button></p>)}
       </section>}
     </div>:<div className="note-placeholder"><span className="paper-icon" aria-hidden="true">≡</span><h3>Listen to the lecture. Let your model take notes.</h3><p>{state?.preference?`Your selected model is ${state.preference.model}. Your notes will appear here when they are ready.`:'Choose a local model once for this lecture. Notes will be created when the saved transcript is ready, and refreshed after corrections.'}</p></div>}
-  </section><aside className="lecture-details note-controls"><h2>Your note-taking model</h2><p className="small muted">Runs on this Windows machine through Ollama. Detailed notes; additional AI explanations are off.</p>
+  </section><aside className="lecture-details note-controls"><h2>Your note-taking model</h2><p className="small muted">Works with any course. Your model derives the subject from the transcript and runs locally through Ollama.</p>
     <label htmlFor="note-model">Local model</label><select id="note-model" value={selected||state?.preference?.model||''} disabled={busy} onChange={event=>setSelected(event.target.value)}><option value="">Choose a model</option>{models.map(model=><option key={model.name} value={model.name}>{model.name}</option>)}{state?.preference&&!models.some(m=>m.name===state.preference?.model)&&<option value={state.preference.model}>{state.preference.model} (unavailable)</option>}</select>
     {(!available||!models.length)&&<p className="small">Open Ollama to use an installed Qwen model. More model families and cloud connections are planned.</p>}
-    <button className="primary full" disabled={busy||!state||!(selected||state.preference?.model)||(!selected&&!!state.preference?.enabled)} onClick={()=>void choose()}>{busy?'Saving…':state?.preference?'Use this model':'Start automatic notes'}</button>
+    <label htmlFor="note-depth">Note detail</label><select id="note-depth" value={profile.depth} disabled={busy} onChange={e=>setCustom({...profile,depth:e.target.value})}><option value="detailed">Detailed explanations and examples</option><option value="standard">Standard study notes</option><option value="brief">Brief key points</option></select>
+    <label htmlFor="note-format">Note layout</label><select id="note-format" value={profile.format} disabled={busy} onChange={e=>setCustom({...profile,format:e.target.value})}><option value="topic_outline">Topic outline</option><option value="cornell">Cornell cues and notes</option><option value="question_answer">Study questions and answers</option></select>
+    <label htmlFor="note-instructions">Writing preferences (optional)</label><textarea id="note-instructions" value={profile.instructions} maxLength={1000} rows={3} disabled={busy} onChange={e=>setCustom({...profile,instructions:e.target.value})} placeholder="e.g. Explain terminology in plain language and emphasize cause and effect."/>
+    <button className="primary full" disabled={busy||!state||!(selected||state.preference?.model)||(!selected&&!custom&&!!state.preference?.enabled)} onClick={()=>void choose()}>{busy?'Saving…':state?.preference?'Apply note preferences':'Start automatic notes'}</button>
     {state?.preference?.enabled&&<button className="text-button" disabled={busy} onClick={()=>void choose(false)}>Pause automatic notes</button>}
     <button className="text-button" disabled={busy} onClick={()=>void refreshModels().catch(err=>setError(err instanceof Error?err.message:'Could not refresh models.'))}>Refresh model list</button>
     <p className="small muted">Automatic notes continue when this page is closed, while the app services are running.</p>

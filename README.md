@@ -1,6 +1,6 @@
 # Notetaker App
 
-A lecture note-taking application focused on turning dense, content-heavy lectures into detailed, organized, trustworthy notes.
+A Windows lecture note-taking application for any course or subject, focused on turning dense, content-heavy lectures into detailed, organized, trustworthy notes.
 
 The current product priority is **reliable lecture capture → timestamped transcription → high-quality, source-linked notes**. Notes should preserve definitions, explanations, worked examples, reasoning, qualifications, and professor emphasis. A short summary is an optional companion to the detailed notes.
 
@@ -8,8 +8,9 @@ The current product priority is **reliable lecture capture → timestamped trans
 
 Follow the [feature and architecture phase plan](docs/project-phases.md) for all future work: Phase 6.1–6.8 maps to M01–M08, with features, architecture changes, completion evidence and local commits for every increment.
 
-**Phase 6.4 / M04: automatic study notes implemented for bounded saved transcripts.** Choose a local model and it writes source-linked notes, refreshes them after transcript corrections, and exports a saved Markdown revision. Manual note writing is not required. Long-lecture topic processing and human quality qualification remain open. The browser interface is a development preview; an installable Windows application remains required in M08.
+**Phase 6.4 / M04: automatic study notes implemented for bounded saved transcripts.** Choose a local model, note detail, layout and writing preferences; it writes source-linked notes, refreshes them after transcript corrections, and exports a saved Markdown revision. Manual note writing is not required. Long-lecture topic processing and human quality qualification remain open. The browser interface is a development preview; an installable Windows application remains required in M08.
 
+- [Windows desktop direction](docs/architecture/windows-desktop-direction.md): proposed early desktop host and remaining installer work.
 - [Automatic notes / M04](docs/implementation/phase-6-m04.md): model selection, automatic generation, source inspection, export, limitations and later OpenAI/Claude connections.
 - [Run the app and review M01 results](docs/implementation/phase-6-m01.md): local startup, implemented behavior, executed checks and remaining milestones.
 - [Transcription and source inspection / M03](docs/implementation/phase-6-m03.md): speech setup, synthetic accuracy results, source playback, correction protection and remaining qualification.

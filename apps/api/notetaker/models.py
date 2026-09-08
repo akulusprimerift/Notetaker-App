@@ -74,6 +74,7 @@ class SettingsVersion(Base):
     depth: Mapped[str] = mapped_column(String(20), default="detailed")
     format: Mapped[str] = mapped_column(String(24), default="topic_outline")
     ai_explanations: Mapped[bool] = mapped_column(Boolean, default=False)
+    instructions: Mapped[str] = mapped_column(String(1000), default='', server_default='')
     __table_args__ = (UniqueConstraint("lecture_id", "version"),)
 
 

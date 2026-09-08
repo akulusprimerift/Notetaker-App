@@ -7,7 +7,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from .config import Settings
 from .note_provider import OllamaNotes
-from .note_contract import ROOT, PROMPT, compact, validate_notes
+from .note_contract import ROOT, validate_notes
+from .note_draft import DRAFT_PROMPT as PROMPT
 from .security import digest
 
 
@@ -15,9 +16,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--model', default='qwen3:4b')
     parser.add_argument('--case', default='all')
+    parser.add_argument('--dataset', choices=['cs', 'universal'], default='cs')
     parser.add_argument('--report', default='.local/note-evaluation.json')
     args = parser.parse_args()
-    raw = (ROOT/'evaluations/fixtures/cs-notes-v1.json').read_text(encoding='utf-8')
+    filename = 'cs-notes-v1.json' if args.dataset == 'cs' else 'universal-notes-v1.json'
+    raw = (ROOT/'evaluations/fixtures'/filename).read_text(encoding='utf-8')
     dataset = json.loads(raw)
     cases = [c for c in dataset['cases'] if args.case == 'all' or c['id'] == args.case]
     if not cases: parser.error('Unknown synthetic case')

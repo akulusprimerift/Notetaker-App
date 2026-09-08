@@ -1,0 +1,167 @@
+{
+  "origin": "synthetic_text",
+  "model": {
+    "name": "qwen3:4b",
+    "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+    "size": 2497293931,
+    "family": "qwen3"
+  },
+  "prompt_sha256": "561a7dd81cb9628093e292dcacb0e1f38d94046afa78b5dc53c01203112a441f",
+  "dataset_sha256": "c31487911a18547dd3b4de57e31eeb98997206104a4dedc857bea40404fcf7c9",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "cases": [
+    {
+      "id": "history-brief-questions",
+      "contract_valid": true,
+      "output": {
+        "schema_version": 1,
+        "source_snapshot_id": "history-snapshot-v1",
+        "settings_version": 3,
+        "blocks": [
+          {
+            "id": "b1",
+            "topic": "What caused the protest?",
+            "kind": "explanation",
+            "passages": [
+              {
+                "id": "b1p1",
+                "text": "The immediate trigger was the government's refusal to hear a petition about rising food prices and unequal taxation, but long-term grievances from these issues led to the protest.",
+                "evidence_kind": "lecture_paraphrase",
+                "sources": [
+                  {
+                    "source_id": "hist-1",
+                    "quote": "In this historical case study, rising food prices and unequal taxation created long-term grievances. The government's refusal to hear a petition was the immediate trigger for the protest. A trigger explains the timing; it does not by itself explain the accumulated grievances.",
+                    "occurrence": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "b2",
+            "topic": "How does the petition reflect the population's views?",
+            "kind": "explanation",
+            "passages": [
+              {
+                "id": "b2p1",
+                "text": "The petition shows the demands of signatories as primary evidence, but it does not prove that all residents shared those aims; compare with other accounts to avoid overgeneralization.",
+                "evidence_kind": "lecture_paraphrase",
+                "sources": [
+                  {
+                    "source_id": "hist-2",
+                    "quote": "The petition expresses the demands of its signatories. It is useful primary evidence of their stated aims, but it does not prove that every resident shared those aims. Compare it with other accounts before making claims about the whole population.",
+                    "occurrence": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "b3",
+            "topic": "What does chronological order imply about causation?",
+            "kind": "explanation",
+            "passages": [
+              {
+                "id": "b3p1",
+                "text": "Chronological order (price increase → petition → protest) does not establish causation; for exam purposes, evidence of how grievances influenced decisions is needed to support causal claims.",
+                "evidence_kind": "lecture_paraphrase",
+                "sources": [
+                  {
+                    "source_id": "hist-3",
+                    "quote": "The chronology shows the price increase, then the petition, then the protest. Chronological order alone does not establish causation. For the exam, support a causal explanation with evidence of how a grievance influenced a decision.",
+                    "occurrence": 0
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "issues": [],
+        "coverage": [
+          {
+            "source_id": "hist-1",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          },
+          {
+            "source_id": "hist-2",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          },
+          {
+            "source_id": "hist-3",
+            "disposition": "used",
+            "reason": "Referenced by these notes."
+          }
+        ]
+      },
+      "metadata": {
+        "provider": "ollama_local",
+        "model": "qwen3:4b",
+        "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+        "ollama_version": "0.33.3",
+        "prompt_version": "draft-v1",
+        "prompt_sha256": "561a7dd81cb9628093e292dcacb0e1f38d94046afa78b5dc53c01203112a441f",
+        "schema_sha256": "0f038bf652bbe1699f963e74c18f179f53373c216caa76462eac9ef1a2fab51c",
+        "provider_schema_sha256": "21b0bb30ccd91723427a8a7997ca674e633e45efd96cea77ce83ed797b25e10f",
+        "input_sha256": "da34cc60fcb203a806f9208986735231c615a8296b0f1ed06faca40f193c29f3",
+        "source_aliases": {
+          "s1": {
+            "source_id": "hist-1",
+            "quote": "In this historical case study, rising food prices and unequal taxation created long-term grievances. The government's refusal to hear a petition was the immediate trigger for the protest. A trigger explains the timing; it does not by itself explain the accumulated grievances.",
+            "occurrence": 0
+          },
+          "s2": {
+            "source_id": "hist-2",
+            "quote": "The petition expresses the demands of its signatories. It is useful primary evidence of their stated aims, but it does not prove that every resident shared those aims. Compare it with other accounts before making claims about the whole population.",
+            "occurrence": 0
+          },
+          "s3": {
+            "source_id": "hist-3",
+            "quote": "The chronology shows the price increase, then the petition, then the protest. Chronological order alone does not establish causation. For the exam, support a causal explanation with evidence of how a grievance influenced a decision.",
+            "occurrence": 0
+          }
+        },
+        "request_sha256": "44eb1b820001b474b1de6a76d204cc79757b75def5eebeaf42513607bdf80b05",
+        "options": {
+          "temperature": 0,
+          "seed": 42,
+          "num_ctx": 32768,
+          "num_predict": 6000
+        },
+        "preflight_prompt_tokens": 980,
+        "prompt_byte_upper_bound": 7262,
+        "metrics": {
+          "prompt_eval_count": 980,
+          "eval_count": 268,
+          "total_duration": 27581436200
+        },
+        "semantic_support": "not_evaluated",
+        "human_review": "pending"
+      },
+      "resolved_citations": [
+        {
+          "passage_id": "b1p1",
+          "source_id": "hist-1",
+          "start": 0,
+          "end": 276
+        },
+        {
+          "passage_id": "b2p1",
+          "source_id": "hist-2",
+          "start": 0,
+          "end": 247
+        },
+        {
+          "passage_id": "b3p1",
+          "source_id": "hist-3",
+          "start": 0,
+          "end": 232
+        }
+      ],
+      "seconds": 49.41
+    }
+  ],
+  "human_review": "pending",
+  "release_eligible": false
+}
