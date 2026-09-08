@@ -89,7 +89,17 @@ def settle_final(db, lecture, request, available=False):
         request.status='needs_attention';request.issues=sorted(set([*request.issues,'Note generation failed. Retry or finalize available results.']));return
     issues=list(request.issues)
     if speech['snapshot']:
-        issues.extend('Transcript: '+i['reason'].replace('_',' ') for i in speech['snapshot']['issues'])
+        messages={
+            'finalized_available':'Recording ended with an unknown tail; browser-only audio is excluded.',
+            'transcription_due':'Speech processing was still pending when available results were finalized.',
+            'transcription_running':'Speech processing was still pending when available results were finalized.',
+            'transcription_failed':'Some audio could not be transcribed.',
+            'transcription_cancelled':'Some speech processing was cancelled.',
+            'uncertain_speech':'Some speech could not be recognized confidently.',
+            'awaiting_saved_audio':'Some recording content was not available for transcription.',
+            'between_runs':'The lecture includes separately recorded segments.',
+        }
+        issues.extend(messages.get(i['reason'],'A recording interruption remains marked in the transcript.') for i in speech['snapshot']['issues'])
     else: issues.append('No transcript is available.')
     selected=notes['editing']['selected'] or notes['revision']
     if not selected: issues.append('No saved notes are available.')
