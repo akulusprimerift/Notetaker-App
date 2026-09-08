@@ -26,7 +26,7 @@ export default function CaptureCheck(){
       await journal.append(owner,id,wav,hash,3);
       journal.close();journal=await openJournal(name);
       check((await journal.get(owner,id)).samples===3,'Blob and sample manifest survive closing and reopening IndexedDB');
-      let chunk=(await journal.pending(owner,id))[0];
+      const chunk=(await journal.pending(owner,id))[0];
       let mismatch=false;
       try{await journal.acknowledge(owner,id,0,{...chunk.identity,storage_state:'verified',chunk_id:'server-chunk',sha256:'b'.repeat(64)});}catch{mismatch=true;}
       check(mismatch&&(await journal.pending(owner,id)).length===1,'Mismatched acknowledgement retains the original blob');

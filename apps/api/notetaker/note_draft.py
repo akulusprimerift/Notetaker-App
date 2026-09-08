@@ -34,7 +34,8 @@ def prepare(evidence):
             citations[alias] = {'source_id': original['id'], 'quote': excerpt, 'occurrence': occurrence}
             sources.append({'id': alias, 'text': excerpt})
             start = end
-    request = {'profile': evidence.get('profile', {'depth': 'detailed', 'format': 'topic_outline'}), 'sources': sources}
+    request = {'profile': evidence.get('profile', {'depth': 'detailed', 'format': 'topic_outline'}), 'sources': sources,
+        'preceding_context': evidence.get('preceding_context', '')}
     return request, citations
 
 
@@ -50,6 +51,7 @@ def draft_messages(request):
     layout = profile.get('layout_prompt', '').strip() or layout
     return [{'role': 'system', 'content': DRAFT_PROMPT + '\nJSON_SCHEMA:\n' + compact(DRAFT_SCHEMA)},
         {'role': 'user', 'content': 'LECTURE TRANSCRIPT:\n' + compact(request['sources']) +
+            '\nPreceding context (orientation only; write and cite the new transcript above):\n' + request.get('preceding_context', '') +
             '\n\nWRITE THE NOTES NOW. ' + depth + ' ' + layout +
             '\nStudent writing preferences: ' + profile.get('instructions', '') +
             '\nUse your own explanatory wording. Do not simply copy the transcript sentences. Return only the JSON notes.'}]

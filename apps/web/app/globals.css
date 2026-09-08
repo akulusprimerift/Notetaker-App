@@ -46,3 +46,15 @@
 .live-progress{display:flex;flex-direction:column;gap:.4rem;margin:1rem 0;padding:1rem;border:1px solid var(--border,#d5ded9);border-radius:12px;}
 .note-controls select,.note-controls textarea{width:100%;min-width:0;}
 @media(min-width:1101px){.generated-notes{grid-template-columns:minmax(0,1fr) 320px;}}
+.note-editing{margin:1.5rem 0;padding:1rem;border:1px solid #d8dedb;border-radius:12px;min-width:0}
+.editor-actions{display:flex;gap:.6rem;flex-wrap:wrap}
+.note-draft label{display:block;margin:1rem 0}
+.note-draft input,.note-draft textarea{display:block;width:100%;box-sizing:border-box}
+.note-draft textarea,.comparison-text,.streaming-text{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}
+.note-comparison{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1rem;margin:1rem 0}
+.note-comparison>div{min-width:0;border:1px solid #d8dedb;padding:.75rem;border-radius:8px}
+.note-comparison input[type=checkbox]{width:auto;display:inline;margin-right:.5rem}
+.note-history button{display:block}
+.streaming-notes{margin:1rem 0;padding:1rem;border-left:3px solid #387964;background:#f1f7f3;border-radius:8px}
+.streaming-text{max-height:24rem;overflow:auto;overflow-anchor:none}
+@media(max-width:700px){.note-comparison{grid-template-columns:minmax(0,1fr)}}

@@ -1,0 +1,80 @@
+{
+  "date": "2026-09-08",
+  "environment": {
+    "host": "Windows",
+    "python": "3.12.14",
+    "node": "22.13.1",
+    "bun": "1.3.10",
+    "uv": "0.12.10",
+    "postgres": "17.11"
+  },
+  "synthetic_only": true,
+  "human_review": "pending",
+  "release_eligible": false,
+  "checks": {
+    "sqlite_backend_tests_passed": 131,
+    "postgres_backend_tests_passed": 131,
+    "javascript_contracts_passed": 60,
+    "combined_browser_workflow_passed": true,
+    "object_readback_passed": true,
+    "kafka_roundtrip_passed": true
+  },
+  "runs": [
+    {
+      "scenario": "initial_30_second_input",
+      "synthetic_only": true,
+      "microphone_access": false,
+      "duration_seconds": 30.0,
+      "audio_sha256": "323865c986f081fe5d9948b23a379d6d0f2e02d6bacf8451b66485b20bceccb1",
+      "first_transcript_seconds": 24.11,
+      "first_preview_seconds": 57.47,
+      "first_saved_notes_seconds": 115.61,
+      "preview_updates": 130,
+      "notes_before_seal": true,
+      "final_ready": true,
+      "release_eligible": false,
+      "model": "qwen3:4b",
+      "lecture_id": "1dd69d81-93fa-4c6f-bf05-bb6aecc2433c",
+      "stream_encoding": "identity",
+      "sealed_at_seconds": 115.67,
+      "elapsed_seconds": 134.38,
+      "transcript_status": "processed",
+      "note_status": "ready",
+      "note_error": null,
+      "source_count": 11,
+      "revision_id": "17154dae-14a5-4b56-8dba-f54d32675961",
+      "exported_bytes": 4228
+    },
+    {
+      "scenario": "speech_preloaded_60_second_input",
+      "synthetic_only": true,
+      "microphone_access": false,
+      "duration_seconds": 60.0,
+      "audio_sha256": "9372327f6740bba43d04edc288990973d05bc4f40e68f62fee7d8a21c51250ff",
+      "first_transcript_seconds": 12.14,
+      "first_preview_seconds": 57.67,
+      "first_saved_notes_seconds": 117.5,
+      "preview_updates": 196,
+      "notes_before_seal": true,
+      "final_ready": true,
+      "release_eligible": false,
+      "model": "qwen3:4b",
+      "lecture_id": "531cc481-1d37-44d4-8397-65538fc7fa8d",
+      "stream_encoding": "identity",
+      "sealed_at_seconds": 117.61,
+      "elapsed_seconds": 174.23,
+      "transcript_status": "processed",
+      "note_status": "ready",
+      "note_error": null,
+      "source_count": 20,
+      "revision_id": "3d05f04c-cb72-4b01-89bf-f479cdb058eb",
+      "exported_bytes": 6849
+    }
+  ],
+  "limits": [
+    "Recording remained open after each finite input ended; notes_before_seal is not the same as saved notes during audio input.",
+    "The second run preloaded speech; note model temperature and resident state were not controlled as a benchmark.",
+    "One 60-second synthetic input is not representative lecture quality, hour-long endurance, or calibrated latency qualification.",
+    "No microphone, external inference, model download, or human educational review was used."
+  ]
+}

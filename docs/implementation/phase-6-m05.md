@@ -1,5 +1,7 @@
 # Phase 6.5 / M05 — Live lecture assistance
 
+Historical M05 checkpoint. The [M06 increment](phase-6-m06.md) supersedes the preset dropdowns, 24-second live window policy, single shared inference slot and whole-transcript generation limits below. Original verification results remain unchanged; consult M06 and the session transfer for current behavior and evidence.
+
 Implemented 2026-09-08 at the user's request, following their accepted working transcription/M04 workflow. This increment adds live assistance and custom note style descriptions. It is **implemented and synthetically verified on macOS**, not a qualified Windows live configuration. M02/M03 device and M04 educational-quality qualification remain open; they do not block this implementation.
 
 ## Student behavior

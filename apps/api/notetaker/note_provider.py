@@ -10,6 +10,42 @@ CONTEXT = 32768
 OUTPUT = 6000
 
 
+def preview_text(raw):
+    """Decode only prose string values, including a safely truncated last token."""
+    values, index = [], 0
+    decoder = json.JSONDecoder()
+    while index < len(raw):
+        if raw[index] != '"':
+            index += 1
+            continue
+        try:
+            key, end = decoder.raw_decode(raw, index)
+        except ValueError:
+            break
+        index = end
+        tail = index
+        while tail < len(raw) and raw[tail].isspace(): tail += 1
+        if key not in ('topic', 'text') or tail >= len(raw) or raw[tail] != ':':
+            continue
+        tail += 1
+        while tail < len(raw) and raw[tail].isspace(): tail += 1
+        if tail >= len(raw) or raw[tail] != '"': continue
+        try:
+            value, index = decoder.raw_decode(raw, tail)
+        except ValueError:
+            partial = raw[tail+1:]
+            for trim in range(min(7, len(partial)+1)):
+                try:
+                    value = json.loads('"' + (partial[:-trim] if trim else partial) + '"')
+                    values.append(value.encode('utf-16', 'surrogatepass').decode('utf-16', 'ignore'))
+                    break
+                except ValueError:
+                    continue
+            break
+        values.append(value)
+    return '\n\n'.join(values)
+
+
 class NoteFailure(Exception):
     def __init__(self, code): self.code = code
 
@@ -52,7 +88,35 @@ class OllamaNotes:
             raise NoteFailure('model_context_unsupported')
         return installed, details
 
-    def generate(self, evidence, preference):
+    def stream_chat(self, body, on_preview):
+        raw, final, total = '', None, 0
+        try:
+            with httpx.Client(base_url=self.url, timeout=600, trust_env=False, follow_redirects=False) as client:
+                with client.stream('POST', '/api/chat', json={**body, 'stream': True}) as response:
+                    response.raise_for_status()
+                    for line in response.iter_lines():
+                        total += len(line.encode('utf-8'))
+                        if total > 4_000_000: raise NoteFailure('invalid_output')
+                        if not line: continue
+                        item = json.loads(line)
+                        if not isinstance(item, dict) or item.get('error'): raise NoteFailure('model_unavailable')
+                        message = item.get('message', {})
+                        if message.get('tool_calls'): raise NoteFailure('invalid_output')
+                        raw += message.get('content', '')
+                        if len(raw.encode('utf-8')) > 2_000_000: raise NoteFailure('invalid_output')
+                        on_preview(preview_text(raw))
+                        if item.get('done'):
+                            final = item
+                            break
+        except (httpx.HTTPError, ValueError, TypeError):
+            raise NoteFailure('model_unavailable') from None
+        if final is None: raise NoteFailure('truncated_output')
+        return {**final, 'message': {'content': raw}}
+
+    def generate_stream(self, evidence, preference, on_preview):
+        return self.generate(evidence, preference, on_preview)
+
+    def generate(self, evidence, preference, on_preview=None):
         installed, details = self.verify(preference.model, preference.model_digest)
         request_evidence, citations = prepare(evidence)
         request_messages = draft_messages(request_evidence)
@@ -72,7 +136,7 @@ class OllamaNotes:
         if type(tokens) is not int or tokens <= 0 or tokens + OUTPUT + 512 > CONTEXT:
             raise NoteFailure('context_limit')
         self.verify(preference.model, preference.model_digest)
-        response = self.request('chat', body, timeout=600)
+        response = self.stream_chat(body, on_preview) if on_preview else self.request('chat', body, timeout=600)
         self.verify(preference.model, preference.model_digest)
         if response.get('done') is not True or response.get('done_reason') != 'stop': raise NoteFailure('truncated_output')
         if response.get('message', {}).get('tool_calls'): raise NoteFailure('invalid_output')

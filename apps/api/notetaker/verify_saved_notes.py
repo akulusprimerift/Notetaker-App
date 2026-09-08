@@ -41,7 +41,7 @@ def main():
             with sessions() as db:
                 saved = db.get(NoteRevision, revision['id'])
                 evidence = inputs(db, db.get(NoteRequest, saved.request_id))
-                resolved = validate_notes(revision['content'], evidence)
+                resolved = validate_notes(revision['content'], evidence, aggregate=True)
             export = client.get(prefix+'/notes/revisions/'+revision['id']+'/export'); export.raise_for_status()
             assert 'Source appendix' in export.text and '.md' in export.headers['content-disposition']
             audio_checks = []

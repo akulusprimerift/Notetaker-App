@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from uuid import uuid4
-from sqlalchemy import String, Integer, BigInteger, Boolean, DateTime, ForeignKey, ForeignKeyConstraint, UniqueConstraint, JSON, CheckConstraint
+from sqlalchemy import String, Text, Integer, BigInteger, Boolean, DateTime, ForeignKey, ForeignKeyConstraint, UniqueConstraint, JSON, CheckConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -293,6 +293,8 @@ class NoteRequest(Base):
     snapshot_id: Mapped[str] = mapped_column(String(36))
     settings_id: Mapped[str] = mapped_column(ForeignKey('settings_versions.id'))
     base_revision: Mapped[int] = mapped_column(Integer)
+    preview: Mapped[str] = mapped_column(Text, default='', server_default='')
+    preview_attempt: Mapped[str] = mapped_column(String(36), default='', server_default='')
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
     __table_args__ = (UniqueConstraint('id', 'lecture_id'),
         UniqueConstraint('snapshot_id', 'preference_id', 'settings_id'),
@@ -313,3 +315,18 @@ class NoteRevision(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
     __table_args__ = (UniqueConstraint('lecture_id', 'revision'),
         ForeignKeyConstraint(['request_id', 'lecture_id'], ['note_requests.id', 'note_requests.lecture_id']))
+
+
+class NoteEdit(Base):
+    """Immutable selected student revision; automatic output is kept separately."""
+    __tablename__ = 'note_edits'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(ForeignKey('lectures.id'), index=True)
+    version: Mapped[int] = mapped_column(Integer)
+    generated_id: Mapped[str] = mapped_column(ForeignKey('note_revisions.id'))
+    reviewed_id: Mapped[str] = mapped_column(ForeignKey('note_revisions.id'))
+    content: Mapped[dict] = mapped_column(JSON)
+    provenance: Mapped[list] = mapped_column(JSON)
+    action: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    __table_args__ = (UniqueConstraint('lecture_id', 'version'),)

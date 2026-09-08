@@ -88,10 +88,10 @@ def plan_pending(sessions, store=None):
 
 def claim(sessions, job_id=None):
     with sessions() as db:
-        query=select(Job.id,Job.lecture_id).where(Job.kind=='speech.window',
+        query=select(Job.id,Job.lecture_id).join(SpeechWindow, SpeechWindow.id == Job.input_revision).where(Job.kind=='speech.window',
             ((Job.status=='due') & (Job.due_at<=now())) | ((Job.status=='running') & (Job.lease_expires_at<=now())))
         if job_id: query=query.where(Job.id==job_id)
-        candidates=db.execute(query.order_by(Job.due_at,Job.id).limit(50)).all()
+        candidates=db.execute(query.order_by(Job.due_at,SpeechWindow.core_start,Job.id).limit(50)).all()
     for candidate, lecture_id in candidates:
         with sessions() as db:
             if not available(db): return None
@@ -260,6 +260,14 @@ def main():
             'enable.auto.commit':False,'auto.offset.reset':'earliest','log_level':0})
         consumer.subscribe([TOPIC])
     try:
+        if not args.once:
+            try:
+                with inference_slot(sessions) as acquired:
+                    if acquired:
+                        provider.load()
+                        log.info('speech_model_ready')
+            except SpeechFailure:
+                log.warning('speech_model_unavailable_at_startup')
         while True:
             plan_pending(sessions,store)
             hint=None

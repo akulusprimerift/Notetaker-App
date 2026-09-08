@@ -10,6 +10,7 @@ from .models import (Lecture, CaptureRun, AudioManifestRevision, UploadReservati
 from .security import error, mutation
 
 CORE_SECONDS = 24
+LIVE_CORE_SECONDS = 6
 CONTEXT_SECONDS = 2
 
 
@@ -70,7 +71,8 @@ def schedule(db, lecture, planned_cuts=None):
             for cursor, stop in uncovered:
                 cuts = (planned_cuts or {}).get((run.id, run.manifest_version))
                 ends = ([cut for cut in cuts if cursor < cut < stop] if cuts is not None
-                    else list(range(cursor + CORE_SECONDS*run.sample_rate, stop, CORE_SECONDS*run.sample_rate)))
+                    else list(range(cursor + (LIVE_CORE_SECONDS if not complete else CORE_SECONDS)*run.sample_rate,
+                        stop, (LIVE_CORE_SECONDS if not complete else CORE_SECONDS)*run.sample_rate)))
                 if complete: ends.append(stop)
                 for end in ends:
                     if not complete and end + CONTEXT_SECONDS*run.sample_rate > right: break

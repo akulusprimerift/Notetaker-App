@@ -17,14 +17,14 @@ $env:S3_SECRET_KEY=$taskValues.S3_SECRET_KEY
 $env:NOTETAKER_S3_ACCESS_KEY=$taskValues.S3_ACCESS_KEY
 $env:NOTETAKER_S3_SECRET_KEY=$taskValues.S3_SECRET_KEY
 $env:PYTHONPATH='apps/api'
-& .venv/Scripts/python.exe -m notetaker.verify_services
+& uv run --no-project --python .venv/Scripts/python.exe python -m notetaker.verify_services
 if ($LASTEXITCODE -ne 0) { throw 'Real service probe failed. Do not mark M01 services verified.' }
 $taskTestRoot = Join-Path $taskRoot ('.cache/service-tests-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $taskTestRoot | Out-Null
-& .venv/Scripts/python.exe -m pytest -q --tb=short --basetemp "$taskTestRoot/temp" -o "cache_dir=$taskTestRoot/cache"
+& uv run --no-project --python .venv/Scripts/python.exe python -m pytest -q --tb=short --basetemp "$taskTestRoot/temp" -o "cache_dir=$taskTestRoot/cache"
 if ($LASTEXITCODE -ne 0) { throw 'PostgreSQL integration tests failed.' }
 if ($Restart) {
-    & .venv/Scripts/python.exe -m notetaker.verify_restart --docker $DockerPath
+    & uv run --no-project --python .venv/Scripts/python.exe python -m notetaker.verify_restart --docker $DockerPath
     if ($LASTEXITCODE -ne 0) { throw 'Persistent-volume restart verification failed.' }
 }
 Write-Output 'Real PostgreSQL application tests and synthetic object/broker probes passed. Device-failure and real-lecture qualification remain separate.'

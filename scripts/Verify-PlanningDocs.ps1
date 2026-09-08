@@ -7,6 +7,8 @@ $repositoryPath = (Resolve-Path -LiteralPath $RepositoryRoot).Path
 $docsPath = Join-Path $repositoryPath 'docs'
 $markdownFiles = @(
     Get-Item -LiteralPath (Join-Path $repositoryPath 'README.md')
+    Get-Item -LiteralPath (Join-Path $repositoryPath 'AGENTS.md')
+    Get-Item -LiteralPath (Join-Path $repositoryPath 'SESSION_TRANSFER.md')
     Get-Item -LiteralPath (Join-Path $repositoryPath 'multimodal_academic_learning_system_spec.md')
     Get-ChildItem -LiteralPath $docsPath -Filter '*.md' -Recurse -File
 )

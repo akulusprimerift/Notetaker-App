@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 import uvicorn
+import httpx
 from playwright.sync_api import sync_playwright, expect
 from test_workspace import setup
 from test_capture import capture
@@ -31,21 +32,26 @@ def test_custom_preferences_and_reconnect_preserve_reading(capture, tmp_path):
         layer=getattr(layer,'app',None)
     enable(app,client,headers,path);append(*capture,0);plan(app.state.sessions)
     assert execute(app.state.sessions,FakeNotes(),claim(app.state.sessions),heartbeat=False)
-    # Refuse to touch another process already occupying our dedicated test ports.
-    for port in (3000,8801):
+    # Use independent loopback ports; the user's Docker preview may be running.
+    ports=[]
+    for _ in range(2):
         with socket.socket() as probe:
-            probe.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-            probe.bind(('127.0.0.1',port))
-    server=uvicorn.Server(uvicorn.Config(app,host='127.0.0.1',port=8801,log_level='error'))
+            probe.bind(('127.0.0.1',0));ports.append(probe.getsockname()[1])
+    web_port,api_port=ports
+    origin=f'http://127.0.0.1:{web_port}'
+    app.state.settings.web_origin=origin
+    headers['origin']=origin
+    server=uvicorn.Server(uvicorn.Config(app,host='127.0.0.1',port=api_port,log_level='error'))
     thread=threading.Thread(target=server.run,daemon=True);thread.start()
     with (tmp_path/'web.log').open('w') as log:
-        web=subprocess.Popen(['node',str(ROOT/'node_modules/next/dist/bin/next'),'dev','--hostname','127.0.0.1','--port','3000'],
-            cwd=ROOT/'apps/web',env={**os.environ,'API_ORIGIN':'http://127.0.0.1:8801','NEXT_TELEMETRY_DISABLED':'1'},stdout=log,stderr=log)
+        web=subprocess.Popen(['node',str(ROOT/'node_modules/next/dist/bin/next'),'dev','--hostname','127.0.0.1','--port',str(web_port)],
+            cwd=ROOT/'apps/web',env={**os.environ,'API_ORIGIN':f'http://127.0.0.1:{api_port}','NEXT_TELEMETRY_DISABLED':'1'},stdout=log,stderr=log,
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
         try:
             deadline=time.monotonic()+30
             while time.monotonic()<deadline:
                 with socket.socket() as probe:
-                    if probe.connect_ex(('127.0.0.1',3000))==0 and server.started:break
+                    if probe.connect_ex(('127.0.0.1',web_port))==0 and server.started:break
                 time.sleep(.1)
             else:pytest.fail('Test servers did not start')
             with sync_playwright() as playwright:
@@ -53,12 +59,20 @@ def test_custom_preferences_and_reconnect_preserve_reading(capture, tmp_path):
                 context=browser.new_context(viewport={'width':1440,'height':1000})
                 context.add_cookies([{'name':'nt_session','value':client.cookies.get('nt_session'),
                     'domain':'127.0.0.1','path':'/','httpOnly':True,'sameSite':'Strict'}])
-                check=context.request.get('http://127.0.0.1:3000/api/session')
+                check=context.request.get(origin+'/api/session')
                 assert check.status==200, (check.status,check.text())
+                for stream_origin in (f'http://127.0.0.1:{api_port}',origin+'/api'):
+                    with httpx.stream('GET',stream_origin+path+'/notes/stream',
+                            cookies={'nt_session':client.cookies.get('nt_session')},timeout=4,trust_env=False) as response:
+                        assert response.status_code==200, (stream_origin,response.status_code)
+                        assert response.headers.get('content-encoding')!='gzip'
+                        first=next(response.iter_lines())
+                        assert first.startswith('data: '),(stream_origin,first)
                 page=context.new_page();errors=[]
                 page.add_init_script("window.testSockets=[];const Native=WebSocket;window.WebSocket=class extends Native{constructor(...args){super(...args);window.testSockets.push(this)}}")
+                page.add_init_script("window.streamEvents=[];const Source=EventSource;window.EventSource=class extends Source{constructor(...args){super(...args);this.addEventListener('message',e=>window.streamEvents.push(e.data));this.addEventListener('error',()=>window.streamEvents.push('stream error'))}}")
                 page.on('pageerror',lambda error:errors.append(str(error)))
-                page.goto('http://127.0.0.1:3000/#lecture/'+path.split('/')[-1])
+                page.goto(origin+'/#lecture/'+path.split('/')[-1])
                 expect(page.get_by_text('Live updates connected',exact=True)).to_be_visible(timeout=30000)
                 detail=page.get_by_label('Describe your detail level (optional)')
                 layout=page.get_by_label('Describe your layout (optional)')
@@ -111,15 +125,63 @@ def test_custom_preferences_and_reconnect_preserve_reading(capture, tmp_path):
                 assert page.evaluate('getSelection().toString()')==selected_transcript
                 page.get_by_role('button',name='Show transcript revisions').click()
                 expect(page.locator('.passage-text').first).to_have_text('Binary search requires sorted input; this is a corrected revision.')
+                assert page.locator('#note-depth').count()==0 and page.locator('#note-format').count()==0
+                page.get_by_role('button',name='Show updated notes (revision 3)').click()
+                page.get_by_role('button',name='Edit notes',exact=True).click()
+                expect(page.locator('.note-draft')).to_be_visible()
+                assert not errors,errors
+                page.get_by_label('Passage 1',exact=True).fill('My protected explanation.\n    lo = mid + 1\nE = mc²')
+                expect(page.get_by_text('Draft saved on this device. Export uses the saved revision.',exact=True)).to_be_visible()
+                page.reload()
+                expect(page.get_by_role('button',name='Restore draft from')).to_be_visible(timeout=20000)
+                page.get_by_role('button',name='Restore draft from').first.click()
+                expect(page.get_by_label('Passage 1',exact=True)).to_have_value('My protected explanation.\n    lo = mid + 1\nE = mc²')
+                # Hold the provider open until the real SSE browser receives partial text.
+                release=threading.Event()
+                class Streaming(FakeNotes):
+                    def generate_stream(self,evidence,pref,preview):
+                        preview('A streamed explanation appears before generation finishes.')
+                        assert release.wait(25), 'Browser did not observe streaming output'
+                        return self.generate(evidence,pref)
+                plan(app.state.sessions)
+                chosen_job=claim(app.state.sessions)
+                outcomes=[]
+                generation=threading.Thread(target=lambda:outcomes.append(execute(app.state.sessions,Streaming(),chosen_job,heartbeat=False)))
+                generation.start()
+                try:
+                    try:
+                        expect(page.locator('.streaming-text')).to_contain_text('A streamed explanation appears before generation finishes.',timeout=15000)
+                    except AssertionError:
+                        pytest.fail('Stream events: '+str(page.evaluate('window.streamEvents'))+'; worker results: '+str(outcomes))
+                    assert client.get(path+'/notes').json()['status']=='generating'
+                    page.get_by_role('button',name='Save my changes').click()
+                    expect(page.locator('.note-revision')).to_contain_text('Student revision 1')
+                finally:
+                    release.set();generation.join(timeout=10)
+                assert outcomes==[True]
+                expect(page.get_by_role('button',name='Compare suggestion')).to_be_visible(timeout=15000)
+                page.get_by_role('button',name='Compare suggestion').click()
+                expect(page.locator('.note-comparison')).to_contain_text('My protected explanation.')
+                page.locator('.note-comparison input[type=checkbox]').first.check()
+                page.get_by_role('button',name='Merge selected sections').click()
+                expect(page.locator('.note-revision')).to_contain_text('Student revision 2')
+                expect(page.locator('.generated-content')).to_contain_text('My protected explanation.')
+                page.get_by_role('button',name='Revision history and undo').click()
+                page.get_by_role('button',name='Restore student revision 1 (save)',exact=True).click()
+                expect(page.locator('.note-revision')).to_contain_text('Student revision 3')
+                assert client.get(path+'/notes').json()['editing']['selected']['content']['blocks'][0]['passages'][0]['text'].startswith('My protected explanation.')
+                assert not errors,errors
                 screenshots=ROOT/'.local';screenshots.mkdir(exist_ok=True)
-                page.screenshot(path=str(screenshots/'m05-browser-desktop.png'),full_page=True)
+                page.screenshot(path=str(screenshots/'m06-browser-desktop.png'),full_page=True)
                 # Layout stays usable on narrow windows too.
                 page.set_viewport_size({'width':390,'height':844})
                 assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
-                page.screenshot(path=str(screenshots/'m05-browser-mobile.png'),full_page=True)
+                page.screenshot(path=str(screenshots/'m06-browser-mobile.png'),full_page=True)
                 browser.close()
         finally:
             server.should_exit=True;thread.join(timeout=5)
-            web.terminate()
+            if os.name=='nt' and web.poll() is None:
+                subprocess.run(['taskkill','/PID',str(web.pid),'/T','/F'],capture_output=True,creationflags=subprocess.CREATE_NO_WINDOW)
+            else: web.terminate()
             try:web.wait(timeout=5)
             except subprocess.TimeoutExpired:web.kill();web.wait(timeout=5)

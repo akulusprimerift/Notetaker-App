@@ -4,7 +4,7 @@ $taskRoot = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $taskRoot
 if (-not $PythonPath) { $PythonPath = Join-Path $taskRoot '.venv/Scripts/python.exe' }
 if (-not (Test-Path -LiteralPath $PythonPath)) { throw 'Create the Python environment first; see docs/implementation/phase-6-m01.md.' }
-if (-not (Test-Path -LiteralPath 'node_modules/next')) { throw 'Install frontend dependencies with npm ci --ignore-scripts first.' }
+if (-not (Test-Path -LiteralPath 'node_modules/next')) { throw 'Install frontend dependencies with bun install --frozen-lockfile --ignore-scripts first.' }
 foreach ($taskPort in @(3000,8010)) {
     $taskProbe = [Net.Sockets.TcpClient]::new()
     try { $taskProbe.Connect('127.0.0.1',$taskPort); throw "Port $taskPort is already occupied. Stop the earlier preview before starting another." }

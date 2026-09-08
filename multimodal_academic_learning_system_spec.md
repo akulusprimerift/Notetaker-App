@@ -1,8 +1,8 @@
 # Notetaker App: consolidated product and technical specification
 
-Version: 0.4 • Date: 2026-09-07 • Status: recording and saved-audio transcription implemented; Windows desktop delivery required before release.
+Version: 0.4 • Updated: 2026-09-08 • Status: live notes and protected editing implemented; Windows desktop delivery and release qualification remain required.
 
-Implementation update: M01 private workspace and M02 recording/recovery have real-service evidence. Phase 6.3 / M03 adds local saved-audio transcription, source playback and protected corrections with synthetic speech verification. Detailed notes and the installable Windows shell remain planned. Actual microphone, representative lecture quality and full release qualification remain open.
+Implementation update: M01 private workspace and M02 recording/recovery have real-service evidence. M03 transcription, M04 automatic detailed notes and M05 live assistance are implemented. The active [M06 increment](docs/implementation/phase-6-m06.md) adds protected editing/regeneration and improves live processing: custom prompts replace preset dropdowns; speech uses six-second live cores with two-second context; contextual note batches stream as they are written; and each model workload has its own bounded inference slot. Immutable student selections, local drafts, version conflicts, compare/keep/merge/replace and undo preserve student work. These current M06 policies supersede earlier preset/default timing and single-slot descriptions. Actual microphone, representative lecture quality, sustained model performance and the Windows installer remain open release work.
 
 **Primary promise:** turn dense lectures into detailed, trustworthy, editable notes that a student can study from. Transcription and note quality are the project's highest priorities.
 

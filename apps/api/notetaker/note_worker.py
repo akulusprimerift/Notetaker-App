@@ -11,7 +11,8 @@ from .db import database
 from .models import (Lecture, Job, NoteRequest, NotePreference, NoteRevision,
     TranscriptSnapshot, TranscriptSnapshotItem, SettingsVersion, LectureUpdate, now)
 from .transcription import lock_lecture
-from .notes import latest, schedule_notes, inputs
+from .notes import latest, schedule_notes, inputs, revision_json
+from .note_batches import generate_batches
 from .note_provider import OllamaNotes, NoteFailure
 from .resource_budget import available, inference_slot
 from .note_contract import validate_notes
@@ -26,7 +27,8 @@ def current_input(db, job, lecture):
     pref = latest(db, NotePreference, lecture.id, NotePreference.version)
     snapshot = latest(db, TranscriptSnapshot, lecture.id, TranscriptSnapshot.sequence)
     settings = latest(db, SettingsVersion, lecture.id, SettingsVersion.version)
-    revision = latest(db, NoteRevision, lecture.id, NoteRevision.revision)
+    revision_number = db.scalar(select(NoteRevision.revision).where(NoteRevision.lecture_id == lecture.id)
+        .order_by(NoteRevision.revision.desc()).limit(1))
     source_matches = snapshot is not None and request.snapshot_id == snapshot.id
     if snapshot and job.status == 'running' and not source_matches:
         # Appends must not starve a slow model. Corrections/removals still fence publication.
@@ -36,7 +38,7 @@ def current_input(db, job, lecture):
     return (job.lifecycle_epoch == lecture.lifecycle_epoch and job.audio_epoch == lecture.audio_epoch
         and pref is not None and pref.enabled and request.preference_id == pref.id
         and source_matches and request.settings_id == settings.id
-        and request.base_revision == (revision.revision if revision else 0))
+        and request.base_revision == (revision_number or 0))
 
 
 def plan(sessions):
@@ -51,7 +53,7 @@ def plan(sessions):
 
 def claim(sessions):
     with sessions() as db:
-        if not available(db): return None
+        if not available(db, 'notes.generate'): return None
         jobs = db.scalars(select(Job).where(Job.kind == 'notes.generate',
             or_((Job.status == 'due') & (Job.due_at <= now()), (Job.status == 'running') & (Job.lease_expires_at <= now())))
             .order_by(Job.due_at, Job.id)).all()
@@ -60,6 +62,8 @@ def claim(sessions):
             if not current_input(db, job, lecture): job.status = 'cancelled'; continue
             job.status = 'running'; job.attempt_token = str(uuid4()); job.attempts += 1
             job.lease_expires_at = now() + timedelta(seconds=LEASE_SECONDS); job.error_code = None
+            request = db.get(NoteRequest, job.input_revision)
+            request.preview = ''; request.preview_attempt = job.attempt_token
             db.commit(); return job.id, job.attempt_token
         db.commit()
     return None
@@ -91,7 +95,7 @@ def publish(sessions, job_id, token, output, metadata):
         job, lecture = active
         request = db.get(NoteRequest, job.input_revision)
         evidence = inputs(db, request)
-        resolved = validate_notes(output, evidence)
+        resolved = validate_notes(output, evidence, aggregate=True)
         pref = db.get(NotePreference, request.preference_id)
         if metadata.get('model_digest') != pref.model_digest or metadata.get('model') != pref.model: raise ValueError('model_identity')
         revision = NoteRevision(lecture_id=lecture.id, request_id=request.id, revision=request.base_revision + 1,
@@ -130,10 +134,27 @@ def execute(sessions, provider, chosen, heartbeat=True):
             if not active: return False
             request = db.get(NoteRequest, active[0].input_revision)
             evidence = inputs(db, request)
+            previous = latest(db, NoteRevision, request.lecture_id, NoteRevision.revision)
+            if previous:
+                previous_request = db.get(NoteRequest, previous.request_id)
+                if previous_request.preference_id != request.preference_id or previous_request.settings_id != request.settings_id:
+                    previous = None
+            previous = revision_json(db, previous) if previous else None
             pref = db.get(NotePreference, request.preference_id); db.expunge(pref)
-        with inference_slot(sessions) as acquired:
+        last_preview = [0.0]
+        def preview(value):
+            if time.monotonic() - last_preview[0] < .2: return
+            with sessions() as db:
+                active = live(db, *chosen)
+                if not active: raise NoteFailure('superseded')
+                current = db.get(NoteRequest, active[0].input_revision)
+                current.preview = value[-128000:]
+                current.preview_attempt = chosen[1]
+                db.commit()
+            last_preview[0] = time.monotonic()
+        with inference_slot(sessions, 'notes.generate') as acquired:
             if not acquired: raise NoteFailure('resource_busy')
-            output, metadata = provider.generate(evidence, pref)
+            output, metadata = generate_batches(provider, evidence, pref, previous, preview)
         return publish(sessions, *chosen, output, metadata)
     except NoteFailure as exc: fail(sessions, *chosen, exc.code)
     except (ValueError, KeyError, TypeError, ValidationError): fail(sessions, *chosen, 'invalid_output')

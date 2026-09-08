@@ -105,5 +105,6 @@ class WhisperProvider:
         if boundary_review or any(s['confidence']['value']<0.6 for s in selected): outcome='uncertain'
         return validate_result({'outcome':outcome,'segments':selected,
             'metadata':{**self.metadata,'elapsed_seconds':round(perf_counter()-started,3),
-                'boundary_review':boundary_review,'window_policy':'pause-aware-24s-core-2s-context-v1',
+                'boundary_review':boundary_review,'window_policy':
+                    'live-6s-core-2s-context-v2' if getattr(window, 'live', False) else 'pause-aware-24s-core-2s-context-v1',
                 'audio_seconds':(window.context_end-window.context_start)/rate}},window)

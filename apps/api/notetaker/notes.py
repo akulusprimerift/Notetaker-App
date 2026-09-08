@@ -1,5 +1,7 @@
 """Saved, source-backed notes and versioned model choices."""
 import html
+import json
+import time
 from typing import Literal
 from fastapi import Depends, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
@@ -56,7 +58,9 @@ def notes_json(db, lecture):
     elif not pref.enabled: status = 'paused'
     elif active_request: status = {'due': 'queued', 'running': 'generating', 'completed': 'ready', 'failed': 'needs_attention', 'cancelled': 'waiting_for_transcript'}[job.status]
     else: status = 'waiting_for_transcript'
+    from .note_edits import editing_json
     return {'status': status, 'preference': preference_json(pref), 'stale': stale,
+        'editing': editing_json(db, lecture, revision),
         'profile': {'depth': settings.depth, 'format': settings.format, 'instructions': settings.instructions, 'detail_prompt': settings.detail_prompt, 'layout_prompt': settings.layout_prompt},
         'error_code': job.error_code if active_request else None,
         'processing': {'newer_transcript_pending': bool(snapshot and request and request.snapshot_id != snapshot.id),
@@ -74,6 +78,24 @@ def schedule_notes(db, lecture):
     raw_snapshot = db.get(TranscriptSnapshot, snapshot['id'])
     if raw_snapshot.audio_epoch != lecture.audio_epoch: return None
     settings = latest(db, SettingsVersion, lecture.id, SettingsVersion.version)
+    revision = latest(db, NoteRevision, lecture.id, NoteRevision.revision)
+    prior = db.get(NoteRequest, revision.request_id) if revision else None
+    previous_sources = {c['source_id'] for c in revision.content['coverage']} if prior and prior.settings_id == settings.id and prior.preference_id == pref.id else set()
+    present = {s['id'] for s in snapshot['segments']}
+    fresh = [s for s in snapshot['segments'] if s['id'] not in previous_sources]
+    # Wait for several short segments (24 seconds of recognized audio windows),
+    # or 100 words, before live note work. Flush short tails after capture stops.
+    # Corrections and changed preferences bypass the accumulation delay.
+    if transcript['mode'] == 'live' and (not revision or (prior.settings_id == settings.id and prior.preference_id == pref.id and previous_sources <= present)):
+        from .models import SpeechWindow, TranscriptSegment, TranscriptVersion, CaptureRun
+        windows = db.execute(select(SpeechWindow.id, SpeechWindow.core_start, SpeechWindow.core_end, CaptureRun.sample_rate)
+            .join(TranscriptSegment, TranscriptSegment.window_id == SpeechWindow.id)
+            .join(TranscriptVersion, TranscriptVersion.segment_id == TranscriptSegment.id)
+            .join(CaptureRun, CaptureRun.id == SpeechWindow.run_id)
+            .where(TranscriptVersion.id.in_([s['id'] for s in fresh])).distinct()).all()
+        seconds = sum((end-start)/rate for _, start, end, rate in windows)
+        words = sum(len(s['text'].split()) for s in fresh)
+        if seconds < 24 and words < 100: return None
     old = db.scalar(select(NoteRequest).where(NoteRequest.snapshot_id == snapshot['id'],
         NoteRequest.preference_id == pref.id, NoteRequest.settings_id == settings.id))
     if old: return old
@@ -101,22 +123,30 @@ def markdown(db, lecture, revision):
     request = db.get(NoteRequest, revision.request_id)
     snapshot = snapshot_json(db, db.get(TranscriptSnapshot, request.snapshot_id))
     sources = {s['id']: s for s in snapshot['segments']}
+    if revision.metadata_json.get('student_revision'):
+        from .models import TranscriptVersion
+        from .transcription import version_json
+        ids = {c['source_id'] for c in revision.content['coverage']}
+        ids.update(c['source_id'] for b in revision.content['blocks'] for p in b['passages'] for c in p['sources'])
+        sources = {v.id: version_json(db, v) for v in db.scalars(select(TranscriptVersion).where(
+            TranscriptVersion.lecture_id == lecture.id, TranscriptVersion.id.in_(ids)))}
     cited = list(sources)
     refs = {source: index + 1 for index, source in enumerate(cited)}
-    lines = ['# ' + escape(lecture.title), '', f'Generated study notes · Revision {revision.revision}', '',
-        'Model: ' + escape(revision.metadata_json['model']), '', 'AI-generated; check important claims against the sources.', '']
+    label = 'Student study notes' if revision.metadata_json.get('student_revision') else 'Generated study notes'
+    lines = ['# ' + escape(lecture.title), '', f'{label} · Revision {revision.revision}', '',
+        'Model: ' + escape(revision.metadata_json['model']), '', 'Check important claims against the sources. Student changes are not AI-verified.', '']
     for block in revision.content['blocks']:
         lines += ['## ' + escape(block['topic']), '']
         for passage in block['passages']:
-            lines.append('Evidence: ' + passage['evidence_kind'].replace('_', ' '))
+            lines.append('Evidence: ' + ('student revision; original source links retained' if passage.get('student_edited') else passage['evidence_kind'].replace('_', ' ')))
             lines.append('')
             lines.extend(['    ' + line for line in passage['text'].splitlines()] if block['kind'] in ('code', 'equation') else [escape(passage['text'])])
-            lines += ['', 'Sources: ' + ', '.join(f'[{refs[c["source_id"]]}]' for c in passage['sources']), '']
+            lines += ['', 'Sources: ' + (', '.join(f'[{refs[c["source_id"]]}]' if c['source_id'] in refs else '[unavailable]' for c in passage['sources']) or 'Student addition; no lecture citation'), '']
     omitted = [item for item in revision.content['coverage'] if item['disposition'] != 'used']
     if revision.content['issues'] or snapshot['issues'] or omitted:
         lines += ['## Review needed', '']
         lines.extend('- ' + escape(i['detail']) for i in revision.content['issues'])
-        lines.extend('- ' + escape(i['disposition'] + ': ' + i['reason']) + f' (source [{refs[i["source_id"]]}])' for i in omitted)
+        lines.extend('- ' + escape(i['disposition'] + ': ' + i['reason']) + f' (source [{refs.get(i["source_id"], "unavailable")}])' for i in omitted)
         if snapshot['issues']: lines.append('- The transcript has recording or recognition issues; review its source warnings.')
         lines.append('')
     lines += ['## Source appendix', '']
@@ -141,6 +171,45 @@ class ModelChoice(BaseModel):
 
 def install_notes(app, current, db_session, owned_lecture, receipt):
     app.state.note_provider = OllamaNotes(app.state.settings)
+
+    @app.get('/lectures/{lecture_id}/notes/stream')
+    def stream(lecture_id: str, session=Depends(current), db=Depends(db_session)):
+        from fastapi.responses import StreamingResponse
+        from .note_worker import current_input
+        from fastapi import HTTPException
+        owned_lecture(db, session.owner_id, lecture_id)
+        session_id = session.token_hash
+        db.rollback()
+        def events():
+            from .models import Session
+            last = None
+            while True:
+                with app.state.sessions() as connection:
+                    try:
+                        access = connection.get(Session, session_id)
+                        if not access or access.revoked or access.expires_at <= now():
+                            yield 'event: expired\ndata: {}\n\n'
+                            return
+                        lecture = owned_lecture(connection, access.owner_id, lecture_id)
+                        request = latest(connection, NoteRequest, lecture_id, NoteRequest.created_at)
+                        job = connection.scalar(select(Job).where(Job.kind == 'notes.generate', Job.input_revision == request.id)) if request else None
+                        active = bool(job and job.status == 'running' and job.lease_expires_at > now() and current_input(connection, job, lecture))
+                        payload = {'attempt': request.preview_attempt if active else '', 'text': request.preview if active else '', 'active': active}
+                    except HTTPException:
+                        yield 'event: expired\ndata: {}\n\n'
+                        return
+                encoded = json.dumps(payload)
+                if encoded != last:
+                    yield 'data: ' + encoded + '\n\n'
+                    last = encoded
+                else:
+                    yield ': heartbeat\n\n'
+                time.sleep(.25)
+        return StreamingResponse(events(), media_type='text/event-stream',
+            headers={'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no', 'Content-Encoding': 'identity'})
+
+    from .note_edits import install_edits
+    install_edits(app, current, db_session, owned_lecture, receipt)
 
     @app.get('/note-models')
     def models(session=Depends(current)):

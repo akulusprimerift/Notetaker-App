@@ -1,5 +1,6 @@
 """Canonical Phase 4 contract, enforced independently of provider generation grammar."""
 import json
+from copy import deepcopy
 from pathlib import Path
 from jsonschema import Draft202012Validator
 
@@ -7,6 +8,10 @@ ROOT = Path(__file__).resolve().parents[3]
 SCHEMA = json.loads((ROOT / 'contracts/ai/note-output.schema.json').read_text(encoding='utf-8'))
 PROMPT = (ROOT / 'prompts/note-generation-v3.txt').read_text(encoding='utf-8')
 VALIDATOR = Draft202012Validator(SCHEMA)
+AGGREGATE_SCHEMA = deepcopy(SCHEMA)
+for key, maximum in (('blocks', 10000), ('issues', 10000), ('coverage', 20000)):
+    AGGREGATE_SCHEMA['properties'][key]['maxItems'] = maximum
+AGGREGATE_VALIDATOR = Draft202012Validator(AGGREGATE_SCHEMA)
 
 
 def compact(value):
@@ -29,9 +34,9 @@ def messages(evidence):
         {'role': 'user', 'content': 'LECTURE_EVIDENCE_JSON:\n' + compact(evidence)}]
 
 
-def validate_notes(output, evidence):
+def validate_notes(output, evidence, aggregate=False):
     # Never return validator exceptions or model text in HTTP errors or logs.
-    VALIDATOR.validate(output)
+    (AGGREGATE_VALIDATOR if aggregate else VALIDATOR).validate(output)
     if output['source_snapshot_id'] != evidence['source_snapshot_id'] or output['settings_version'] != evidence['settings_version']:
         raise ValueError('stale_metadata')
     sources = {s['id']: s for s in evidence['sources']}

@@ -3,6 +3,9 @@ const config: NextConfig = {
   agentRules: false,
   devIndicators: false,
   poweredByHeader: false,
+  // This loopback app forwards live text. Gzip buffered small SSE writes until
+  // completion, hiding provider tokens even though the API had flushed them.
+  compress: false,
   async rewrites() {
     return [{ source: '/api/:path*', destination: `${process.env.API_ORIGIN ?? 'http://127.0.0.1:8010'}/:path*` }];
   },
