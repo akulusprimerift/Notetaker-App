@@ -48,7 +48,7 @@ def validate_notes(output, evidence, aggregate=False):
             if passage['id'] in passages or not passage['text'].strip(): raise ValueError('invalid_passage')
             passages.add(passage['id'])
             kind = passage['evidence_kind']
-            if kind in ('lecture_paraphrase', 'exact_quote') and not passage['sources']: raise ValueError('evidence_required')
+            if kind in ('lecture_paraphrase', 'material_paraphrase', 'exact_quote') and not passage['sources']: raise ValueError('evidence_required')
             if kind == 'ai_explanation' and (not evidence['allow_ai_explanations'] or passage['sources']): raise ValueError('explanation_disabled')
             for citation in passage['sources']:
                 if citation['source_id'] not in sources: raise ValueError('unknown_source')

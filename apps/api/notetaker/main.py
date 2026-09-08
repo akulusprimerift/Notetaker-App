@@ -212,11 +212,13 @@ def create_app(settings: Settings | None = None):
         existing,key,fingerprint=receipt(db,request,session,action,body.model_dump())
         if existing:
             return lecture_json(owned_lecture(db,session.owner_id,existing.result_id))
+        db.scalar(select(Course).where(Course.id==course_id).with_for_update())
         lecture=Lecture(course_id=course_id,title=body.title,update_seq=1)
         db.add(lecture)
         db.flush()
+        from .materials import course_ids
         db.add_all([
-            SettingsVersion(lecture_id=lecture.id),
+            SettingsVersion(lecture_id=lecture.id, material_ids=course_ids(db, course_id)),
             CommandReceipt(owner_id=session.owner_id,action=action,key=key,fingerprint=fingerprint,result_id=lecture.id),
             LectureUpdate(lecture_id=lecture.id,sequence=1,kind="lecture.created",entity_id=lecture.id,entity_version=1),
             Outbox(lecture_id=lecture.id,event_type="lecture.created",entity_id=lecture.id,lifecycle_epoch=1),
@@ -286,6 +288,8 @@ def create_app(settings: Settings | None = None):
     install_capture(app, current, db_session, owned_lecture, receipt)
     install_transcription(app, current, db_session, owned_lecture, receipt)
     install_notes(app, current, db_session, owned_lecture, receipt)
+    from .materials import install_materials
+    install_materials(app, current, db_session, owned_course, owned_lecture, receipt)
     return app
 
 

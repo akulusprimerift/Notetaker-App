@@ -266,6 +266,9 @@ def install_transcription(app, current, db_session, owned_lecture, receipt):
 
     @app.get('/lectures/{lecture_id}/sources/{version_id}')
     def get_source(lecture_id: str, version_id: str, session=Depends(current), db=Depends(db_session)):
+        if version_id.startswith('material:'):
+            from .materials import source_for_lecture
+            return source_for_lecture(db, owned_lecture(db, session.owner_id, lecture_id), version_id)
         return version_json(db, source(db, session.owner_id, lecture_id, version_id))
 
     @app.get('/lectures/{lecture_id}/transcript/segments/{segment_id}/versions')

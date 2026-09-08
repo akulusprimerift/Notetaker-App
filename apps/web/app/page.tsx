@@ -1,5 +1,6 @@
 'use client';
 import LiveUpdates from './live';
+import Materials from './materials';
 
 import {FormEvent, useCallback, useEffect, useRef, useState} from 'react';
 import Recording from './recording';
@@ -120,10 +121,12 @@ export default function Workspace(){
         {snapshot.lecture.audio_removed||removedAudio.includes(snapshot.lecture.id)?<p className="inline-notice">Audio has been removed. Transcript, notes and saved revisions remain available.</p>:<Recording owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setCaptureBusy}/>}
         <LiveUpdates key={snapshot.lecture.id+'-live'} lecture={snapshot.lecture.id} onSessionExpired={sessionExpired}/>
         <Notes key={snapshot.lecture.id+'-notes'} lecture={snapshot.lecture.id} csrf={session.csrf_token} onSessionExpired={sessionExpired}/>
+        <Materials key={snapshot.lecture.id+'-materials'} course={snapshot.lecture.course_id} lecture={snapshot.lecture.id} csrf={session.csrf_token}/>
         <Transcript key={snapshot.lecture.id} owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setTranscriptBusy} onSessionExpired={sessionExpired}/>
         <Finalization key={snapshot.lecture.id+'-final'} lecture={snapshot.lecture.id} csrf={session.csrf_token} busy={captureBusy||transcriptBusy} onRemoved={dataRemoved}/>
       </>:route.startsWith('course/')&&selected?<>
         <a className="back-link" href="#">← Your library</a><div className="page-heading"><div><p className="eyebrow">{selected.code||'YOUR COURSE'}</p><h1>{selected.name}</h1><p className="muted">Your lectures, together in one place.</p></div><button className="primary" onClick={()=>openForm('lecture')}>+ New lecture</button></div>
+        <Materials key={selected.id} course={selected.id} csrf={session.csrf_token}/>
         <div className="section-row"><h2>Lectures <span className="count">{lectures.length}</span></h2><span>Most recent first</span></div>
         {lectures.length===0?<section className="empty-state"><span className="empty-art" aria-hidden="true">≡</span><p className="eyebrow">START WITH A LECTURE</p><h2>Your next idea belongs here.</h2><p>Create a lecture to give your next class a home.<br/>You can reopen it any time.</p><button className="secondary" onClick={()=>openForm('lecture')}>Create your first lecture <span aria-hidden="true">↗</span></button></section>:<div className="lecture-list">{lectures.map(lecture=><a className="lecture-row" key={lecture.id} href={`#lecture/${lecture.id}`}><span className="lecture-icon" aria-hidden="true">≡</span><div><h3>{lecture.title}</h3><p>{date(lecture.created_at)} · {lecture.status==='prepared'?'No recording yet':'Open transcript and study notes'}</p></div><span className="prepared-badge">{lecture.status==='prepared'?'Prepared':lecture.status==='recording'?'Recording open':'Saved audio'}</span><span aria-hidden="true">↗</span></a>)}</div>}
       </>:!route?<>

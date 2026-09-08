@@ -78,7 +78,21 @@ class SettingsVersion(Base):
     instructions: Mapped[str] = mapped_column(String(1000), default='', server_default='')
     detail_prompt: Mapped[str] = mapped_column(String(2000), default="", server_default="")
     layout_prompt: Mapped[str] = mapped_column(String(2000), default="", server_default="")
+    material_ids: Mapped[list] = mapped_column(JSON, default=list, server_default='[]')
     __table_args__ = (UniqueConstraint("lecture_id", "version"),)
+
+
+class CourseMaterial(Base):
+    __tablename__ = 'course_materials'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    course_id: Mapped[str] = mapped_column(ForeignKey('courses.id'), index=True)
+    lecture_id: Mapped[str | None] = mapped_column(ForeignKey('lectures.id'), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(160))
+    kind: Mapped[str] = mapped_column(String(24))
+    sha256: Mapped[str] = mapped_column(String(64))
+    original: Mapped[str] = mapped_column(Text)
+    pages: Mapped[list] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
 
 
 class CommandReceipt(Base):

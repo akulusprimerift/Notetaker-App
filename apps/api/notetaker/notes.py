@@ -24,11 +24,12 @@ def preference_json(pref):
 def inputs(db, request):
     snapshot = snapshot_json(db, db.get(TranscriptSnapshot, request.snapshot_id))
     settings = db.get(SettingsVersion, request.settings_id)
+    from .materials import material_sources
     return {'source_snapshot_id': request.snapshot_id, 'settings_version': settings.version,
         'allow_ai_explanations': settings.ai_explanations,
         'profile': {'depth': settings.depth, 'format': settings.format, 'instructions': settings.instructions, 'detail_prompt': settings.detail_prompt, 'layout_prompt': settings.layout_prompt},
         'sources': [{'id': s['id'], 'text': s['text'], 'start_ms': round(s['start_sample'] * 1000 / s['sample_rate']),
-            'end_ms': round(s['end_sample'] * 1000 / s['sample_rate'])} for s in snapshot['segments']]}
+            'end_ms': round(s['end_sample'] * 1000 / s['sample_rate'])} for s in snapshot['segments']] + material_sources(db, settings.material_ids)}
 
 
 def revision_json(db, revision):
@@ -130,6 +131,11 @@ def markdown(db, lecture, revision):
         ids.update(c['source_id'] for b in revision.content['blocks'] for p in b['passages'] for c in p['sources'])
         sources = {v.id: version_json(db, v) for v in db.scalars(select(TranscriptVersion).where(
             TranscriptVersion.lecture_id == lecture.id, TranscriptVersion.id.in_(ids)))}
+    from .materials import material_sources
+    material_ids = set(db.get(SettingsVersion, request.settings_id).material_ids)
+    if revision.metadata_json.get('student_revision'):
+        material_ids.update(c['source_id'].split(':')[1] for c in revision.content['coverage'] if c['source_id'].startswith('material:'))
+    sources.update({s['id']: s for s in material_sources(db, sorted(material_ids))})
     cited = list(sources)
     refs = {source: index + 1 for index, source in enumerate(cited)}
     label = 'Student study notes' if revision.metadata_json.get('student_revision') else 'Generated study notes'
@@ -152,6 +158,9 @@ def markdown(db, lecture, revision):
     lines += ['## Source appendix', '']
     for source_id in cited:
         s = sources[source_id]
+        if s.get('source_kind'):
+            lines += [f'### [{refs[source_id]}] Uploaded material: ' + escape(s['label']), '', 'Source version: ' + source_id, '', escape(s['text']), '']
+            continue
         lines += [f'### [{refs[source_id]}] Recording {s["segment_number"]}, {s["start_sample"]/s["sample_rate"]:.2f}–{s["end_sample"]/s["sample_rate"]:.2f} seconds',
             '', 'Source version: ' + source_id, '', escape(s['text']), '']
     return '\n'.join(lines)
@@ -246,7 +255,7 @@ def install_notes(app, current, db_session, owned_lecture, receipt):
         current_settings = latest(db, SettingsVersion, lecture.id, SettingsVersion.version)
         changes = {key: value for key, value in {'depth': body.depth, 'format': body.format, 'instructions': body.instructions, 'detail_prompt': body.detail_prompt, 'layout_prompt': body.layout_prompt}.items() if value is not None}
         if body.enabled and any(getattr(current_settings, key) != value for key, value in changes.items()):
-            fields = {key: getattr(current_settings, key) for key in ('depth', 'format', 'instructions', 'ai_explanations', 'detail_prompt', 'layout_prompt')}
+            fields = {key: getattr(current_settings, key) for key in ('depth', 'format', 'instructions', 'ai_explanations', 'detail_prompt', 'layout_prompt', 'material_ids')}
             db.add(SettingsVersion(lecture_id=lecture.id, version=current_settings.version + 1, **{**fields, **changes}))
             db.flush()
         pref = NotePreference(lecture_id=lecture.id, version=body.expected_version + 1, model=body.model,

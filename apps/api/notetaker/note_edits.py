@@ -23,6 +23,11 @@ def edit_json(db, edit):
     source_ids = {c['source_id'] for b in edit.content['blocks'] for p in b['passages'] for c in p['sources']}
     sources = {v.id: v.text for v in db.scalars(select(TranscriptVersion).where(
         TranscriptVersion.lecture_id == edit.lecture_id, TranscriptVersion.id.in_(source_ids)))}
+    from .materials import source_for_lecture
+    from .models import Lecture
+    for ident in source_ids:
+        if ident.startswith('material:'):
+            sources[ident] = source_for_lecture(db, db.get(Lecture, edit.lecture_id), ident)['text']
     for block in edit.content['blocks']:
         for passage in block['passages']:
             for citation in passage['sources']:
@@ -50,6 +55,8 @@ def proposal_valid(db, lecture, revision):
             or job.lifecycle_epoch != lecture.lifecycle_epoch or job.audio_epoch != lecture.audio_epoch):
         return False
     current = set(db.scalars(select(TranscriptSnapshotItem.version_id).where(TranscriptSnapshotItem.snapshot_id == snapshot.id)))
+    from .materials import material_sources
+    current.update(s['id'] for s in material_sources(db, settings.material_ids))
     return {c['source_id'] for c in revision.content['coverage']} <= current
 
 
