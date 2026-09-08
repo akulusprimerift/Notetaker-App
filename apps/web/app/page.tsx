@@ -29,7 +29,6 @@ export default function Workspace(){
   const [captureBusy,setCaptureBusy]=useState(false);
   const [transcriptBusy,setTranscriptBusy]=useState(false);
   const sessionExpired=useCallback(()=>setSession(null),[]);
-  const [code,setCode]=useState('');
   const [courses,setCourses]=useState<Course[]>([]);
   const [route,setRoute]=useState('');
   const [lectures,setLectures]=useState<Lecture[]>([]);
@@ -52,7 +51,7 @@ export default function Workspace(){
   },[]);
   const load=useCallback(async()=>{
     setLoading(true);setError('');
-    try{const info=await request<Session>('/session');setSession(info);setCourses(await request<Course[]>('/courses'))}
+    try{const info=await request<Session>('/session/open',{method:'POST'});setSession(info);setCourses(await request<Course[]>('/courses'))}
     catch(err){if(err instanceof ApiError&&err.status===401)setSession(null);else report(err)}
     finally{setLoading(false)}
   },[report]);
@@ -72,10 +71,6 @@ export default function Workspace(){
   },[route,session,report]);
   useEffect(()=>{if(form)firstField.current?.focus()},[form]);
 
-  async function unlock(event:FormEvent){
-    event.preventDefault();setBusy(true);setError('');
-    try{const info=await request<Session>('/session/bootstrap',{method:'POST',body:JSON.stringify({token:code})});setCode('');setSession(info);setCourses(await request<Course[]>('/courses'))}catch(err){report(err)}finally{setBusy(false)}
-  }
   function openForm(kind:'course'|'lecture'){
     if(captureBusy||transcriptBusy)return;
     returnFocus.current=document.activeElement as HTMLElement;setError('');setName('');setCourseCode('');command.current=null;setForm(kind);
@@ -93,30 +88,17 @@ export default function Workspace(){
       command.current=null;setForm(null);location.hash=destination;
     }catch(err){report(err)}finally{setBusy(false)}
   }
-  async function logout(){
-    if(!session||captureBusy||transcriptBusy)return;setBusy(true);
-    try{await request('/session/logout',{method:'POST',headers:{'X-CSRF-Token':session.csrf_token}});setSession(null);setCourses([]);setSnapshot(null);setForm(null);setNotice('Workspace locked. Use a new local unlock code to return.')}catch(err){report(err)}finally{setBusy(false)}
-  }
-
   if(loading)return <main className="loading"><span className="brand-icon">n</span><p role="status">Opening your workspace…</p></main>;
-  if(!session)return <main className="welcome">
-    <div className="welcome-story"><a className="brand" href="#"><span className="brand-icon">n</span>notetaker<span className="brand-dot">.</span></a><div><p className="eyebrow">YOUR LECTURES, KEPT CLOSE</p><h1>A place for<br/>everything<br/>you learn.</h1><p className="welcome-copy">Keep your courses together. Return to the ideas that matter. Build a library you can study from.</p></div><p className="local-note"><span className="status-dot"/>Private workspace · On this device</p></div>
-    <section className="unlock-card"><p className="eyebrow">WELCOME TO YOUR WORKSPACE</p><h2>Make yourself at home.</h2><p className="muted">Enter the one-use code created by the local start command. This keeps your library private on this device.</p>
-      {notice&&<p role="status" className="inline-notice">{notice}</p>}
-      {error&&<p role="alert" className="error">{error}</p>}
-      <form onSubmit={unlock}><label htmlFor="unlock-code">Workspace code</label><input id="unlock-code" type="password" autoComplete="off" required minLength={32} maxLength={200} value={code} onChange={e=>setCode(e.target.value)} placeholder="Paste your one-use code"/><button className="primary full" disabled={busy}>{busy?'Opening…':'Open workspace'}<span aria-hidden="true">↗</span></button></form>
-      <p className="small muted">The code expires after 30 minutes and can only be used once. Your courses stay saved when the workspace closes.</p><button className="text-button" onClick={()=>void load()} disabled={busy}>Check connection again</button>
-    </section>
-  </main>;
+  if(!session)return <main className="welcome"><section className="unlock-card"><h1>Open your workspace</h1><p>Your library is saved on this device.</p>{error&&<p role="alert" className="error">{error}</p>}<button className="primary" onClick={()=>void load()}>Open workspace</button></section></main>;
 
   return <div className="workspace">
     <a className="skip" href="#main-content" onClick={event=>{event.preventDefault();document.getElementById('main-content')?.focus()}}>Skip to content</a>
     <aside className="sidebar"><a className="brand" href="#"><span className="brand-icon">n</span>notetaker<span className="brand-dot">.</span></a>
       <nav aria-label="Workspace"><a href="#" className={`nav-library ${!route?'active':''}`}><span aria-hidden="true">▦</span> Your library</a><div className="nav-title"><span>YOUR COURSES</span><button aria-label="Add a course" onClick={()=>openForm('course')}>+</button></div>
         {courses.length===0?<p className="sidebar-empty">Your courses will appear here.</p>:courses.map(course=><a key={course.id} href={`#course/${course.id}`} className={`course-link ${selectedId===course.id?'active':''}`}><span className="course-initial">{initial(course.name)}</span><span>{course.name}</span></a>)}
-      </nav><div className="sidebar-bottom"><div className="local-note"><span className="status-dot"/>Local workspace</div><p>Saved on this device</p><button onClick={()=>void logout()} disabled={busy||captureBusy||transcriptBusy} className="text-button">Lock workspace</button></div>
+      </nav><div className="sidebar-bottom"><div className="local-note"><span className="status-dot"/>Local workspace</div><p>Saved on this device</p></div>
     </aside>
-    <div className="workspace-body"><div className="topbar"><span>YOUR SPACE TO LEARN</span><button className="text-button mobile-lock" onClick={()=>void logout()} disabled={busy||captureBusy||transcriptBusy}>Lock workspace</button><span className="privacy-badge"><span className="status-dot"/>{session.preview?'Local preview':'Private library'}</span></div>
+    <div className="workspace-body"><div className="topbar"><span>YOUR SPACE TO LEARN</span><span className="privacy-badge"><span className="status-dot"/>{session.preview?'Local preview':'Private library'}</span></div>
     <main id="main-content" tabIndex={-1}>
       <div className="preview-notice">{session.preview?'Local preview · ':''}Your model takes notes from the lecture. Review the ideas, check the sources, and keep learning.</div>
       {error&&!form&&<div className="error" role="alert">{error} <a href="#">Return to library</a></div>}

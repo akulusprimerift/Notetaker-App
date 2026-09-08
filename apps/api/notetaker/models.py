@@ -330,3 +330,15 @@ class NoteEdit(Base):
     action: Mapped[str] = mapped_column(String(20))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
     __table_args__ = (UniqueConstraint('lecture_id', 'version'),)
+
+
+class PromptProfile(Base):
+    __tablename__ = 'prompt_profiles'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    owner_id: Mapped[str] = mapped_column(ForeignKey('owners.id'), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    detail_prompt: Mapped[str] = mapped_column(String(2000), default='')
+    layout_prompt: Mapped[str] = mapped_column(String(2000), default='')
+    instructions: Mapped[str] = mapped_column(String(1000), default='')
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    deleted: Mapped[bool] = mapped_column(Boolean, default=False)

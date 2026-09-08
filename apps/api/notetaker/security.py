@@ -15,7 +15,7 @@ def error(status: int, code: str, message: str):
 def authenticate(db, token: str | None):
     session = db.get(Session, digest(token)) if token else None
     if not session or session.revoked or session.expires_at <= now():
-        error(401, "session_required", "Unlock your workspace to continue.")
+        error(401, "session_required", "Reopen your workspace to continue.")
     return session
 
 

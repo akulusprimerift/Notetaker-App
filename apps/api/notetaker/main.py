@@ -17,7 +17,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from .config import Settings
 from .db import database
-from .models import Bootstrap, Owner, Session, Course, Lecture, SettingsVersion, CommandReceipt, Outbox, LectureUpdate, Job, now
+from .models import Owner, Session, Course, Lecture, SettingsVersion, CommandReceipt, Outbox, LectureUpdate, Job, now
 from .security import authenticate, mutation, digest, error
 from .audio_store import AudioStore
 from .capture import install_capture
@@ -29,10 +29,6 @@ log = logging.getLogger("notetaker")
 
 class StrictInput(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
-
-
-class BootstrapInput(StrictInput):
-    token: str = Field(min_length=32, max_length=200)
 
 
 class CourseInput(StrictInput):
@@ -144,17 +140,22 @@ def create_app(settings: Settings | None = None):
         except SQLAlchemyError:
             return JSONResponse({"status":"unavailable"}, status_code=503)
 
-    @app.post("/session/bootstrap")
-    def bootstrap(body: BootstrapInput, request: Request, response: Response, db=Depends(db_session)):
+    @app.post("/session/open")
+    def open_workspace(request: Request, response: Response, db=Depends(db_session)):
         mutation(request)
-        consumed = db.execute(update(Bootstrap).where(Bootstrap.id==1, Bootstrap.used.is_(False), Bootstrap.token_hash==digest(body.token), Bootstrap.expires_at>now()).values(used=True))
-        if consumed.rowcount != 1:
-            error(401, "setup_code_invalid", "This setup code is invalid, expired or already used. Run the local unlock command for a new code.")
+        # The app is bound to loopback. A same-origin POST opens its one local owner.
+        # Insert-on-conflict also handles two fresh browser tabs opening together.
+        if db.bind.dialect.name == 'postgresql':
+            from sqlalchemy.dialects.postgresql import insert
+        else:
+            from sqlalchemy.dialects.sqlite import insert
+        db.execute(insert(Owner).values(id=str(uuid4()), singleton=1, created_at=now()).on_conflict_do_nothing(index_elements=['singleton']))
         owner = db.scalar(select(Owner))
-        if not owner:
-            owner=Owner()
-            db.add(owner)
-            db.flush()
+        old_token = request.cookies.get('nt_session')
+        old = db.get(Session, digest(old_token)) if old_token else None
+        if old and not old.revoked and old.expires_at > now():
+            db.commit()
+            return {"csrf_token":digest("csrf:"+old_token),"preview":settings.preview,"owner_id":owner.id}
         token=secrets.token_urlsafe(48)
         csrf=digest("csrf:"+token)
         db.add(Session(token_hash=digest(token),owner_id=owner.id,csrf_hash=digest(csrf),expires_at=now()+timedelta(hours=settings.session_hours)))
@@ -269,6 +270,8 @@ def create_app(settings: Settings | None = None):
         except SQLAlchemyError:
             await socket.close(code=1013)
 
+    from .profiles import install_profiles
+    install_profiles(app, current, db_session, receipt)
     install_capture(app, current, db_session, owned_lecture, receipt)
     install_transcription(app, current, db_session, owned_lecture, receipt)
     install_notes(app, current, db_session, owned_lecture, receipt)

@@ -1,4 +1,5 @@
 'use client';
+import PromptProfiles from './prompt-profiles';
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 import NoteEditor,{type Editing} from './note-editor';
@@ -120,6 +121,7 @@ export default function Notes({lecture,csrf,onSessionExpired}:{lecture:string;cs
   </section><aside className="lecture-details note-controls"><h2>Your note-taking model</h2><p className="small muted">Works with any course. Your model derives the subject from the transcript and runs locally through Ollama.</p>
     <label htmlFor="note-model">Local model</label><select id="note-model" value={selected||state?.preference?.model||''} disabled={busy} onChange={event=>setSelected(event.target.value)}><option value="">Choose a model</option>{models.map(model=><option key={model.name} value={model.name}>{model.name}</option>)}{state?.preference&&!models.some(m=>m.name===state.preference?.model)&&<option value={state.preference.model}>{state.preference.model} (unavailable)</option>}</select>
     {(!available||!models.length)&&<p className="small">Open Ollama to use an installed Qwen model. More model families and cloud connections are planned.</p>}
+    <PromptProfiles csrf={csrf} prompts={profile} onLoad={value=>setCustom({...profile,...value})}/>
     <label htmlFor="note-detail-prompt">Describe your detail level (optional)</label><textarea id="note-detail-prompt" value={profile.detail_prompt} maxLength={2000} rows={4} disabled={busy} onChange={e=>setCustom({...profile,detail_prompt:e.target.value})} placeholder="e.g. Assume I am new to the subject. Explain each concept fully, keep every worked example, and include a short recap."/>
     <label htmlFor="note-layout-prompt">Describe your layout (optional)</label><textarea id="note-layout-prompt" value={profile.layout_prompt} maxLength={2000} rows={4} disabled={busy} onChange={e=>setCustom({...profile,layout_prompt:e.target.value})} placeholder="e.g. Group by concept, with a definition, explanation, example and self-check question under each heading."/><p className="small muted">Tell your model how much detail you want and how to organize it. Leave these blank for detailed notes grouped by topic. Source links are retained.</p>
     <label htmlFor="note-instructions">Writing preferences (optional)</label><textarea id="note-instructions" value={profile.instructions} maxLength={1000} rows={3} disabled={busy} onChange={e=>setCustom({...profile,instructions:e.target.value})} placeholder="e.g. Explain terminology in plain language and emphasize cause and effect."/>

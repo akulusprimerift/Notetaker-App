@@ -63,7 +63,7 @@ def setup(tmp_path):
 
 
 def login(client):
-    response=client.post('/session/bootstrap',json={"token":TOKEN},headers={"origin":ORIGIN})
+    response=client.post('/session/open',headers={"origin":ORIGIN})
     assert response.status_code==200,response.text
     return {"origin":ORIGIN,"x-csrf-token":response.json()["csrf_token"],"idempotency-key":str(uuid4())}
 
@@ -93,21 +93,21 @@ def test_sqlite_is_explicit_preview_only():
         Settings(database_url='sqlite:///unapproved.db',preview=False)
 
 
-def test_bootstrap_is_once_cookie_private_and_session_reloads(setup):
+def test_workspace_opens_without_code_and_reuses_session(setup):
     app,client,_=setup
     headers=login(client)
     cookie=client.cookies.get('nt_session')
     assert cookie and TOKEN not in cookie
     assert client.get('/session').json()['csrf_token']==headers['x-csrf-token']
-    assert client.post('/session/bootstrap',json={"token":TOKEN},headers={"origin":ORIGIN}).status_code==401
-    with app.state.sessions() as db:
-        assert db.scalar(select(Session)).token_hash==digest(cookie)
-        assert db.scalar(select(Bootstrap)).used
+    assert login(client)['x-csrf-token']==headers['x-csrf-token']
+    assert client.cookies.get('nt_session')==cookie
+    assert client.post('/session/bootstrap',json={'token':TOKEN},headers={'origin':ORIGIN}).status_code==404
 
 
-def test_bootstrap_rejects_cross_origin_without_consuming_secret(setup):
+def test_workspace_rejects_cross_origin(setup):
     _,client,_=setup
-    assert client.post('/session/bootstrap',json={"token":TOKEN},headers={"origin":"https://attacker.invalid"}).status_code==403
+    assert client.post('/session/open',headers={'origin':'https://attacker.invalid'}).status_code==403
+    assert client.post('/session/open').status_code==403
     login(client)
 
 
@@ -258,12 +258,15 @@ def test_database_rejects_orphan_lecture(setup):
         with pytest.raises(IntegrityError):db.commit()
 
 
-def test_bootstrap_expiry_and_unknown_host(setup):
+def test_open_replaces_expired_session_and_rejects_unknown_host(setup):
     app,client,_=setup
+    login(client)
+    old=client.cookies.get('nt_session')
     with app.state.sessions() as db:
-        db.get(Bootstrap,1).expires_at=now()-timedelta(seconds=1)
+        db.get(Session,digest(old)).expires_at=now()-timedelta(seconds=1)
         db.commit()
-    assert client.post('/session/bootstrap',json={'token':TOKEN},headers={'origin':ORIGIN}).status_code==401
+    login(client)
+    assert client.cookies.get('nt_session')!=old
     assert client.get('/health',headers={'host':'attacker.invalid'}).status_code==400
 
 
@@ -281,10 +284,9 @@ def test_migration_keeps_existing_data_and_refuses_destructive_downgrade(setup):
     assert client.get('/courses').json()[0]['id']==saved['id']
 
 
-def test_session_cookie_flags_and_failed_input_do_not_consume_unlock(setup):
+def test_session_cookie_flags(setup):
     _,client,_=setup
-    assert client.post('/session/bootstrap',json={'token':'private'},headers={'origin':ORIGIN}).status_code==422
-    response=client.post('/session/bootstrap',json={'token':TOKEN},headers={'origin':ORIGIN})
+    response=client.post('/session/open',headers={'origin':ORIGIN})
     assert response.status_code==200
     cookie=response.headers['set-cookie'].lower()
     assert 'httponly' in cookie and 'samesite=strict' in cookie and 'path=/' in cookie

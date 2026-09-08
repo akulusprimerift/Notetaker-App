@@ -1,4 +1,4 @@
-param([switch]$NewUnlockCode, [switch]$NoBuild, [switch]$WithSpeech, [string]$DockerPath)
+param([switch]$NoBuild, [switch]$WithSpeech, [string]$DockerPath)
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $taskRoot
@@ -31,10 +31,5 @@ $taskArguments += @('up', '-d', '--wait', '--wait-timeout', '120')
 if (-not $NoBuild) { $taskArguments += '--build' }
 & $DockerPath @taskArguments
 if ($LASTEXITCODE -ne 0) { throw 'The app did not finish starting. Inspect the container status; existing data volumes were retained.' }
-if ($NewUnlockCode) {
-    & $DockerPath compose --env-file .local/services.env exec -T api python -m notetaker.manage unlock
-    if ($LASTEXITCODE -ne 0) { throw 'The app started but a new workspace code could not be created.' }
-}
+
 Write-Output 'Open http://127.0.0.1:3000. Services continue running in Docker after this script exits.'
-if ($NewUnlockCode) { Write-Output 'Paste the one-use code from .local/unlock-code.txt. Previous sessions were revoked; courses remain saved.' }
-else { Write-Output 'If the workspace is locked, rerun with -NewUnlockCode to create a new one-use code.' }

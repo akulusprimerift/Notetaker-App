@@ -1,4 +1,4 @@
-param([string]$PythonPath, [switch]$NewUnlockCode)
+param([string]$PythonPath)
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $taskRoot
@@ -19,11 +19,8 @@ $env:API_ORIGIN='http://127.0.0.1:8010'
 $env:NEXT_TELEMETRY_DISABLED='1'
 & $PythonPath -m alembic upgrade head
 if ($LASTEXITCODE -ne 0) { throw 'Migration failed; services were not started.' }
-if ($NewUnlockCode -or -not (Test-Path -LiteralPath '.local/unlock-code.txt')) {
-    & $PythonPath -m notetaker.manage unlock
-    if ($LASTEXITCODE -ne 0) { throw 'Unlock setup failed.' }
-}
+
 $taskApi = Start-Process -FilePath $PythonPath -ArgumentList @('-m','uvicorn','notetaker.main:app','--app-dir','apps/api','--host','127.0.0.1','--port','8010','--no-access-log') -WorkingDirectory $taskRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput '.local/api.stdout.log' -RedirectStandardError '.local/api.stderr.log'
-Write-Output 'Open http://127.0.0.1:3000. A new unlock code is in .local/unlock-code.txt when requested. Ctrl+C stops the preview.'
+Write-Output 'Open http://127.0.0.1:3000. The local workspace opens automatically. Ctrl+C stops the preview.'
 try { & node node_modules/next/dist/bin/next dev apps/web --hostname 127.0.0.1 --port 3000 }
 finally { if (-not $taskApi.HasExited) { Stop-Process -Id $taskApi.Id } }

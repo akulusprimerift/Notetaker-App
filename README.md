@@ -19,7 +19,7 @@ Follow the [feature and architecture phase plan](docs/project-phases.md) for all
 - [Transcription and source inspection / M03](docs/implementation/phase-6-m03.md): speech setup, synthetic accuracy results, source playback, correction protection and remaining qualification.
 - [Recording and recovery / M02](docs/implementation/phase-6-m02.md): current behavior, synthetic test evidence, failure handling and remaining qualification.
 
-With Docker Desktop's Linux engine running, provision speech once with `pwsh -File scripts/Provision-Speech.ps1`, then run `pwsh -File scripts/Start-App.ps1 -WithSpeech -NewUnlockCode`, open `http://127.0.0.1:3000`, and use `.local/unlock-code.txt`. This builds and starts the app, creates a one-use code and preserves existing courses. Subsequent starts can omit `-NewUnlockCode` while the browser session is valid. The separately selected SQLite preview remains available; its data is preserved separately and is not automatically copied to PostgreSQL.
+With Docker Desktop's Linux engine running, provision speech once with `pwsh -File scripts/Provision-Speech.ps1`, then run `pwsh -File scripts/Start-App.ps1 -WithSpeech` and open `http://127.0.0.1:3000`. The local workspace opens automatically; no access key is needed. Existing courses and sessions are preserved. Saved prompt profiles reuse your detail, layout and writing instructions across lectures.
 
 - [Current product and technical specification](multimodal_academic_learning_system_spec.md): consolidated scope, selected architecture, evidence boundaries and release gates.
 - [Current architecture artifact](multimodal_academic_learning_system_architecture_v2.html): standalone visual overview, version 0.4; the existing filename is retained.

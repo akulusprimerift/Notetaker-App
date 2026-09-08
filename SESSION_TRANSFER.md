@@ -52,3 +52,7 @@ M06 implementation and the requested live improvements are handled. M07 finaliza
 Use Git history for the final local commit titled **Add streaming lecture notes and protected editing**. No push is requested. The final app rollout retains data and current unlock sessions. Future work should start from this checkpoint rather than repeating M05/M06.
 
 Detailed behavior and evidence: [M06 implementation](docs/implementation/phase-6-m06.md). Keep this file current when handing off; do not repeat completed implementation or claim the synthetic smoke establishes release readiness.
+
+## M07 entry increment
+
+User now requests saved prompt profiles and removal of the access-code flow first, followed by M07 finalization and data control. Profiles are versioned, reusable copies of all three prompt fields; loading does not apply or regenerate notes until the student chooses. The loopback workspace opens through a same-origin POST with session cookies and CSRF still enforced. Startup no longer creates or requires an unlock code. Existing bootstrap database history remains inert for migration compatibility. Workspace and profile API checks pass; M07 implementation follows.
