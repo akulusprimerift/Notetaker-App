@@ -25,44 +25,75 @@ def current_runs(db, lecture):
         .order_by(CaptureRun.capture_epoch)).all()
 
 
+def saved_through(db, run):
+    """Only the contiguous, verified prefix may become live model input."""
+    through = sequence = 0
+    rows = db.scalars(select(UploadReservation).where(UploadReservation.run_id == run.id)
+        .order_by(UploadReservation.sequence)).all()
+    for row in rows:
+        if row.state != 'verified' or row.sequence != sequence or row.identity['start_sample'] != through:
+            break
+        through += row.identity['sample_count']; sequence += 1
+    return through
+
+
+def valid_window(window, run):
+    if not window.live:
+        return window.manifest_version == run.manifest_version
+    # Verified chunks are immutable. Appending/sealing does not invalidate a live
+    # core, but a newly declared interruption through its context does.
+    return not any(window.context_start < gap['after_sample'] < window.context_end for gap in run.gaps)
+
+
 def schedule(db, lecture, planned_cuts=None):
-    """Called under the lecture lock. Only complete sealed snapshots are inference inputs."""
+    """Lecture lock required. Live cores wait for a full right-hand context."""
     made = 0
     for run in current_runs(db, lecture):
         revision = db.scalar(select(AudioManifestRevision).where(
             AudioManifestRevision.run_id == run.id, AudioManifestRevision.version == run.manifest_version))
-        if not revision or not revision.content['complete']:
-            continue
-        if planned_cuts is not None and (run.id,run.manifest_version) not in planned_cuts:
-            continue
-        boundaries = sorted({0, run.final_sample_count, *[g['after_sample'] for g in run.gaps]})
+        complete = bool(revision and revision.content['complete'])
+        through = run.final_sample_count if complete else saved_through(db, run)
+        if not complete and run.state != 'recording': continue
+        existing = db.scalars(select(SpeechWindow).where(SpeechWindow.run_id == run.id)).all()
+        existing = [w for w in existing if valid_window(w, run)]
+        boundaries = sorted({0, through, *[g['after_sample'] for g in run.gaps if g['after_sample'] <= through]})
         for left, right in zip(boundaries, boundaries[1:]):
-            cuts = [left, *[cut for cut in (planned_cuts or {}).get((run.id,run.manifest_version),
-                range(left+CORE_SECONDS*run.sample_rate,right,CORE_SECONDS*run.sample_rate)) if left<cut<right], right]
-            for start,end in zip(cuts,cuts[1:]):
-                if db.scalar(select(SpeechWindow.id).where(SpeechWindow.run_id == run.id,
-                    SpeechWindow.manifest_version == run.manifest_version, SpeechWindow.core_start == start)):
-                    continue
-                window = SpeechWindow(lecture_id=lecture.id, run_id=run.id, manifest_version=run.manifest_version,
-                    core_start=start, core_end=end, context_start=max(left, start-CONTEXT_SECONDS*run.sample_rate),
-                    context_end=min(right, end+CONTEXT_SECONDS*run.sample_rate))
-                db.add(window); db.flush()
-                job = Job(lecture_id=lecture.id, kind='speech.window', logical_key='speech:window:'+window.id,
-                    lifecycle_epoch=lecture.lifecycle_epoch, audio_epoch=lecture.audio_epoch, input_revision=window.id)
-                db.add(job); db.flush()
-                db.add(Outbox(lecture_id=lecture.id, event_type='speech.requested', entity_id=job.id,
-                    lifecycle_epoch=lecture.lifecycle_epoch))
-                made += 1
+            # Subtract every retained core, including cores after a newly declared
+            # gap. Filling only a prefix would overlap those later valid passages.
+            cursor = left
+            uncovered = []
+            for w in sorted(existing, key=lambda w: w.core_start):
+                if left <= w.core_start and w.core_end <= right:
+                    if cursor < w.core_start: uncovered.append((cursor, w.core_start))
+                    cursor = max(cursor, w.core_end)
+            if cursor < right: uncovered.append((cursor, right))
+            for cursor, stop in uncovered:
+                cuts = (planned_cuts or {}).get((run.id, run.manifest_version))
+                ends = ([cut for cut in cuts if cursor < cut < stop] if cuts is not None
+                    else list(range(cursor + CORE_SECONDS*run.sample_rate, stop, CORE_SECONDS*run.sample_rate)))
+                if complete: ends.append(stop)
+                for end in ends:
+                    if not complete and end + CONTEXT_SECONDS*run.sample_rate > right: break
+                    window = SpeechWindow(lecture_id=lecture.id, run_id=run.id, manifest_version=run.manifest_version,
+                        core_start=cursor, core_end=end, context_start=max(left, cursor-CONTEXT_SECONDS*run.sample_rate),
+                        context_end=min(right, end+CONTEXT_SECONDS*run.sample_rate), live=not complete)
+                    db.add(window); db.flush()
+                    job = Job(lecture_id=lecture.id, kind='speech.window', logical_key='speech:window:'+window.id,
+                        lifecycle_epoch=lecture.lifecycle_epoch, audio_epoch=lecture.audio_epoch, input_revision=window.id)
+                    db.add(job); db.flush()
+                    db.add(Outbox(lecture_id=lecture.id, event_type='speech.requested', entity_id=job.id,
+                        lifecycle_epoch=lecture.lifecycle_epoch))
+                    cursor = end; made += 1
     return made
 
 
 def windows_for(db, lecture):
-    return db.execute(select(SpeechWindow, Job, CaptureRun).join(Job, Job.input_revision == SpeechWindow.id)
+    rows = db.execute(select(SpeechWindow, Job, CaptureRun).join(Job, Job.input_revision == SpeechWindow.id)
         .join(CaptureRun, CaptureRun.id == SpeechWindow.run_id)
         .where(SpeechWindow.lecture_id == lecture.id, Job.kind == 'speech.window',
-            CaptureRun.audio_epoch == lecture.audio_epoch, CaptureRun.lifecycle_epoch == lecture.lifecycle_epoch,
-            SpeechWindow.manifest_version == CaptureRun.manifest_version)
+            CaptureRun.audio_epoch == lecture.audio_epoch, CaptureRun.lifecycle_epoch == lecture.lifecycle_epoch)
         .order_by(CaptureRun.capture_epoch, SpeechWindow.core_start)).all()
+    return [(w, j, r) for w, j, r in rows if valid_window(w, r)]
 
 
 def freeze_transcript(db, lecture):
@@ -90,8 +121,13 @@ def freeze_transcript(db, lecture):
         if run.id not in covered_runs and run.final_sample_count != 0:
             issues.append({'run_id':run.id, 'reason':'awaiting_saved_audio'})
     sequence = (db.scalar(select(func.max(TranscriptSnapshot.sequence)).where(TranscriptSnapshot.lecture_id == lecture.id)) or 0)+1
+    unfinished = (any(r.state == 'recording' or r.final_sample_count is None or
+        saved_through(db, r) != r.final_sample_count for r in runs)
+        or any(j.status != 'completed' for _, j, _ in windows)
+        or any(sum(w.core_end-w.core_start for w,_,_ in windows if w.run_id == r.id)
+            != r.final_sample_count for r in runs))
     snapshot = TranscriptSnapshot(lecture_id=lecture.id, sequence=sequence, audio_epoch=lecture.audio_epoch,
-        manifests=manifests, issues=issues)
+        manifests=manifests, issues=issues, stability='provisional' if unfinished else 'stable')
     db.add(snapshot); db.flush()
     for index, version in enumerate(versions):
         db.add(TranscriptSnapshotItem(snapshot_id=snapshot.id, lecture_id=lecture.id, position=index, version_id=version.id))
@@ -117,7 +153,7 @@ def snapshot_json(db, snapshot):
     versions = db.scalars(select(TranscriptVersion).join(TranscriptSnapshotItem,
         TranscriptSnapshotItem.version_id == TranscriptVersion.id)
         .where(TranscriptSnapshotItem.snapshot_id == snapshot.id).order_by(TranscriptSnapshotItem.position)).all()
-    return {'id':snapshot.id, 'sequence':snapshot.sequence, 'issues':snapshot.issues,
+    return {'id':snapshot.id, 'sequence':snapshot.sequence, 'stability':snapshot.stability, 'issues':snapshot.issues,
         'manifests':snapshot.manifests, 'segments':[version_json(db, v) for v in versions]}
 
 
@@ -132,12 +168,13 @@ def transcript_json(db, lecture):
     elif counts['due']: status = 'queued'
     elif counts['failed']: status = 'needs_attention'
     elif waiting: status = 'awaiting_saved_audio'
-    elif windows: status = 'processed'
+    elif windows: status = 'listening' if any(r.state == 'recording' for r in runs) else 'processed'
     else: status = 'not_started'
-    return {'status':status, 'counts':counts, 'waiting_for_audio':waiting,
+    backlog = sum(max(0, saved_through(db, r) - sum(w.core_end-w.core_start for w,j,_ in windows if w.run_id == r.id and j.status == 'completed')) / r.sample_rate for r in runs)
+    return {'processing_delay_seconds':round(backlog, 1), 'status':status, 'counts':counts, 'waiting_for_audio':waiting,
         'errors':sorted({job.error_code for _,job,_ in windows if job.error_code}),
         'snapshot':snapshot_json(db, snapshot) if snapshot else None,
-        'mode':'saved_audio', 'notes_available':db.scalar(select(NoteRevision.id).where(NoteRevision.lecture_id == lecture.id).limit(1)) is not None}
+        'mode':'live' if any(r.state == 'recording' for r in runs) else 'saved_audio', 'notes_available':db.scalar(select(NoteRevision.id).where(NoteRevision.lecture_id == lecture.id).limit(1)) is not None}
 
 
 def read_audio(db, store, run, start, end):
@@ -257,7 +294,7 @@ def install_transcription(app, current, db_session, owned_lecture, receipt):
             error(409, 'transcript_version', 'This passage changed. Your draft is retained; compare it with the latest words.')
         window = db.get(SpeechWindow, segment.window_id)
         run = db.get(CaptureRun, window.run_id)
-        if window.manifest_version != run.manifest_version:
+        if not valid_window(window, run):
             error(409, 'source_changed', 'The audio source changed. Reopen the current transcript before correcting it.')
         segment.current_revision += 1
         version = TranscriptVersion(lecture_id=lecture_id, segment_id=segment_id,

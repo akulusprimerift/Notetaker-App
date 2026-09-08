@@ -8,8 +8,9 @@ The current product priority is **reliable lecture capture → timestamped trans
 
 Follow the [feature and architecture phase plan](docs/project-phases.md) for all future work: Phase 6.1–6.8 maps to M01–M08, with features, architecture changes, completion evidence and local commits for every increment.
 
-**Phase 6.4 / M04: automatic study notes implemented for bounded saved transcripts.** Choose a local model, note detail, layout and writing preferences; it writes source-linked notes, refreshes them after transcript corrections, and exports a saved Markdown revision. Manual note writing is not required. Long-lecture topic processing and human quality qualification remain open. The browser interface is a development preview; an installable Windows application remains required in M08.
+**Phase 6.5 / M05: live lecture assistance implemented with synthetic macOS verification.** Receive transcript and note updates during recording, see processing backlog separately from audio saves, and reconnect while keeping the reading copy in place. Describe your own note detail and layout alongside the existing presets. Durable replay, coalesced note jobs and a shared inference budget extend M04’s source-linked notes. Long-lecture note context handling, human quality review and Windows live performance qualification remain open. The browser interface is a development preview; an installable Windows application remains required in M08.
 
+- [Live assistance / M05](docs/implementation/phase-6-m05.md): custom note styles, incremental transcription/notes, replay recovery, synthetic verification and qualification boundaries.
 - [Windows desktop direction](docs/architecture/windows-desktop-direction.md): proposed early desktop host and remaining installer work.
 - [Automatic notes / M04](docs/implementation/phase-6-m04.md): model selection, automatic generation, source inspection, export, limitations and later OpenAI/Claude connections.
 - [Run the app and review M01 results](docs/implementation/phase-6-m01.md): local startup, implemented behavior, executed checks and remaining milestones.
@@ -24,7 +25,7 @@ With Docker Desktop's Linux engine running, provision speech once with `pwsh -Fi
 - [Phase 5 reconciliation](docs/implementation/phase-5-reconciliation.md): decisions changed from the originals and unresolved evaluation work.
 - [Phase 5 verification](docs/implementation/phase-5-verification.md): checks performed on the consolidated documents and artifact.
 
-The next implementation work is **Phase 6.4 / M04 long-lecture topic processing and note-quality qualification**. OpenAI/Claude provider connections are planned later in Phase 7. M02 device and M03 real-lecture qualification stay open under the user’s synthetic-only testing preference; synthetic engineering results do not close those gates. Human review, real-audio quality and usable live performance remain required release evidence. Earlier design records follow:
+The active implementation phase is **Phase 6.5 / M05**. Live assistance is implemented; long-lecture note processing and actual Windows latency/memory qualification remain open before declaring the milestone complete. OpenAI/Claude provider connections are planned later in Phase 7. M02 device and M03 real-lecture qualification stay open under the user’s synthetic-only testing preference; synthetic engineering results do not close those gates. Human review, real-audio quality and usable live performance remain required release evidence. Earlier design records follow:
 
 - [Phase 1 product brief](docs/product/phase-1-product-brief.md): audience, first-release scope, note requirements, quality gates, and open decisions.
 - [Phase 2 student experience](docs/product/phase-2-student-experience.md): screens, lecture workflows, recording states, source inspection, editing, export, and accessibility requirements.

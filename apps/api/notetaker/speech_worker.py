@@ -12,7 +12,8 @@ from .db import database
 from .audio_store import AudioStore
 from .models import (Lecture, Job, Outbox, Inbox, SpeechWindow, SpeechGeneration, CaptureRun, AudioManifestRevision,
     TranscriptSegment, TranscriptVersion, UploadReservation, now)
-from .transcription import lock_lecture, schedule, read_audio, freeze_transcript, windows_for, current_runs
+from .transcription import lock_lecture, schedule, read_audio, freeze_transcript, windows_for, current_runs, valid_window, saved_through
+from .resource_budget import available, inference_slot
 from .speech_provider import WhisperProvider, SpeechFailure, validate_result
 
 LEASE_SECONDS=60
@@ -76,7 +77,12 @@ def plan_pending(sessions, store=None):
         with sessions() as db:
             lecture=lock_lecture(db,lecture_id)
             if lecture and not lecture.tombstoned:
-                schedule(db,lecture,cuts)
+                made = schedule(db,lecture,cuts)
+                # Sealing promotes the snapshot without rewriting source identities.
+                from .models import TranscriptSnapshot
+                prior = db.scalar(select(TranscriptSnapshot).where(TranscriptSnapshot.lecture_id == lecture_id).order_by(TranscriptSnapshot.sequence.desc()).limit(1))
+                if made or (prior and prior.manifests != [{'run_id':r.id,'version':r.manifest_version} for r in current_runs(db,lecture)] and lecture.status == 'audio_saved'):
+                    freeze_transcript(db,lecture)
             db.commit()
 
 
@@ -88,6 +94,7 @@ def claim(sessions, job_id=None):
         candidates=db.execute(query.order_by(Job.due_at,Job.id).limit(50)).all()
     for candidate, lecture_id in candidates:
         with sessions() as db:
+            if not available(db): return None
             lecture=lock_lecture(db,lecture_id)
             job=db.get(Job,candidate)
             if not job or not (job.status=='due' and job.due_at<=now() or job.status=='running' and job.lease_expires_at<=now()):
@@ -95,7 +102,7 @@ def claim(sessions, job_id=None):
             window=db.get(SpeechWindow,job.input_revision)
             run=db.get(CaptureRun,window.run_id)
             if (lecture.tombstoned or job.lifecycle_epoch!=lecture.lifecycle_epoch or job.audio_epoch!=lecture.audio_epoch
-                or run.manifest_version!=window.manifest_version):
+                or not valid_window(window,run)):
                 job.status='cancelled'; job.error_code='source_changed'; db.commit(); continue
             other=db.scalar(select(Job.id).where(Job.lecture_id==lecture_id,Job.kind=='speech.window',
                 Job.id!=job.id,Job.status=='running',Job.lease_expires_at>now()).limit(1))
@@ -116,7 +123,7 @@ def live_attempt(db, job_id, token):
     run=db.get(CaptureRun,window.run_id)
     if (job.status!='running' or job.attempt_token!=token or job.lease_expires_at<=now()
         or lecture.tombstoned or lecture.lifecycle_epoch!=job.lifecycle_epoch or lecture.audio_epoch!=job.audio_epoch
-        or run.manifest_version!=window.manifest_version):
+        or not valid_window(window,run)):
         return None
     return lecture,job,window,run
 
@@ -147,8 +154,10 @@ def publish(sessions, job_id, token, result):
         window.outcome=result['outcome'];job.status='completed';job.lease_expires_at=None;job.error_code=None
         db.flush()
         # Original chunk jobs complete only when all current inference windows for their run complete.
-        run_jobs=[j for w,j,_ in windows_for(db,lecture) if w.run_id==run.id]
-        if run_jobs and all(j.status=='completed' for j in run_jobs):
+        run_windows=[(w,j) for w,j,_ in windows_for(db,lecture) if w.run_id==run.id]
+        if (run.final_sample_count is not None and saved_through(db,run)==run.final_sample_count
+            and sum(w.core_end-w.core_start for w,_ in run_windows)==run.final_sample_count
+            and run_windows and all(j.status=='completed' for _,j in run_windows)):
             chunk_ids=db.scalars(select(UploadReservation.id).where(UploadReservation.run_id==run.id)).all()
             db.execute(update(Job).where(Job.kind=='speech.chunk',Job.input_revision.in_(chunk_ids),
                 Job.lecture_id==lecture.id).values(status='completed'))
@@ -161,7 +170,7 @@ def fail(sessions, job_id, token, failure):
         if not active:return
         lecture,job,_,_=active
         job.error_code=failure.code;job.lease_expires_at=None
-        job.status='due' if failure.retryable and (job.attempts<5 or failure.code=='model_unavailable') else 'failed'
+        job.status='due' if failure.retryable and (job.attempts<5 or failure.code in ('model_unavailable','resource_busy')) else 'failed'
         delay=60 if failure.code=='model_unavailable' else min(60,2**min(job.attempts,6))
         job.due_at=now()+timedelta(seconds=delay)
         freeze_transcript(db,lecture);db.commit()
@@ -185,7 +194,9 @@ def execute(sessions, store, provider, claimed, heartbeat=True):
         with sessions() as db:
             try: audio=read_audio(db,store,run,window.context_start,window.context_end)
             except Exception as exc: raise SpeechFailure('audio_integrity_unavailable') from exc
-        result=provider.transcribe(audio,window,run.sample_rate)
+        with inference_slot(sessions) as acquired:
+            if not acquired: raise SpeechFailure('resource_busy')
+            result=provider.transcribe(audio,window,run.sample_rate)
         return publish(sessions,job_id,token,result)
     except SpeechFailure as exc:
         fail(sessions,job_id,token,exc);return False

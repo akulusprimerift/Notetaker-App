@@ -281,7 +281,7 @@ def test_course_neutral_preferences_are_versioned_and_drive_generation(notes):
     response=client.post(path+'/notes/model',headers={**headers,'idempotency-key':str(uuid4())},json=body)
     assert response.status_code==200
     data=client.get(path+'/notes').json()
-    assert data['profile']=={k:body[k] for k in ('depth','format','instructions')}
+    assert data['profile']=={**{k:body[k] for k in ('depth','format','instructions')},'detail_prompt':'','layout_prompt':''}
     snapshot=client.get(path+'/snapshot').json()
     assert snapshot['settings']['depth']=='brief' and snapshot['settings']['version']==2
     chosen=claim(app.state.sessions)
