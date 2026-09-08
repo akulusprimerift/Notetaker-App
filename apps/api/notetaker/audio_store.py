@@ -40,3 +40,20 @@ class AudioStore:
         response = self.client.get_object(Bucket=self.bucket, Key=key)
         with response['Body'] as stream:
             return stream.read(8 * 1024 * 1024 + 1)
+
+
+    def list_keys(self, prefix):
+        self.ready()
+        keys=[]
+        for page in self.client.get_paginator('list_objects_v2').paginate(Bucket=self.bucket,Prefix=prefix):
+            keys.extend(row['Key'] for row in page.get('Contents',[]))
+        return keys
+
+    def delete_verified(self, key):
+        self.client.delete_object(Bucket=self.bucket,Key=key)
+        try:
+            self.client.head_object(Bucket=self.bucket,Key=key)
+        except ClientError as exc:
+            if exc.response['ResponseMetadata']['HTTPStatusCode']==404:return
+            raise
+        raise RuntimeError('object_still_present')

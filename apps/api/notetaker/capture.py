@@ -109,6 +109,8 @@ def install_capture(app, current, db_session, owned_lecture, receipt):
         return run
 
     def grant(request, lecture, run, allow_expired=False):
+        if lecture.audio_removed or lecture.status in ('finalizing','finalized'):
+            error(409,'capture_closed','This lecture no longer accepts audio. Start a new lecture to record.')
         token = request.headers.get('x-capture-grant', '')
         if not compare_digest(digest(token), run.grant_hash):
             error(409, 'capture_grant', 'This recording needs recovery before it can save more audio.')
@@ -181,6 +183,8 @@ def install_capture(app, current, db_session, owned_lecture, receipt):
         lecture = lock(db, session.owner_id, request.path_params['lecture_id'])
         if existing:
             return manifest(db, run_for(db, lecture, existing.result_id))
+        if lecture.audio_removed or lecture.status in ('finalizing','finalized'):
+            error(409,'capture_closed','This lecture no longer accepts audio. Start a new lecture to record.')
         if lecture.capture_epoch != body.expected_capture_epoch:
             error(409, 'capture_version', 'Recording ownership changed. Refresh before starting.')
         active = db.scalar(select(CaptureRun).where(CaptureRun.lecture_id == lecture.id, CaptureRun.state == 'recording'))
@@ -208,7 +212,7 @@ def install_capture(app, current, db_session, owned_lecture, receipt):
     def capture_status(lecture_id: str, session=Depends(current), db=Depends(db_session)):
         lecture = lock(db, session.owner_id, lecture_id)
         runs = db.scalars(select(CaptureRun).where(CaptureRun.lecture_id == lecture.id).order_by(CaptureRun.capture_epoch)).all()
-        return {'available':app.state.audio_store.available, 'capture_epoch':lecture.capture_epoch, 'runs':[manifest(db, run) for run in runs], 'processing':'saved_audio'}
+        return {'available':app.state.audio_store.available and not lecture.audio_removed and lecture.status not in ('finalizing','finalized'), 'capture_epoch':lecture.capture_epoch, 'runs':[manifest(db, run) for run in runs], 'processing':'saved_audio'}
 
     @app.post('/lectures/{lecture_id}/capture-runs', status_code=201)
     def start(lecture_id: str, body: Start, request: Request, session=Depends(current), db=Depends(db_session)):
@@ -356,6 +360,8 @@ def install_capture(app, current, db_session, owned_lecture, receipt):
         run = run_for(db, lecture, body.run_id)
         if existing:
             return manifest(db, run)
+        if lecture.audio_removed or lecture.status in ('finalizing','finalized'):
+            error(409,'capture_closed','This lecture no longer accepts recovered audio.')
         if body.expected_capture_epoch != lecture.capture_epoch or body.expected_version != run.manifest_version:
             error(409, 'recovery_version', 'Recording state changed. Refresh before recovery.')
         seal_bounds(db, run, body)

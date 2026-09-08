@@ -2,10 +2,11 @@ import {matchesAck,MAX_PENDING_BYTES} from './pcm.mjs';
 
 export function openJournal(name='notetaker-capture-v1') {
   return new Promise((resolve,reject) => {
-    const request=indexedDB.open(name,1);
+    const request=indexedDB.open(name,2);
     request.onupgradeneeded=()=>{
-      request.result.createObjectStore('runs',{keyPath:['owner_id','id']});
-      request.result.createObjectStore('chunks',{keyPath:['owner_id','run_id','sequence']});
+      if(!request.result.objectStoreNames.contains('runs'))request.result.createObjectStore('runs',{keyPath:['owner_id','id']});
+      if(!request.result.objectStoreNames.contains('chunks'))request.result.createObjectStore('chunks',{keyPath:['owner_id','run_id','sequence']});
+      request.result.createObjectStore('removed',{keyPath:['owner_id','lecture_id']});
     };
     request.onerror=()=>reject(request.error);
     request.onblocked=()=>reject(new Error('Close the other workspace tabs so local storage can open.'));
@@ -39,7 +40,21 @@ class Journal {
     });
   }
   get(owner,id) { return this.transaction(['runs'],'readonly',(tx,set)=>{tx.objectStore('runs').get([owner,id]).onsuccess=event=>set(event.target.result);}); }
-  put(run) { return this.transaction(['runs'],'readwrite',tx=>{tx.objectStore('runs').put(run);}); }
+  put(run) { return this.transaction(['runs','removed'],'readwrite',(tx,set,fail)=>{
+    tx.objectStore('removed').get([run.owner_id,run.lecture_id]).onsuccess=event=>{
+      if(event.target.result){fail(new Error('Audio was removed for this lecture.'));return;}
+      tx.objectStore('runs').put(run);
+    };
+  }); }
+  purgeLecture(owner,lecture) {
+    return this.transaction(['runs','chunks','removed'],'readwrite',tx=>{
+      tx.objectStore('removed').put({owner_id:owner,lecture_id:lecture});
+      tx.objectStore('runs').openCursor().onsuccess=event=>{
+        const cursor=event.target.result;
+        if(cursor){const run=cursor.value;if(run.owner_id===owner&&run.lecture_id===lecture){tx.objectStore('chunks').delete(IDBKeyRange.bound([owner,run.id,0],[owner,run.id,Number.MAX_SAFE_INTEGER]));cursor.delete();}cursor.continue();}
+      };
+    });
+  }
   patch(owner,id,changes) {
     return this.transaction(['runs'],'readwrite',(tx,set,fail)=>{
       const runs=tx.objectStore('runs');

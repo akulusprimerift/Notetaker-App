@@ -28,6 +28,12 @@ class MemoryStore:
         if self.fail: raise RuntimeError('synthetic failed readback')
         assert hashlib.sha256(self.read(key)).hexdigest() == checksum
     def read(self, key): return self.objects[key]
+    def list_keys(self, prefix):
+        self.ready()
+        return [key for key in self.objects if key.startswith(prefix)]
+    def delete_verified(self, key):
+        self.ready()
+        self.objects.pop(key,None)
 
 
 @pytest.fixture

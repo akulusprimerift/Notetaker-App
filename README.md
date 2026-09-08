@@ -8,8 +8,9 @@ The current product priority is **reliable lecture capture → timestamped trans
 
 Follow the [feature and architecture phase plan](docs/project-phases.md) for all future work: Phase 6.1–6.8 maps to M01–M08, with features, architecture changes, completion evidence and local commits for every increment.
 
-**Phase 6.6 / M06: protected editing and regeneration.** Custom prompts replace redundant detail/layout dropdowns. Short live speech windows, accumulated note batches and streaming previews extend M05. Edit notes with durable local drafts, compare suggestions, keep/merge/replace and restore earlier revisions without automatic generation overwriting student work. Human quality review and actual Windows model-performance qualification remain open. The browser interface is a development preview; an installable Windows application remains required in M08.
+**Phase 6.7 / M07: finalization and data control.** Save immutable final lecture snapshots with incomplete results visible, retain revision history, recover late audio into a new snapshot, remove audio or delete a lecture with progress and browser-copy cleanup. Saved prompt profiles reuse your instructions across lectures, and the local workspace opens without an access key. Human quality review, full-lecture hardware qualification and the M08 Windows installer remain open.
 
+- [Finalization and data control / M07](docs/implementation/phase-6-m07.md): snapshot history, late recovery, deletion reconciliation and browser purge.
 - [Working instructions](AGENTS.md) and [session transfer](SESSION_TRANSFER.md): product intent, workflow, Bun/uv commands and the latest handoff.
 - [Editing, streaming and regeneration / M06](docs/implementation/phase-6-m06.md): live improvements, protected revisions, comparison, undo and verification boundaries.
 - [Live assistance / M05](docs/implementation/phase-6-m05.md): original live implementation and its historical evidence; M06 supersedes its timing and resource policy.
@@ -27,7 +28,7 @@ With Docker Desktop's Linux engine running, provision speech once with `pwsh -Fi
 - [Phase 5 reconciliation](docs/implementation/phase-5-reconciliation.md): decisions changed from the originals and unresolved evaluation work.
 - [Phase 5 verification](docs/implementation/phase-5-verification.md): checks performed on the consolidated documents and artifact.
 
-The active implementation phase is **Phase 6.6 / M06**. The user accepts the M05 workflow; this increment improves live processing and adds protected editing. Chronological bounded note batches now handle longer transcripts without resending all unchanged notes, while cross-topic quality and actual Windows latency/memory qualification remain open. OpenAI/Claude connections stay in Phase 7. Testing remains synthetic-only: M02 device, M03 real-lecture, human educational-quality and sustained live-performance gates are still release requirements. Earlier design records follow:
+The active implementation phase is **Phase 6.7 / M07**. M06 protected editing and live improvements are retained. M07 adds finalization/data controls; it does not close outstanding microphone, human-review, sustained-performance or Windows delivery gates. OpenAI/Claude connections remain in Phase 7. Earlier design records follow:
 
 - [Phase 1 product brief](docs/product/phase-1-product-brief.md): audience, first-release scope, note requirements, quality gates, and open decisions.
 - [Phase 2 student experience](docs/product/phase-2-student-experience.md): screens, lecture workflows, recording states, source inspection, editing, export, and accessibility requirements.

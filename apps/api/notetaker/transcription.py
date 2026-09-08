@@ -48,17 +48,27 @@ def valid_window(window, run):
 
 def schedule(db, lecture, planned_cuts=None):
     """Lecture lock required. Live cores wait for a full right-hand context."""
+    if lecture.tombstoned or lecture.audio_removed: return 0
     made = 0
     for run in current_runs(db, lecture):
         revision = db.scalar(select(AudioManifestRevision).where(
             AudioManifestRevision.run_id == run.id, AudioManifestRevision.version == run.manifest_version))
-        complete = bool(revision and revision.content['complete'])
+        complete = bool(revision and revision.content['complete']) or run.state == 'finalized'
         through = run.final_sample_count if complete else saved_through(db, run)
         if not complete and run.state != 'recording': continue
         existing = db.scalars(select(SpeechWindow).where(SpeechWindow.run_id == run.id)).all()
         existing = [w for w in existing if valid_window(w, run)]
         boundaries = sorted({0, through, *[g['after_sample'] for g in run.gaps if g['after_sample'] <= through]})
-        for left, right in zip(boundaries, boundaries[1:]):
+        intervals = list(zip(boundaries, boundaries[1:]))
+        if run.state == 'finalized':
+            # Finalize every verified island, including audio after a missing chunk.
+            available=[]
+            for row in db.scalars(select(UploadReservation).where(UploadReservation.run_id==run.id,UploadReservation.state=='verified').order_by(UploadReservation.sequence)):
+                a=row.identity['start_sample'];b=a+row.identity['sample_count']
+                if available and available[-1][1]==a:available[-1]=(available[-1][0],b)
+                else:available.append((a,b))
+            intervals=[(max(a,left),min(b,right)) for a,b in available for left,right in intervals if max(a,left)<min(b,right)]
+        for left, right in intervals:
             # Subtract every retained core, including cores after a newly declared
             # gap. Filling only a prefix would overlap those later valid passages.
             cursor = left
@@ -101,6 +111,19 @@ def windows_for(db, lecture):
 def freeze_transcript(db, lecture):
     """Immutable membership selected while holding the lecture lock."""
     db.flush()
+    if lecture.audio_removed:
+        prior=db.scalar(select(TranscriptSnapshot).where(TranscriptSnapshot.lecture_id==lecture.id).order_by(TranscriptSnapshot.sequence.desc()).limit(1))
+        if not prior:return None
+        snapshot=TranscriptSnapshot(lecture_id=lecture.id,sequence=prior.sequence+1,audio_epoch=lecture.audio_epoch,manifests=prior.manifests,issues=prior.issues,stability=prior.stability)
+        db.add(snapshot);db.flush()
+        old_versions=db.scalars(select(TranscriptVersion).join(TranscriptSnapshotItem,TranscriptSnapshotItem.version_id==TranscriptVersion.id).where(TranscriptSnapshotItem.snapshot_id==prior.id).order_by(TranscriptSnapshotItem.position)).all()
+        for position,old in enumerate(old_versions):
+            segment=db.get(TranscriptSegment,old.segment_id)
+            version=db.scalar(select(TranscriptVersion).where(TranscriptVersion.segment_id==segment.id,TranscriptVersion.revision==segment.current_revision))
+            db.add(TranscriptSnapshotItem(snapshot_id=snapshot.id,lecture_id=lecture.id,position=position,version_id=version.id))
+        lecture.update_seq+=1
+        db.add(LectureUpdate(lecture_id=lecture.id,sequence=lecture.update_seq,kind='transcript.changed',entity_id=snapshot.id,entity_version=snapshot.sequence))
+        return snapshot
     runs = current_runs(db, lecture)
     windows = windows_for(db, lecture)
     issues = [{'run_id':r.id, **gap} for r in runs for gap in r.gaps]

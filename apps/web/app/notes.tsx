@@ -42,6 +42,7 @@ export default function Notes({lecture,csrf,onSessionExpired}:{lecture:string;cs
   useEffect(()=>{
     const events=new EventSource('/api'+path+'/stream');
     events.onmessage=event=>{try{setPreview(JSON.parse(event.data))}catch{setPreview({text:'',active:false})}};
+    events.addEventListener('removed',()=>{events.close();setPreview({text:'',active:false});window.dispatchEvent(new Event('deletion-started'))});
     events.addEventListener('expired',()=>{events.close();onSessionExpired()});
     events.onerror=()=>{setPreview(current=>({...current,active:false}))};
     return()=>events.close();

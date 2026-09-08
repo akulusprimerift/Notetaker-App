@@ -1,7 +1,7 @@
 """Run explicitly with Playwright installed; never requests microphone access.
 
 PYTHONPATH=apps/api:apps/api/tests .venv/bin/python -m pytest -q tests/browser
-Requires npm ci; starts its own loopback API and Next development server.
+Requires bun install --frozen-lockfile; starts its own loopback API and Next development server.
 """
 import os
 import json
@@ -171,12 +171,58 @@ def test_custom_preferences_and_reconnect_preserve_reading(capture, tmp_path):
                 expect(page.locator('.note-revision')).to_contain_text('Student revision 3')
                 assert client.get(path+'/notes').json()['editing']['selected']['content']['blocks'][0]['passages'][0]['text'].startswith('My protected explanation.')
                 assert not errors,errors
+                # M07 entry: profiles persist every prompt and load without applying.
+                detail.fill('Preserve each worked example.')
+                layout.fill('Organize by concept.')
+                page.get_by_label('Writing preferences (optional)').fill('Explain unfamiliar terms.')
+                page.get_by_label('Profile name',exact=True).fill('Study profile')
+                page.get_by_role('button',name='Save prompts as new profile').click()
+                expect(page.get_by_text('Profile saved. You can use it in any lecture.',exact=True)).to_be_visible()
+                page.reload()
+                page.get_by_label('Saved profile',exact=True).select_option(label='Study profile')
+                page.get_by_role('button',name='Load profile prompts').click()
+                expect(page.get_by_label('Describe your detail level (optional)')).to_have_value('Preserve each worked example.')
+                expect(page.get_by_label('Writing preferences (optional)')).to_have_value('Explain unfamiliar terms.')
+                assert page.get_by_label('Workspace code',exact=True).count()==0
+                # A separate browser starts with no cookie/code and opens the same local owner.
+                other_context=browser.new_context()
+                other=other_context.new_page();other.goto(origin+'/#lecture/'+path.split('/')[-1])
+                expect(other.get_by_role('heading',name='Your lecture notes',exact=True)).to_be_visible(timeout=30000)
+                other.get_by_role('button',name='Edit notes',exact=True).click()
+                other.get_by_label('Passage 1',exact=True).fill('A disconnected draft must be purged on reconnect.')
+                expect(other.get_by_text('Draft saved on this device. Export uses the saved revision.',exact=True)).to_be_visible()
+                other_context.set_offline(True)
+                page.get_by_role('button',name='Finalize available results now',exact=True).click()
+                page.get_by_role('button',name='Confirm',exact=True).click()
+                expect(page.get_by_text('Final snapshot saved with incomplete results',exact=True).first).to_be_visible(timeout=15000)
+                page.get_by_text('Final snapshot history',exact=False).click()
+                page.get_by_role('button',name='Read snapshot',exact=True).click()
+                expect(page.get_by_role('region',name='Saved final snapshot')).to_contain_text('My protected explanation.')
+                page.get_by_role('region',name='Finalization and data control').screenshot(path=str(ROOT/'.local/m07-finalization.png'))
+                page.get_by_role('button',name='Close snapshot',exact=True).click()
+                page.get_by_role('button',name='Remove audio',exact=True).click()
+                page.get_by_role('button',name='Confirm',exact=True).click()
+                expect(page.get_by_text('Audio removal · Server cleanup complete',exact=True)).to_be_visible(timeout=20000)
+                expect(page.locator('.generated-content')).to_contain_text('My protected explanation.')
+                page.get_by_role('button',name='Delete lecture',exact=True).click()
+                page.get_by_role('button',name='Confirm',exact=True).click()
+                expect(page.get_by_text('Lecture deletion · Server cleanup complete',exact=True)).to_be_visible(timeout=20000)
+                assert client.get(path+'/notes').status_code==404
+                # Offline browser keeps its local data until reconnection, then purges
+                # durable drafts and unmounts its obsolete reading copy.
+                assert other.evaluate("() => new Promise(resolve=>{const r=indexedDB.open('notetaker-note-drafts',2);r.onsuccess=()=>{const db=r.result;const q=db.transaction('drafts').objectStore('drafts').getAll();q.onsuccess=()=>{resolve(q.result.length);db.close()}}})")>0
+                other_context.set_offline(False)
+                expect(other.get_by_role('heading',name='Your lecture library.',exact=True)).to_be_visible(timeout=20000)
+                expect(other.get_by_text('Copies in this browser have been removed.',exact=False).first).to_be_visible(timeout=15000)
+                assert other.evaluate("() => new Promise(resolve=>{const r=indexedDB.open('notetaker-note-drafts',2);r.onsuccess=()=>{const db=r.result;const q=db.transaction('drafts').objectStore('drafts').getAll();q.onsuccess=()=>{resolve(q.result.length);db.close()}}})")==0
+                other_context.close()
+                assert not errors,errors
                 screenshots=ROOT/'.local';screenshots.mkdir(exist_ok=True)
-                page.screenshot(path=str(screenshots/'m06-browser-desktop.png'),full_page=True)
+                page.screenshot(path=str(screenshots/'m07-browser-desktop.png'),full_page=True)
                 # Layout stays usable on narrow windows too.
                 page.set_viewport_size({'width':390,'height':844})
                 assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
-                page.screenshot(path=str(screenshots/'m06-browser-mobile.png'),full_page=True)
+                page.screenshot(path=str(screenshots/'m07-browser-mobile.png'),full_page=True)
                 browser.close()
         finally:
             server.should_exit=True;thread.join(timeout=5)

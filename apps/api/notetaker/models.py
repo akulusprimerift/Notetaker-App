@@ -59,6 +59,7 @@ class Lecture(Base):
     title: Mapped[str] = mapped_column(String(160))
     status: Mapped[str] = mapped_column(String(24), default="prepared")
     lifecycle_epoch: Mapped[int] = mapped_column(Integer, default=1)
+    audio_removed: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     capture_epoch: Mapped[int] = mapped_column(Integer, default=0)
     audio_epoch: Mapped[int] = mapped_column(Integer, default=1)
     update_seq: Mapped[int] = mapped_column(Integer, default=0)
@@ -342,3 +343,47 @@ class PromptProfile(Base):
     instructions: Mapped[str] = mapped_column(String(1000), default='')
     version: Mapped[int] = mapped_column(Integer, default=1)
     deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class Finalization(Base):
+    __tablename__ = 'finalizations'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(ForeignKey('lectures.id'), index=True)
+    lifecycle_epoch: Mapped[int] = mapped_column(Integer)
+    audio_epoch: Mapped[int] = mapped_column(Integer)
+    expected_edit_version: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(24), default='speech')
+    issues: Mapped[list] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+
+
+class FinalSnapshot(Base):
+    __tablename__ = 'final_snapshots'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(ForeignKey('lectures.id'), index=True)
+    finalization_id: Mapped[str] = mapped_column(ForeignKey('finalizations.id'), unique=True)
+    content: Mapped[dict] = mapped_column(JSON)
+    markdown: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+
+
+class Deletion(Base):
+    __tablename__ = 'deletions'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(ForeignKey('lectures.id'), index=True)
+    owner_id: Mapped[str] = mapped_column(ForeignKey('owners.id'), index=True)
+    kind: Mapped[str] = mapped_column(String(16))
+    lifecycle_epoch: Mapped[int] = mapped_column(Integer)
+    audio_epoch: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(24), default='deleting')
+    error: Mapped[str | None] = mapped_column(String(100))
+    browser_ack: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    reconciled_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class DeletionObject(Base):
+    __tablename__ = 'deletion_objects'
+    deletion_id: Mapped[str] = mapped_column(ForeignKey('deletions.id'), primary_key=True)
+    object_key: Mapped[str] = mapped_column(String(240), primary_key=True)
+    removed: Mapped[bool] = mapped_column(Boolean, default=False)

@@ -9,7 +9,7 @@ export default function PromptProfiles({prompts,onLoad,csrf}:{prompts:Prompts;on
   useEffect(()=>{void refresh().catch(e=>setError(e.message))},[refresh]);
   async function save(update:boolean){
     const row=rows.find(r=>r.id===selected);if(update&&!row)return;
-    const body=JSON.stringify({...prompts,name,expected_version:update?row!.version:0}),path='/api/prompt-profiles'+(update?'/'+row!.id:'');
+    const body=JSON.stringify({detail_prompt:prompts.detail_prompt,layout_prompt:prompts.layout_prompt,instructions:prompts.instructions,name,expected_version:update?row!.version:0}),path='/api/prompt-profiles'+(update?'/'+row!.id:'');
     if(command.current?.body!==body||command.current.path!==path)command.current={body,path,key:crypto.randomUUID()};
     setBusy(true);setError('');setNotice('');
     try{const response=await fetch(path,{method:update?'PUT':'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf,'Idempotency-Key':command.current.key},body});const data=await response.json();if(!response.ok)throw new Error(data.error?.message??'Could not save the profile.');command.current=null;await refresh();setSelected(data.id);setNotice('Profile saved. You can use it in any lecture.');}

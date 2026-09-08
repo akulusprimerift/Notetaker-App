@@ -73,7 +73,8 @@ def live(db, job_id, token):
     job = db.get(Job, job_id)
     if not job: return None
     lecture = lock_lecture(db, job.lecture_id)
-    db.refresh(job)
+    job=db.scalar(select(Job).where(Job.id==job_id).execution_options(populate_existing=True))
+    if not job or lecture.tombstoned:return None
     if job.status != 'running' or job.attempt_token != token or not job.lease_expires_at or job.lease_expires_at <= now(): return None
     if not current_input(db, job, lecture):
         job.status = 'cancelled'; db.commit(); return None

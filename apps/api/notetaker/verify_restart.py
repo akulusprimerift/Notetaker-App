@@ -70,7 +70,7 @@ def main():
             db.add(Bootstrap(id=1, token_hash=digest(token), expires_at=now()+timedelta(minutes=10)))
             db.commit()
         with TestClient(app) as client:
-            response = client.post('/session/bootstrap', json={'token':token}, headers={'origin':settings.web_origin})
+            response = client.post('/session/open', headers={'origin':settings.web_origin})
             assert response.status_code == 200
             headers = {'origin':settings.web_origin, 'x-csrf-token':response.json()['csrf_token'], 'idempotency-key':suffix}
             response = client.post('/courses', json={'name':'Synthetic restart check', 'code':'VERIFY'}, headers=headers)

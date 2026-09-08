@@ -118,8 +118,10 @@ def live_attempt(db, job_id, token):
     lecture_id=db.scalar(select(Job.lecture_id).where(Job.id==job_id))
     if not lecture_id:return None
     lecture=lock_lecture(db,lecture_id)
-    job=db.get(Job,job_id)
+    job=db.scalar(select(Job).where(Job.id==job_id).execution_options(populate_existing=True))
+    if not job or lecture.tombstoned:return None
     window=db.get(SpeechWindow,job.input_revision)
+    if not window:return None
     run=db.get(CaptureRun,window.run_id)
     if (job.status!='running' or job.attempt_token!=token or job.lease_expires_at<=now()
         or lecture.tombstoned or lecture.lifecycle_epoch!=job.lifecycle_epoch or lecture.audio_epoch!=job.audio_epoch

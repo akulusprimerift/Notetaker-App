@@ -10,6 +10,14 @@ export class Recorder {
     Object.assign(this,{owner,lecture,csrf,onChange,streamFactory,fetcher});
     this.active=false;this.working=false;this.message='';this.local=[];this.server={available:false,runs:[],capture_epoch:0};
     this.writeChain=Promise.resolve();this.volatile=[];this.urls=[];this.disposed=false;
+    this.removed=event=>{
+      if(event.detail.lecture_id!==this.lecture)return;
+      this.erased=true;this.blocked=true;this.active=false;this.closeMicrophone();
+      this.node?.disconnect();this.source?.disconnect();this.node=null;this.source=null;
+      this.worker?.terminate();this.worker=null;this.flushResolve?.();
+      for(const {url} of this.urls)URL.revokeObjectURL(url);
+      this.urls=[];this.volatile=[];this.local=[];
+    };
     this.beforeUnload=event=>{if(this.active||this.local.some(run=>run.pending_bytes)||this.volatile.length){event.preventDefault();event.returnValue='';}};
     this.navigate=event=>{
       if((this.active||this.working||this.volatile.length)&&event.target.closest?.('a[href]:not([download])')) {
@@ -31,6 +39,7 @@ export class Recorder {
   }
   async init() {
     window.addEventListener('beforeunload',this.beforeUnload);
+    window.addEventListener('lecture-removed',this.removed);
     document.addEventListener('click',this.navigate,true);
     try {
       this.journal=await openJournal();
@@ -113,6 +122,7 @@ export class Recorder {
     },{headers:{'Idempotency-Key':run.command}});
   }
   workerMessage(data) {
+    if(this.erased)return;
     if(data.kind==='chunk') {
       this.latestSampleAt=Date.now();
       this.writeChain=this.writeChain.then(async()=>{
@@ -121,6 +131,7 @@ export class Recorder {
           this.node?.port.postMessage({kind:'persisted',bytes:data.sourceBytes});
           this.local=await this.journal.list(this.owner,this.lecture);this.emit();
         }catch(error){
+          if(this.erased)return;
           // A failed journal write is never reported as saved. Keep its bounded RAM copy available.
           this.volatile.push(data);
           const url=URL.createObjectURL(new Blob([data.wav],{type:'audio/wav'}));
@@ -169,7 +180,7 @@ export class Recorder {
     }
   }
   async tick() {
-    if(this.disposed)return;
+    if(this.disposed||this.erased)return;
     if(this.active&&Date.now()-this.latestSampleAt>6500) {await this.stop('sleep_or_suspension');return;}
     if(!this.blocked&&(this.active || (this.run?.stopped&&(!this.run.server_sealed||this.run.pending_bytes))))await this.sync();
     else if(!this.working)await this.refresh().catch(()=>{});
@@ -178,7 +189,7 @@ export class Recorder {
     if(this.syncPromise)return this.syncPromise;
     this.syncPromise=this.uploadPending().catch(async error=>{
       this.message=error.message;
-      if(error.status===401||error.status===404||['capture_fenced','capture_interrupted','capture_grant'].includes(error.code)) {
+      if(error.status===401||error.status===404||['capture_fenced','capture_interrupted','capture_grant','capture_closed'].includes(error.code)) {
         this.blocked=true;
         if(this.active)void this.stop(error.status===401?'sleep_or_suspension':'takeover');
         if(error.status===404&&error.code==='unavailable'&&this.run)await this.journal.purge(this.owner,this.run.id);
@@ -266,7 +277,7 @@ export class Recorder {
     await this.stop();await this.syncPromise;
     if(this.context){await this.context.close().catch(()=>{});this.context=null;}
     this.releaseLock?.();this.releaseLock=null;
-    window.removeEventListener('beforeunload',this.beforeUnload);document.removeEventListener('click',this.navigate,true);
+    window.removeEventListener('lecture-removed',this.removed);window.removeEventListener('beforeunload',this.beforeUnload);document.removeEventListener('click',this.navigate,true);
     this.journal?.close();
     for(const {url} of this.urls)URL.revokeObjectURL(url);
   }

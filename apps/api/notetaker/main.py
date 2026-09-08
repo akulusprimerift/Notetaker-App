@@ -3,7 +3,7 @@ import json
 import logging
 import secrets
 from time import perf_counter
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from datetime import timedelta
 from uuid import uuid4
 
@@ -45,7 +45,7 @@ def course_json(course):
 
 
 def lecture_json(lecture):
-    return {"id": lecture.id, "course_id": lecture.course_id, "title": lecture.title, "status": lecture.status,
+    return {"id": lecture.id, "course_id": lecture.course_id, "title": lecture.title, "status": lecture.status, "audio_removed":lecture.audio_removed,
             "created_at": lecture.created_at.isoformat() + "Z", "update_cursor": lecture.update_seq}
 
 
@@ -87,8 +87,14 @@ def create_app(settings: Settings | None = None):
 
     @asynccontextmanager
     async def lifespan(app):
-        yield
-        engine.dispose()
+        from .lifecycle import coordinator
+        task=asyncio.create_task(coordinator(app))
+        try:
+            yield
+        finally:
+            task.cancel()
+            with suppress(asyncio.CancelledError): await task
+            engine.dispose()
 
     app = FastAPI(title="Notetaker API", version="0.1.0", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
     app.state.settings, app.state.engine, app.state.sessions = settings, engine, sessions
@@ -143,6 +149,9 @@ def create_app(settings: Settings | None = None):
     @app.post("/session/open")
     def open_workspace(request: Request, response: Response, db=Depends(db_session)):
         mutation(request)
+        from urllib.parse import urlsplit
+        if urlsplit(settings.web_origin).hostname not in ('127.0.0.1','localhost'):
+            error(403,'local_workspace_only','Automatic workspace access is available only on this device.')
         # The app is bound to loopback. A same-origin POST opens its one local owner.
         # Insert-on-conflict also handles two fresh browser tabs opening together.
         if db.bind.dialect.name == 'postgresql':
@@ -272,6 +281,8 @@ def create_app(settings: Settings | None = None):
 
     from .profiles import install_profiles
     install_profiles(app, current, db_session, receipt)
+    from .lifecycle import install_lifecycle
+    install_lifecycle(app, current, db_session, owned_lecture, receipt)
     install_capture(app, current, db_session, owned_lecture, receipt)
     install_transcription(app, current, db_session, owned_lecture, receipt)
     install_notes(app, current, db_session, owned_lecture, receipt)

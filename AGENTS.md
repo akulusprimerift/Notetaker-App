@@ -2,7 +2,7 @@
 
 ## Product
 
-Build an installable Windows lecture companion for any subject. Capture lecture audio reliably, transcribe timestamped segments during recording, and continuously write detailed, source-linked study notes. Preserve explanations, definitions, worked examples, qualifications and professor emphasis. Accumulate enough transcript context before writing each note batch; show the model's text as it streams. Students control detail, layout and style through their own prompts. Protect student edits, compare regeneration suggestions, support keep/merge/replace and undo, and export the selected saved revision.
+Build an installable Windows lecture companion for any subject. Capture lecture audio reliably, transcribe timestamped segments during recording, and continuously write detailed, source-linked study notes. Preserve explanations, definitions, worked examples, qualifications and professor emphasis. Accumulate enough transcript context before writing each note batch; show the model's text as it streams. Students control detail, layout and style through their own prompts, with saved profiles for reuse. The loopback workspace opens without an access key. Protect student edits, compare regeneration suggestions, support keep/merge/replace and undo, and export the selected saved revision.
 
 Audio preservation is independent of inference. Never silently discard sources, overwrite student revisions, invent missing visual information, download models or fall back to external providers. A short summary is optional; detailed trustworthy notes are the priority.
 
@@ -26,7 +26,7 @@ Audio preservation is independent of inference. Never silently discard sources, 
 
 ## Code style and correctness
 
-Follow nearby conventions; prefer small domain-focused modules, explicit types and descriptive names. Avoid unrelated formatting changes or speculative infrastructure. Validate all external input. Keep authorization, CSRF, idempotency, ownership, expected-version writes and worker attempt/epoch fencing on new paths. Add additive migrations; never mutate immutable source/settings/note history. Render arbitrary text safely, preserve code/equation whitespace, and label student changes and unvalidated streaming previews honestly. Keep secrets, model weights, generated caches and local lecture data out of Git.
+Follow nearby conventions; prefer small domain-focused modules, explicit types and descriptive names. Avoid unrelated formatting changes or speculative infrastructure. Validate all external input. Keep authorization, CSRF, idempotency, ownership, expected-version writes and worker attempt/epoch fencing on new paths. Add additive migrations; never mutate immutable source/settings/note history. Preserve final snapshots when recovering late evidence; retain deletion tombstones and reconcile late object writes. Render arbitrary text safely, preserve code/equation whitespace, and label student changes and unvalidated streaming previews honestly. Keep secrets, model weights, generated caches and local lecture data out of Git.
 
 ## Testing and linting
 

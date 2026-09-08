@@ -8,6 +8,8 @@ Implementation update: M01 private workspace and M02 recording/recovery have rea
 
 **Product loop:** Capture → Transcribe → Organize → Verify → Study from the notes.
 
+Current implementation update (2026-09-08): Phase 6.7 / M07 adds immutable final snapshots, explicit incomplete finalization, late-audio recovery into a new snapshot, audio/lecture deletion reconciliation and browser-copy purge. Saved prompt profiles and automatic loopback workspace access replace the prior one-use key flow. See [M07 implementation](docs/implementation/phase-6-m07.md). Historical design details below are superseded by this access-flow decision; Windows delivery and existing release gates remain open.
+
 ## 1. Authority and current evidence
 
 This specification consolidates product-development Phases 1–5. It supersedes the first-release scope and zero-based build phases in the [original v0.2 specification](docs/archive/original-spec-v0.2.md) and [original architecture](docs/archive/original-architecture-v0.2.html). Those files are preserved unchanged as historical references. Their broader learning/platform ambitions remain future options, not a mandatory first-release checklist.

@@ -5,9 +5,11 @@ import {FormEvent, useCallback, useEffect, useRef, useState} from 'react';
 import Recording from './recording';
 import Transcript from './transcript';
 import Notes from './notes';
+import Finalization from './finalization';
+import DataRemoval from './data-removal';
 
 type Course={id:string;name:string;code:string;created_at:string};
-type Lecture={id:string;course_id:string;title:string;status:string;created_at:string;update_cursor:number};
+type Lecture={id:string;course_id:string;title:string;status:string;audio_removed:boolean;created_at:string;update_cursor:number};
 type Snapshot={lecture:Lecture;course_name:string;settings:{depth:string;format:string};processing_location:string};
 type Session={csrf_token:string;preview:boolean;owner_id:string};
 class ApiError extends Error {constructor(message:string, public status:number){super(message)}}
@@ -29,6 +31,15 @@ export default function Workspace(){
   const [captureBusy,setCaptureBusy]=useState(false);
   const [transcriptBusy,setTranscriptBusy]=useState(false);
   const sessionExpired=useCallback(()=>setSession(null),[]);
+  const [removedAudio,setRemovedAudio]=useState<string[]>([]);
+  const dataRemoved=useCallback((lecture:string,kind:string)=>{
+    setRemovedAudio(ids=>ids.includes(lecture)?ids:[...ids,lecture]);
+    if(kind==='lecture'){
+      setSnapshot(old=>old?.lecture.id===lecture?null:old);
+      setLectures(old=>old.filter(row=>row.id!==lecture));
+      if(location.hash==='#lecture/'+lecture)location.hash='';
+    }
+  },[]);
   const [courses,setCourses]=useState<Course[]>([]);
   const [route,setRoute]=useState('');
   const [lectures,setLectures]=useState<Lecture[]>([]);
@@ -101,14 +112,16 @@ export default function Workspace(){
     <div className="workspace-body"><div className="topbar"><span>YOUR SPACE TO LEARN</span><span className="privacy-badge"><span className="status-dot"/>{session.preview?'Local preview':'Private library'}</span></div>
     <main id="main-content" tabIndex={-1}>
       <div className="preview-notice">{session.preview?'Local preview · ':''}Your model takes notes from the lecture. Review the ideas, check the sources, and keep learning.</div>
+      <DataRemoval owner={session.owner_id} csrf={session.csrf_token} onRemoved={dataRemoved}/>
       {error&&!form&&<div className="error" role="alert">{error} <a href="#">Return to library</a></div>}
       {viewLoading?<p role="status" className="page-loading">Opening lecture library…</p>:snapshot?<>
         <a className="back-link" href={`#course/${snapshot.lecture.course_id}`}>← {snapshot.course_name}</a>
         <div className="page-heading"><div><p className="eyebrow">LECTURE WORKSPACE</p><h1>{snapshot.lecture.title}</h1><p className="muted">Created {date(snapshot.lecture.created_at)} <span className="separator">/</span> Saved to your course</p></div><span className="prepared-badge">Saved workspace</span></div>
-        <Recording owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setCaptureBusy}/>
+        {snapshot.lecture.audio_removed||removedAudio.includes(snapshot.lecture.id)?<p className="inline-notice">Audio has been removed. Transcript, notes and saved revisions remain available.</p>:<Recording owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setCaptureBusy}/>}
         <LiveUpdates key={snapshot.lecture.id+'-live'} lecture={snapshot.lecture.id} onSessionExpired={sessionExpired}/>
         <Notes key={snapshot.lecture.id+'-notes'} lecture={snapshot.lecture.id} csrf={session.csrf_token} onSessionExpired={sessionExpired}/>
         <Transcript key={snapshot.lecture.id} owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setTranscriptBusy} onSessionExpired={sessionExpired}/>
+        <Finalization key={snapshot.lecture.id+'-final'} lecture={snapshot.lecture.id} csrf={session.csrf_token} busy={captureBusy||transcriptBusy} onRemoved={dataRemoved}/>
       </>:route.startsWith('course/')&&selected?<>
         <a className="back-link" href="#">← Your library</a><div className="page-heading"><div><p className="eyebrow">{selected.code||'YOUR COURSE'}</p><h1>{selected.name}</h1><p className="muted">Your lectures, together in one place.</p></div><button className="primary" onClick={()=>openForm('lecture')}>+ New lecture</button></div>
         <div className="section-row"><h2>Lectures <span className="count">{lectures.length}</span></h2><span>Most recent first</span></div>
