@@ -49,6 +49,8 @@ class Completion(QObject):
     def success(self, value):
         try:
             self.done(value)
+        except Exception as exc:
+            self.failed(str(exc))
         finally:
             _tasks.discard(self.task)
             self.deleteLater()

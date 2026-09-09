@@ -15,6 +15,8 @@ def main():
     parser.add_argument('--data-dir', type=Path)
     parser.add_argument('--smoke-test', type=Path)
     args = parser.parse_args()
+    if args.smoke_test and not args.data_dir:
+        parser.error('Synthetic verification requires an explicit isolated --data-dir')
     app = QApplication(sys.argv[:1])
     app.setQuitOnLastWindowClosed(False)
     app.setApplicationName('Notetaker'); app.setOrganizationName('Notetaker')
