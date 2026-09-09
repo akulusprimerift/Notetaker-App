@@ -50,14 +50,14 @@ def lecture_json(lecture):
 
 
 def owned_course(db, owner, course_id):
-    course = db.scalar(select(Course).where(Course.id == course_id, Course.owner_id == owner))
+    course = db.scalar(select(Course).where(Course.id == course_id, Course.owner_id == owner, Course.tombstoned.is_(False)))
     if not course:
         error(404, "unavailable", "This course is unavailable.")
     return course
 
 
 def owned_lecture(db, owner, lecture_id):
-    lecture = db.scalar(select(Lecture).join(Course).where(Lecture.id == lecture_id, Course.owner_id == owner, Lecture.tombstoned.is_(False)))
+    lecture = db.scalar(select(Lecture).join(Course).where(Lecture.id == lecture_id, Course.owner_id == owner, Course.tombstoned.is_(False), Lecture.tombstoned.is_(False)))
     if not lecture:
         error(404, "unavailable", "This lecture is unavailable.")
     return lecture
@@ -185,7 +185,7 @@ def create_app(settings: Settings | None = None):
 
     @app.get("/courses")
     def courses(session=Depends(current),db=Depends(db_session)):
-        rows=db.scalars(select(Course).where(Course.owner_id==session.owner_id).order_by(Course.created_at,Course.id)).all()
+        rows=db.scalars(select(Course).where(Course.owner_id==session.owner_id,Course.tombstoned.is_(False)).order_by(Course.created_at,Course.id)).all()
         return [course_json(row) for row in rows]
 
     @app.post("/courses",status_code=201)
@@ -213,6 +213,8 @@ def create_app(settings: Settings | None = None):
         if existing:
             return lecture_json(owned_lecture(db,session.owner_id,existing.result_id))
         db.scalar(select(Course).where(Course.id==course_id).with_for_update())
+        db.expire_all()
+        owned_course(db,session.owner_id,course_id)
         lecture=Lecture(course_id=course_id,title=body.title,update_seq=1)
         db.add(lecture)
         db.flush()
@@ -290,6 +292,8 @@ def create_app(settings: Settings | None = None):
     install_notes(app, current, db_session, owned_lecture, receipt)
     from .materials import install_materials
     install_materials(app, current, db_session, owned_course, owned_lecture, receipt)
+    from .course_deletion import install_course_deletion
+    install_course_deletion(app,current,db_session,receipt)
     return app
 
 

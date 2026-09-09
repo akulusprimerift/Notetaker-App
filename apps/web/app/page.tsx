@@ -1,6 +1,8 @@
 'use client';
 import LiveUpdates from './live';
 import Materials from './materials';
+import Theme from './theme';
+import CourseDelete from './course-delete';
 
 import {FormEvent, useCallback, useEffect, useRef, useState} from 'react';
 import Recording from './recording';
@@ -110,7 +112,7 @@ export default function Workspace(){
         {courses.length===0?<p className="sidebar-empty">Your courses will appear here.</p>:courses.map(course=><a key={course.id} href={`#course/${course.id}`} className={`course-link ${selectedId===course.id?'active':''}`}><span className="course-initial">{initial(course.name)}</span><span>{course.name}</span></a>)}
       </nav><div className="sidebar-bottom"><div className="local-note"><span className="status-dot"/>Local workspace</div><p>Saved on this device</p></div>
     </aside>
-    <div className="workspace-body"><div className="topbar"><span>YOUR SPACE TO LEARN</span><span className="privacy-badge"><span className="status-dot"/>{session.preview?'Local preview':'Private library'}</span></div>
+    <div className="workspace-body"><div className="topbar"><span>YOUR SPACE TO LEARN</span><Theme/><span className="privacy-badge"><span className="status-dot"/>{session.preview?'Local preview':'Private library'}</span></div>
     <main id="main-content" tabIndex={-1}>
       <div className="preview-notice">{session.preview?'Local preview · ':''}Your model takes notes from the lecture. Review the ideas, check the sources, and keep learning.</div>
       <DataRemoval owner={session.owner_id} csrf={session.csrf_token} onRemoved={dataRemoved}/>
@@ -126,6 +128,7 @@ export default function Workspace(){
         <Finalization key={snapshot.lecture.id+'-final'} lecture={snapshot.lecture.id} csrf={session.csrf_token} busy={captureBusy||transcriptBusy} onRemoved={dataRemoved}/>
       </>:route.startsWith('course/')&&selected?<>
         <a className="back-link" href="#">← Your library</a><div className="page-heading"><div><p className="eyebrow">{selected.code||'YOUR COURSE'}</p><h1>{selected.name}</h1><p className="muted">Your lectures, together in one place.</p></div><button className="primary" onClick={()=>openForm('lecture')}>+ New lecture</button></div>
+        <CourseDelete course={selected.id} name={selected.name} csrf={session.csrf_token} onDeleted={()=>{setCourses(old=>old.filter(row=>row.id!==selected.id));location.hash='';}}/>
         <Materials key={selected.id} course={selected.id} csrf={session.csrf_token}/>
         <div className="section-row"><h2>Lectures <span className="count">{lectures.length}</span></h2><span>Most recent first</span></div>
         {lectures.length===0?<section className="empty-state"><span className="empty-art" aria-hidden="true">≡</span><p className="eyebrow">START WITH A LECTURE</p><h2>Your next idea belongs here.</h2><p>Create a lecture to give your next class a home.<br/>You can reopen it any time.</p><button className="secondary" onClick={()=>openForm('lecture')}>Create your first lecture <span aria-hidden="true">↗</span></button></section>:<div className="lecture-list">{lectures.map(lecture=><a className="lecture-row" key={lecture.id} href={`#lecture/${lecture.id}`}><span className="lecture-icon" aria-hidden="true">≡</span><div><h3>{lecture.title}</h3><p>{date(lecture.created_at)} · {lecture.status==='prepared'?'No recording yet':'Open transcript and study notes'}</p></div><span className="prepared-badge">{lecture.status==='prepared'?'Prepared':lecture.status==='recording'?'Recording open':'Saved audio'}</span><span aria-hidden="true">↗</span></a>)}</div>}

@@ -214,6 +214,8 @@ async def coordinator(app):
         try:
             await run_in_threadpool(reconcile_finalizations,app.state.sessions)
             await run_in_threadpool(reconcile_deletions,app.state.sessions,app.state.audio_store)
+            from .course_deletion import reconcile_courses
+            await run_in_threadpool(reconcile_courses,app.state.sessions)
         except Exception:log.warning('lifecycle_reconciliation_retry')
         await asyncio.sleep(2)
 

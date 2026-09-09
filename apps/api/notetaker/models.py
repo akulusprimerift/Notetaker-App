@@ -48,6 +48,7 @@ class Course(Base):
     owner_id: Mapped[str] = mapped_column(ForeignKey("owners.id"), index=True)
     name: Mapped[str] = mapped_column(String(120))
     code: Mapped[str] = mapped_column(String(24), default="")
+    tombstoned: Mapped[bool] = mapped_column(Boolean, default=False, server_default='0')
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
     __table_args__ = (UniqueConstraint("id", "owner_id"),)
 

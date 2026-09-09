@@ -1,0 +1,9 @@
+'use client';
+import {useRef,useState} from 'react';
+export default function CourseDelete({course,name,csrf,onDeleted}:{course:string;name:string;csrf:string;onDeleted:()=>void}){
+  const [ids,setIds]=useState<string[]|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+  const key=useRef('');
+  async function review(){setError('');try{const response=await fetch(`/api/courses/${course}/lectures`,{cache:'no-store'});if(!response.ok)throw new Error('Could not read this course.');const rows=await response.json();setIds(rows.map((row:{id:string})=>row.id));key.current=crypto.randomUUID();}catch(e){setError((e as Error).message);}}
+  async function remove(){setBusy(true);setError('');try{const response=await fetch(`/api/courses/${course}/deletion`,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf,'Idempotency-Key':key.current},body:JSON.stringify({expected_lecture_ids:ids})});if(!response.ok){const data=await response.json();throw new Error(data.error?.message??'Deletion could not start.');}window.dispatchEvent(new Event('deletion-started'));onDeleted();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
+  return <section className="course-delete">{ids===null?<button className="text-button" onClick={()=>void review()}>Delete course</button>:<div role="region" aria-label="Confirm course deletion"><h2>Delete {name}?</h2><p>This removes {ids.length} lectures, their audio, notes, revisions and uploaded materials. Active recordings in this course will stop. Export anything you want to keep first. Other devices remove local copies when they reconnect.</p><button className="secondary" disabled={busy} onClick={()=>setIds(null)}>Cancel</button> <button className="primary" disabled={busy} onClick={()=>void remove()}>{busy?'Starting deletion…':'Delete course and lectures'}</button></div>}{error&&<p role="alert" className="error">{error}</p>}</section>;
+}

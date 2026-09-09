@@ -1,0 +1,14 @@
+:root{--ink:#1b263b;--muted:#415a77;--green:#415a77;--bg:#e0e1dd;--line:#8e9aaf;--white:#f2f3f1;--soft:#cdd5df;--surface:#f2f3f1;--sidebar:#d0d6df;--accent:#415a77;--focus:#415a77;--warning-bg:#ede3d2;--warning-ink:#654013;color-scheme:light}
+:root[data-theme=dark]{--ink:#f2f2f5;--muted:#b9c3da;--green:#bd9df4;--bg:#090d17;--line:#3e4b67;--white:#121b2d;--soft:#232643;--surface:#121b2d;--sidebar:#101421;--accent:#c3a5fb;--focus:#ffa45c;--warning-bg:#322336;--warning-ink:#ffc58f;color-scheme:dark}
+body,.workspace,.modal{background:var(--bg);color:var(--ink)}
+.sidebar{background:var(--sidebar)}
+.empty-state,.course-card,.lecture-row,.note-paper,.capture-panel,.notes-panel,.note-source,.note-draft,.note-placeholder,.secondary,input,textarea,select{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.active,.preview-notice,.prepared-badge,.count,.card-icon,.lecture-icon,.empty-art,.add-card:hover,.streaming-notes,.prompt-profiles{background:var(--soft);color:var(--ink);border-color:var(--line)}
+.primary,.brand-icon{background:var(--accent);border-color:var(--accent);color:#fff}:root[data-theme=dark] .primary,:root[data-theme=dark] .brand-icon{color:#111626}
+.primary:hover{filter:brightness(1.12);background:var(--accent)}.secondary:hover{background:var(--soft)}
+.muted,.eyebrow,.text-button,.back-link,.sidebar-empty,.sidebar-bottom p,.topbar>span:first-child,.section-row>span,.card-footer,.library-footer,.lecture-row p,.lecture-details dt,.source-empty,.paper-heading span,.note-placeholder p,.empty-state p:not(.eyebrow),.nav-title,.nav-title button,.privacy-badge,.capture-message,.recording-segments p,.evidence-label{color:var(--muted)}
+.note-review,.recovery-box{background:var(--warning-bg);color:var(--warning-ink);border-color:var(--line)}.recovery-box p{color:var(--warning-ink)}
+pre,.study-block pre{background:var(--sidebar);color:var(--ink)}.status-dot{background:#778da9}.status-dot.neutral{background:#8e9aaf}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.theme-choice{display:flex;align-items:center;gap:10px;margin:0}.theme-choice select{margin:0;width:auto;padding:5px 8px;border-radius:6px}.course-delete{margin:28px 0}.note-review h3{margin:0}.note-review .section-row{align-items:center}
+:root[data-theme=dark] .error{background:#351b2a;color:#ffc4b6;border-color:#885262}:root[data-theme=dark] .recording-badge{background:#3c2030;color:#ffbd9b}

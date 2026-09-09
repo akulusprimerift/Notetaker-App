@@ -65,3 +65,7 @@ The entry increment is `ce0bb63`. During verification, the shared workspace rece
 M06 commit `ea5c7fa` implemented protected edits and genuine live streaming. Keep its evidence in [M06 implementation](docs/implementation/phase-6-m06.md) and [real-model synthetic smoke](evaluations/reports/m06-live-smoke.json). Its final synthetic 60-second input gave first transcript at 12.14 seconds and streamed prose at 57.67 seconds; those were not full-hour performance qualification.
 
 M08 Windows host/installer, service lifecycle, upgrade/backup/restore and release qualification follow M07. Actual microphone/device failure, representative lecture recognition, human educational-quality review, RAM/VRAM/cold-warm distributions and full-hour endurance remain open. Optional collapsed overview and semantic topic decomposition remain deferred. M07 does not authorize deleting existing student lectures as a verification shortcut.
+
+## Native Windows change (2026-09-09)
+
+The user selected a browser-free native Windows rebuild. M08 remains active. Course deletion now tombstones the course and all children atomically, checks the reviewed lecture list, and uses existing durable audio deletion reconciliation. Slate/Midnight themes and revision-specific dismissible review notices are implemented in the existing development UI. Two new deletion tests, all 60 JavaScript contracts, typecheck, ESLint and Ruff passed. Native Qt Widgets delivery with bundled services is in progress; the old Electron installer is not the requested final deliverable.

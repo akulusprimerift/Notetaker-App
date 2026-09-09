@@ -1,5 +1,6 @@
 'use client';
 import PromptProfiles from './prompt-profiles';
+import ReviewNotice from './review-notice';
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 import NoteEditor,{type Editing} from './note-editor';
@@ -113,11 +114,11 @@ export default function Notes({lecture,csrf,onSessionExpired}:{lecture:string;cs
         {block.kind==='code'||block.kind==='equation'?<pre><code>{passage.text}</code></pre>:<p className="study-text">{passage.text}</p>}
         <div className="citation-list">{passage.sources.map((citation,index)=><button key={index} className="text-button" onClick={()=>void openSource(citation)}>Source {index+1} ↗<span className="sr-only"> for {block.topic}, passage {passage.id}</span></button>)}</div>
       </div>)}</section>)}
-      {(revision.content.issues.length>0||revision.source_issues.length>0||revision.content.coverage.some(c=>c.disposition!=='used'))&&<section className="note-review"><h3>Worth reviewing</h3>
+      {(revision.content.issues.length>0||revision.source_issues.length>0||revision.content.coverage.some(c=>c.disposition!=='used'))&&<ReviewNotice key={revision.id} lecture={lecture} revision={revision.id}>
         {revision.source_issues.length>0&&<p>The transcript includes recording gaps or uncertain recognition. Check the warnings in the transcript below.</p>}
         {revision.content.issues.map((issue,index)=><p key={index}>{issue.detail}</p>)}
         {revision.content.coverage.filter(c=>c.disposition!=='used').map(item=><p key={item.source_id}>{item.disposition==='unclear'?'Unclear passage':'Omitted passage'}: {item.reason} <button className="text-button" onClick={()=>void openSource({source_id:item.source_id,quote:'',occurrence:0})}>Review source</button></p>)}
-      </section>}
+      </ReviewNotice>}
     </div>:<div className="note-placeholder"><span className="paper-icon" aria-hidden="true">≡</span><h3>Listen to the lecture. Let your model take notes.</h3><p>{state?.preference?`Your selected model is ${state.preference.model}. Your notes will appear here when they are ready.`:'Choose a local model once for this lecture. Notes will be created when the saved transcript is ready, and refreshed after corrections.'}</p></div>}
   </section><aside className="lecture-details note-controls"><h2>Your note-taking model</h2><p className="small muted">Works with any course. Your model derives the subject from the transcript and runs locally through Ollama.</p>
     <label htmlFor="note-model">Local model</label><select id="note-model" value={selected||state?.preference?.model||''} disabled={busy} onChange={event=>setSelected(event.target.value)}><option value="">Choose a model</option>{models.map(model=><option key={model.name} value={model.name}>{model.name}</option>)}{state?.preference&&!models.some(m=>m.name===state.preference?.model)&&<option value={state.preference.model}>{state.preference.model} (unavailable)</option>}</select>

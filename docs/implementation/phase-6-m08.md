@@ -29,3 +29,7 @@ Before upgrading service software, finish recording and allow audio saves and in
 Open gates: clean Windows machine install/prerequisite experience, upgrade/uninstall data retention on a separate qualification machine, signed distribution, actual microphone/device failures, full-hour endurance, human educational-quality review, accessibility qualification and coordinated restore. The installer is a development distribution with prerequisites, not a release-ready standalone offline bundle. The user currently authorizes synthetic audio only.
 
 References: [Electron security](https://www.electronjs.org/docs/latest/tutorial/security), [Electron sandboxing](https://www.electronjs.org/docs/latest/tutorial/sandbox), and [phase plan](../project-phases.md).
+
+## Native Windows change (2026-09-09)
+
+The user selected a browser-free native Windows rebuild. M08 remains active. Course deletion now tombstones the course and all children atomically, checks the reviewed lecture list, and uses existing durable audio deletion reconciliation. Slate/Midnight themes and revision-specific dismissible review notices are implemented in the existing development UI. Two new deletion tests, all 60 JavaScript contracts, typecheck, ESLint and Ruff passed. Native Qt Widgets delivery with bundled services is in progress; the old Electron installer is not the requested final deliverable.
