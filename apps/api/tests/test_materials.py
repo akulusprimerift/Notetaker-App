@@ -87,3 +87,40 @@ def test_pptx_text_and_archive_failures():
     with zipfile.ZipFile(data, 'w') as archive:
         archive.writestr('word/document.xml', '<!DOCTYPE a><a/>')
     with pytest.raises(ValueError): extract('unsafe.docx', data.getvalue())
+
+
+def test_pdf_syllabus_and_blank_scan_are_distinguished():
+    from pypdf import PdfWriter
+    from pypdf.generic import DictionaryObject, NameObject, DecodedStreamObject
+    from notetaker.materials import parse_upload
+    writer = PdfWriter()
+    page = writer.add_blank_page(width=612, height=792)
+    font = DictionaryObject({NameObject('/Type'): NameObject('/Font'), NameObject('/Subtype'): NameObject('/Type1'),
+        NameObject('/BaseFont'): NameObject('/Helvetica')})
+    page[NameObject('/Resources')] = DictionaryObject({NameObject('/Font'): DictionaryObject({NameObject('/F1'): writer._add_object(font)})})
+    stream = DecodedStreamObject(); stream.set_data(b'BT /F1 12 Tf 72 720 Td (Course syllabus: binary search) Tj ET')
+    page[NameObject('/Contents')] = writer._add_object(stream)
+    data = io.BytesIO(); writer.write(data)
+    assert 'Course syllabus' in parse_upload('syllabus.pdf', data.getvalue())[0]['text']
+    blank = PdfWriter(); blank.add_blank_page(width=612, height=792)
+    data = io.BytesIO(); blank.write(data)
+    with pytest.raises(ValueError): parse_upload('scan.pdf', data.getvalue())
+
+
+def test_large_mixed_batches_pair_transcript_and_material_evidence():
+    from types import SimpleNamespace
+    from test_notes import DIGEST
+    from notetaker.note_batches import generate_batches, BATCH_BYTES
+    evidence = {'source_snapshot_id': 'test', 'settings_version': 1, 'allow_ai_explanations': False,
+        'profile': {'depth': 'detailed', 'format': 'topic_outline'},
+        'sources': [{'id': 'speech', 'text': 'Binary search requires sorted input.'},
+            *[{'id': f'material:{i}', 'source_kind': 'slides', 'text': 'Binary search details. '*100} for i in range(8)]]}
+    class Paired(FakeNotes):
+        def generate(self, part, pref):
+            assert sum(len(s['text'].encode()) for s in part['sources']) <= BATCH_BYTES
+            assert any(s.get('source_kind') for s in part['sources'])
+            assert any(not s.get('source_kind') for s in part['sources'])
+            return super().generate(part, pref)
+    content, metadata = generate_batches(Paired(), evidence, SimpleNamespace(model='qwen3:4b', model_digest=DIGEST))
+    assert len(content['coverage']) == 9
+    assert metadata['batch_count'] > 1

@@ -1,5 +1,6 @@
 """Bound each model call, reuse unchanged source-backed notes, retain all coverage."""
 from copy import deepcopy
+import re
 from .note_contract import validate_notes
 
 BATCH_BYTES = 8000
@@ -20,10 +21,13 @@ def generate_batches(provider, evidence, preference, previous=None, on_preview=N
     content.update(source_snapshot_id=evidence['source_snapshot_id'], settings_version=evidence['settings_version'])
     done = {s['source_id'] for s in content['coverage']}
     pending = [s for s in evidence['sources'] if s['id'] not in done]
+    has_materials = any(s.get('source_kind') for s in evidence['sources'])
+    # Leave room to pair each passage batch with relevant evidence of the other kind.
+    target_bytes = 5000 if has_materials else BATCH_BYTES
     batches, batch, size = [], [], 0
     for source in pending:
         cost = len(source['text'].encode('utf-8'))
-        if batch and (size + cost > BATCH_BYTES or len(batch) >= BATCH_SOURCES):
+        if batch and (size + cost > target_bytes or len(batch) >= BATCH_SOURCES):
             batches.append(batch); batch, size = [], 0
         batch.append(source); size += cost
     if batch:
@@ -32,6 +36,17 @@ def generate_batches(provider, evidence, preference, previous=None, on_preview=N
     batch_records = deepcopy(metadata.get('batches', []))
     completed_text = ''
     for batch in batches:
+        if has_materials:
+            material_batch = all(s.get('source_kind') for s in batch)
+            terms = set(re.findall(r'\w{4,}', ' '.join(s['text'] for s in batch).lower()))
+            candidates = [s for s in evidence['sources'] if bool(s.get('source_kind')) != material_batch and s not in batch]
+            candidates.sort(key=lambda s: len(terms & set(re.findall(r'\w{4,}', s['text'].lower()))), reverse=True)
+            budget = BATCH_BYTES - sum(len(s['text'].encode('utf-8')) for s in batch)
+            for source in candidates:
+                cost = len(source['text'].encode('utf-8'))
+                if cost <= budget and len(batch) < BATCH_SOURCES:
+                    batch = [*batch, source]
+                    break
         first = next(i for i, s in enumerate(evidence['sources']) if s['id'] == batch[0]['id'])
         # Context helps continuity but is not a newly covered or citeable source.
         context = '\n'.join(s['text'] for s in evidence['sources'][max(0, first-2):first])[-2500:]
@@ -53,7 +68,12 @@ def generate_batches(provider, evidence, preference, previous=None, on_preview=N
             content['blocks'].append(block)
             completed_text += block['topic'] + '\n' + '\n'.join(p['text'] for p in block['passages']) + '\n\n'
         content['issues'].extend(output['issues'])
-        content['coverage'].extend(output['coverage'])
+        coverage = {c['source_id']: c for c in content['coverage']}
+        for entry in output['coverage']:
+            prior = coverage.get(entry['source_id'])
+            if not prior or prior['disposition'] != 'used':
+                coverage[entry['source_id']] = entry
+        content['coverage'] = list(coverage.values())
         if on_preview:
             on_preview(completed_text)
     validate_notes(content, evidence, aggregate=True)

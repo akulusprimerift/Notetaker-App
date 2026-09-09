@@ -5,6 +5,9 @@ import io
 import re
 import posixpath
 import zipfile
+import subprocess
+import sys
+import json
 from pathlib import PurePosixPath
 from typing import Literal
 from xml.etree import ElementTree as ET
@@ -28,6 +31,15 @@ def extract(name, raw):
     pages = []
     if extension in ('.txt', '.md'):
         pages = [('Document', raw.decode('utf-8-sig'))]
+    elif extension == '.pdf':
+        from pypdf import PdfReader
+        reader = PdfReader(io.BytesIO(raw), strict=True)
+        if reader.is_encrypted or len(reader.pages) > 300:
+            raise ValueError('pdf_limit')
+        for index, page in enumerate(reader.pages):
+            pages.append((f'Page {index+1}', page.extract_text() or ''))
+            if sum(len(text) for _, text in pages) > 180000:
+                raise ValueError('text_limit')
     elif extension in ('.pptx', '.docx'):
         with zipfile.ZipFile(io.BytesIO(raw)) as archive:
             entries = archive.infolist()
@@ -62,6 +74,18 @@ def extract(name, raw):
     # Stable excerpts keep long document paragraphs within the note context budget.
     return [{'label': label + (f' · excerpt {start//3000+1}' if len(text)>3000 else ''),
         'text': text[start:start+3000].strip()} for label, text in pages for start in range(0, max(1, len(text)), 3000)]
+
+
+def parse_upload(name, raw):
+    # Keep malformed document processing out of the API process and bound runtime.
+    try:
+        result = subprocess.run([sys.executable, '-m', 'notetaker.material_parser', PurePosixPath(name).suffix.lower()],
+            input=raw, capture_output=True, timeout=20, check=False,
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
+        if result.returncode or len(result.stdout) > 1500000: raise ValueError('parse_failed')
+        return json.loads(result.stdout)
+    except (subprocess.TimeoutExpired, OSError):
+        raise ValueError('parse_failed') from None
 
 
 def material_sources(db, ids):
@@ -127,9 +151,9 @@ def install_materials(app, current, db_session, owned_course, owned_lecture, rec
         try:
             raw = base64.b64decode(body.data, validate=True)
             if len(raw) > MAX_BYTES or not raw: raise ValueError('size')
-            pages = extract(body.name, raw)
+            pages = parse_upload(body.name, raw)
         except (ValueError, KeyError, UnicodeError, zipfile.BadZipFile, ET.ParseError, RuntimeError):
-            error(422, 'material_unreadable', 'Use a readable PPTX, DOCX, UTF-8 TXT or Markdown file, up to 8 MiB, 300 slides and 180,000 characters. Images and scanned text cannot be read. Export older PPT files as PPTX.')
+            error(422, 'material_unreadable', 'Use a readable PPTX, DOCX, PDF, UTF-8 TXT or Markdown file, up to 8 MiB, 300 pages/slides and 180,000 characters. Encrypted files, images and scanned text cannot be read. Export older PPT files as PPTX.')
         fingerprint_body = {'name': body.name, 'kind': body.kind, 'sha256': hashlib.sha256(raw).hexdigest(), 'expected_count': body.expected_count}
         # Serialize course additions and lecture creation on their common parent.
         db.scalar(select(Course).where(Course.id == course_id).with_for_update())
