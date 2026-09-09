@@ -1,8 +1,8 @@
 # Phase 6.8 / M08 — Windows application
 
-Updated: 2026-09-09. Active implementation phase. Electron host and Windows installer are implemented; release qualification remains open.
+Updated: 2026-09-09. Active phase. The user-selected native Qt Widgets application and standalone installer are implemented and synthetically verified on Windows 11. The Electron section below is historical. Native delivery needs no separate Docker, Python, PowerShell, Ollama or browser installation; existing local model files are selected explicitly.
 
-## Windows delivery
+## Historical Electron delivery
 
 Electron 44.3.0 reuses the existing loopback UI/backend. `bun run dev:desktop` opens the desktop host. `bun run build:desktop` produces `.local/desktop-dist/Notetaker-0.1.0-Setup.exe`, an unsigned per-user x64 NSIS installer with Start menu/desktop shortcuts. The installer retains app data on uninstall. The build includes the service source, pinned locks and startup scripts, but no credentials, lecture data, caches or model weights.
 
@@ -47,3 +47,18 @@ Executed: five native tests cover GUI-thread delivery, restart/receipt/gap persi
 Packaging resolved a developer-PATH ICU DLL collision by using controlled lookup and the Windows ICU API. Package scans found no Chromium, Electron, WebView or QtWebEngine binary. Final ZIP/NSIS rebuild and isolated install/reinstall checks are the exact next verification step. Artifacts are under `.local/native-qualified`; do not publish until the final artifact checks are recorded. No microphone access, model download, external inference or Git push was performed.
 
 Final verification follow-up: Chromium regression passed (36.47 seconds); native plus material regression passed (11 tests). The installed native executable passed isolated upload/audio/theme/review smoke. Material mutations now follow the same owner→course lock order as course deletion and lecture creation, preventing a PostgreSQL lock inversion. Native callback failures reach visible error handling, and smoke mode requires an explicit isolated data folder. Final artifacts are being refreshed with these small fixes; no PostgreSQL rerun is claimed because Docker's service engine is stopped.
+
+## Final native delivery evidence
+
+Final artifacts (unsigned Windows x64):
+
+- `.local/native-qualified/Notetaker-Native-0.2.0-Setup.exe`: 208,751,261 bytes; SHA256 `614f5ff3004b8d49370a5ba1f9191e0e75941b3b55180588d64b55bfbdbb9cb2`.
+- `.local/native-qualified/Notetaker-Windows-x64.zip`: 220,528,366 bytes; SHA256 `f0586d4ce2db236834dfafc52f4acd7c5f91ba3d5c703449d12517b1af17b722`.
+
+Final native install and installed-executable smoke passed on Windows 11 with PATH restricted to Windows system directories. No microphone was accessed. Native material upload, synthetic WAV capture/recovery/readback, both themes and review dismissal passed. Uninstall removed the test executable while leaving its library database byte-for-byte unchanged. Reinstallation reopened the earlier course; an additional in-place reinstall also left the library unchanged. Installed GUI/service executables match the final package; the GUI uses the Windows GUI subsystem. No browser-engine binary was found. The local test installation remains at `.local/native-installed`; its test data is under `.local/native-installed-library`, separate from the default user library.
+
+[Machine-readable delivery evidence](../../evaluations/reports/m08-native-delivery.json) and [bundled runtime probe](../../evaluations/reports/m08-native-models.json) record the checks. Final combined backend/native regression: 162 passed, one service-only skip. Browser regression, 60 JavaScript contracts, typecheck, lint, Ruff, production web build, documentation and whitespace checks passed. The last narrow native/material follow-up also passed 11 tests. PostgreSQL was not rerun because Docker's engine was stopped; earlier PostgreSQL evidence remains historical.
+
+GitHub Actions now builds the portable ZIP and checksums, tests it, and prepares a draft release on explicitly pushed `native-v*` tags. This workflow has not been run on GitHub in this task. No push or public release was performed. The installer can be uploaded as a release asset after review. Consumers need local model weights, not separately installed inference applications.
+
+M08 release qualification remains open: truly clean-machine testing, signed publication, version-to-version upgrades, coordinated backup/restore tooling, full-hour endurance, accessibility, physical device/sleep/power-failure tests and representative human note-quality review. Synthetic checks and same-version reinstall are not substitutes for these gates. Existing Docker libraries remain intact and separate; automatic migration into the native library is not implemented.
