@@ -1,8 +1,12 @@
 # Session transfer
 
-Updated: 2026-09-09. Current increment: **Phase 6.8 / M08 — Electron Windows application**.
+Updated: 2026-09-09. Current increment: **Phase 6.8 / M08 — native Windows rebuild (no browser engine)**.
 
-## Latest checkpoint
+## Latest native checkpoint
+
+The user explicitly selected a native Windows rebuild with no browser engine, self-contained runtime delivery, course deletion, dismissible review notices and Slate/Midnight themes. Local commits `4e6eda2` and `9004123` contain the appearance/deletion and standalone-storage increments. Native Qt implementation and checks are described at the end of this file. Final package/install verification is active. The Electron checkpoint below is historical and is not the requested deliverable.
+
+## Earlier Electron checkpoint
 
 The user requested syllabus/curriculum and PowerPoint uploads before Electron Windows delivery, streaming regeneration, installed local model discovery, tests and local commits. Implemented and verified in local commits: shared-workspace `8580df1` initial materials, `9ba7842` ordered bounded evidence, `71ea732` PDF extraction and mixed transcript/slide batches, `fa0c175` Electron host/installer, and `cb3bec5` existing-workspace reuse and installed-app evidence. See [materials evidence](docs/implementation/course-materials.md) and [M08 evidence](docs/implementation/phase-6-m08.md).
 
@@ -71,3 +75,13 @@ M08 Windows host/installer, service lifecycle, upgrade/backup/restore and releas
 The user selected a browser-free native Windows rebuild. M08 remains active. Course deletion now tombstones the course and all children atomically, checks the reviewed lecture list, and uses existing durable audio deletion reconciliation. Slate/Midnight themes and revision-specific dismissible review notices are implemented in the existing development UI. Two new deletion tests, all 60 JavaScript contracts, typecheck, ESLint and Ruff passed. Native Qt Widgets delivery with bundled services is in progress; the old Electron installer is not the requested final deliverable.
 
 The native profile explicitly selects standalone SQLite (WAL, FULL synchronous writes) and private filesystem audio, instead of requiring Docker services. Existing PostgreSQL development libraries remain unchanged. Audio writes are checksum verified, immutable on retries, atomically published and path constrained. Full backend regression: 157 passed, one service-only skip. Native packaging dependencies are pinned separately; no model weights are bundled or downloaded. Native GUI/packaging verification is ongoing.
+
+## Native implementation checkpoint
+
+Implemented a browser-free Qt Widgets/Qt Multimedia workspace, native recording journal and recovery, local material uploads, streaming previews, saved preferences/profiles, protected passage edits, revision comparison/keep/append/replace/undo, source inspection/playback, final snapshot export, course deletion, Slate/Midnight themes and revision-scoped review dismissal. Native writes use the existing authenticated/version-fenced API. Model discovery inspects conventional local Ollama, LM Studio and speech-model folders; importing a local GGUF creates a unique model name and never pulls weights.
+
+Windows child processes are owned by a kill-on-close job; no unrelated services are stopped. Audio persists before upload; every receipt field must match before releasing queued bytes. Native shutdown waits for audio verification, device/pause gaps are recorded, and deletion polling purges journals/drafts. The native library is separate from the preserved Docker workspace.
+
+Executed: five native tests cover GUI-thread delivery, restart/receipt/gap persistence, owned process shutdown, literal streaming text, and real API-backed native protected-edit/regeneration/course-deletion controls. All passed. Source and frozen-executable synthetic smoke passed uploads, audio recovery/readback, themes and review dismissal. Bundled Ollama CPU inference produced eight tokens with existing Qwen3 4B; bundled faster-whisper processed one second of synthetic silence in 8.471 seconds. This verifies runtime loading, not lecture quality or sustained latency. Full backend regression earlier in this increment: 157 passed, one service-only skip. Web typecheck, lint, 60 contracts and production build passed; documentation links/coverage passed.
+
+Packaging resolved a developer-PATH ICU DLL collision by using controlled lookup and the Windows ICU API. Package scans found no Chromium, Electron, WebView or QtWebEngine binary. Final ZIP/NSIS rebuild and isolated install/reinstall checks are the exact next verification step. Artifacts are under `.local/native-qualified`; do not publish until the final artifact checks are recorded. No microphone access, model download, external inference or Git push was performed.

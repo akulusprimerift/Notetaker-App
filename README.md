@@ -1,16 +1,20 @@
 # Notetaker App
 
-Current work: course materials were brought forward from Phase 7.2 by the user before Phase 6.8. PPTX, DOCX, TXT and Markdown uploads now pin source text into streamed, protected note regeneration. See [materials evidence](docs/implementation/course-materials.md). The Electron host and installer are now implemented; Windows verification is active. Earlier qualification gaps remain open.
+Current work: course materials were brought forward from Phase 7.2 by the user before Phase 6.8. PPTX, DOCX, TXT and Markdown uploads now pin source text into streamed, protected note regeneration. See [materials evidence](docs/implementation/course-materials.md). The user has selected a browser-free native Windows rebuild. Qt Widgets, bundled local services and standalone storage now replace Electron for the Windows deliverable; verification is active. Earlier qualification gaps remain open.
 
 A Windows lecture note-taking application for any course or subject, focused on turning dense, content-heavy lectures into detailed, organized, trustworthy notes.
 
 The current product priority is **reliable lecture capture → timestamped transcription → high-quality, source-linked notes**. Notes should preserve definitions, explanations, worked examples, reasoning, qualifications, and professor emphasis. A short summary is an optional companion to the detailed notes.
 
+## Native Windows download
+
+See [download and model setup](docs/native-download.md). The native package runs without Docker, Python, PowerShell, Ollama or a browser installed separately. Model weights are selected from existing local files and are never downloaded automatically. The standalone library does not automatically import the earlier Docker library. GitHub Actions can build the downloadable ZIP; no public release has been pushed by this task.
+
 ## Current phase
 
 Follow the [feature and architecture phase plan](docs/project-phases.md) for all future work: Phase 6.1–6.8 maps to M01–M08, with features, architecture changes, completion evidence and local commits for every increment.
 
-**Phase 6.8 / M08: Windows application.** Electron host, setup and model discovery now reuse the existing workspace. M07 behavior is retained: Save immutable final lecture snapshots with incomplete results visible, retain revision history, recover late audio into a new snapshot, remove audio or delete a lecture with progress and browser-copy cleanup. Saved prompt profiles reuse your instructions across lectures, and the local workspace opens without an access key. Human quality review, full-lecture hardware qualification and the M08 Windows installer remain open.
+**Phase 6.8 / M08: Windows application.** The native Qt Widgets application bundles its Python and CPU inference runtimes, uses an explicit standalone library and detects local model locations. The earlier Electron/Docker workspace remains a separate development option. M07 behavior is retained: Save immutable final lecture snapshots with incomplete results visible, retain revision history, recover late audio into a new snapshot, remove audio or delete a lecture with progress and browser-copy cleanup. Saved prompt profiles reuse your instructions across lectures, and the local workspace opens without an access key. Human quality review, full-lecture hardware qualification and release qualification remain open.
 
 - [Finalization and data control / M07](docs/implementation/phase-6-m07.md): snapshot history, late recovery, deletion reconciliation and browser purge.
 - [Working instructions](AGENTS.md) and [session transfer](SESSION_TRANSFER.md): product intent, workflow, Bun/uv commands and the latest handoff.

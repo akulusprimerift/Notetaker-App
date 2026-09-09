@@ -53,7 +53,7 @@ class LocalAudioStore:
         if not base.exists():
             return []
         return [p.relative_to(self.root).as_posix() for p in base.rglob('*')
-                if p.is_file() and p.resolve().is_relative_to(self.root) and not p.name.startswith('.pending-')]
+                if p.is_file() and p.resolve().is_relative_to(self.root)]
 
     def delete_verified(self, key):
         target = self.path(key)

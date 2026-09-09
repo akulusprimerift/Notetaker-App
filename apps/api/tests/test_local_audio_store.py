@@ -19,6 +19,13 @@ def test_standalone_objects_verify_retry_and_reject_overwrite(tmp_path):
     store.delete_verified(key)
     store.delete_verified(key)
     assert store.list_keys('lecture/') == []
+    # A process can die between fsync and publication. Deletion must include
+    # these unpublished temporary bytes as well as verified objects.
+    pending = store.path('lecture/run/.pending-crash')
+    pending.write_bytes(data)
+    assert store.list_keys('lecture/') == ['lecture/run/.pending-crash']
+    store.delete_verified('lecture/run/.pending-crash')
+    assert store.list_keys('lecture/') == []
 
 
 @pytest.mark.parametrize('key', ['../outside', '/absolute', 'a/../../b', 'C:/outside', 'a//b'])

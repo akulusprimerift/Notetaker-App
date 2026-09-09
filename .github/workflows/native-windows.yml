@@ -1,0 +1,42 @@
+name: Native Windows package
+on:
+  workflow_dispatch:
+  push:
+    tags: ['native-v*']
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Install pinned build dependencies
+        run: |
+          uv venv
+          uv pip sync apps/api/requirements-native.lock apps/api/requirements-dev.lock
+      - name: Verify backend and native contracts
+        env:
+          PYTHONPATH: 'apps/api;apps/api/tests;apps/native'
+        run: uv run --no-project python -m pytest apps/api/tests tests/native -q
+      - name: Build browser-free package
+        run: ./scripts/Build-Native.ps1 -PrepareVendor
+      - name: Verify packaged synthetic workflow
+        run: |
+          $process = Start-Process .local/native-qualified/Notetaker/Notetaker.exe -ArgumentList '--data-dir .local/ci-native-library --smoke-test .local/ci-native-smoke' -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode) { throw 'Packaged smoke failed' }
+          Get-Content .local/ci-native-smoke/report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Notetaker-Windows-x64
+          path: |
+            .local/native-qualified/Notetaker-Windows-x64.zip
+            .local/ci-native-smoke/report.json
+      - name: Prepare a reviewable GitHub release on native version tags
+        if: startsWith(github.ref, 'refs/tags/native-v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release create "$env:RELEASE_TAG" .local/native-qualified/Notetaker-Windows-x64.zip --draft --title "Notetaker $env:RELEASE_TAG" --notes-file docs/native-download.md

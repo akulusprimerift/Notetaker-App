@@ -1,6 +1,6 @@
 # Windows desktop direction
 
-Date: 2026-09-08. Status: Electron selected and implemented in [M08](../implementation/phase-6-m08.md); release qualification remains open. The proposed steps below are retained as the original direction.
+Date: 2026-09-09. The user explicitly selected a native Windows application with no browser engine. Qt Widgets replaces Electron for the deliverable. Python, Qt, faster-whisper and the CPU Ollama executable are bundled; models remain user-selected local files. An explicit standalone SQLite/private-file profile removes Docker dependencies while retaining backend source, revision and deletion contracts. Existing Docker libraries are preserved separately. See [native download](../native-download.md) and [M08](../implementation/phase-6-m08.md). The Electron proposals below are historical and do not control the native implementation.
 
 The product is a course-neutral Windows note-taking application. The current browser interface is the development surface for the same product. Reuse the existing React interface, Python services, source validation and saved data when adding a desktop host.
 

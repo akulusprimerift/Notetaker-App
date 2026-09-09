@@ -37,8 +37,11 @@ class Settings(BaseSettings):
             raise ValueError('HTTPS requires secure session cookies')
         if self.standalone:
             from pathlib import Path
+            from sqlalchemy.engine import make_url
             if self.preview or not self.database_url.startswith('sqlite:///') or not Path(self.audio_directory).is_absolute():
                 raise ValueError('Standalone storage requires a SQLite file and an absolute audio directory')
+            if not Path(make_url(self.database_url).database or '').is_absolute():
+                raise ValueError('Standalone storage requires an absolute database file path')
         if self.database_url.startswith("sqlite") and not (self.preview or self.standalone):
             raise ValueError("SQLite requires explicit preview or standalone mode")
         if not self.database_url.startswith(("sqlite", "postgresql+psycopg://")):
