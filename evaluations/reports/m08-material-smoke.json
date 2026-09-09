@@ -1,0 +1,159 @@
+{
+  "synthetic_only": true,
+  "microphone_access": false,
+  "model": "qwen3:4b",
+  "elapsed": 45.5,
+  "preview_updates": 190,
+  "first_preview": {
+    "elapsed": 25.97,
+    "characters": 0
+  },
+  "material_cited": true,
+  "output": {
+    "schema_version": 1,
+    "blocks": [
+      {
+        "id": "b1",
+        "topic": "Binary Search Requirements and Comparison Bound",
+        "kind": "definition",
+        "passages": [
+          {
+            "id": "b1p1",
+            "text": "Binary search requires the input array to be sorted. The algorithm compares the target value with the middle element of the current search range. If the target is found, the search terminates; otherwise, the algorithm discards the half of the array that cannot contain the target and repeats the process on the remaining half.",
+            "evidence_kind": "lecture_paraphrase",
+            "sources": [
+              {
+                "source_id": "speech-test",
+                "quote": "Binary search requires sorted input. Compare the middle element with the target. Discard the half that cannot contain it, then repeat.",
+                "occurrence": 0
+              }
+            ]
+          },
+          {
+            "id": "b1p2",
+            "text": "The maximum number of comparisons required for binary search on an array of size n (where n > 0) is given by the formula: floor(log\u2082(n)) + 1. For empty arrays, no comparisons are needed.",
+            "evidence_kind": "material_paraphrase",
+            "sources": [
+              {
+                "source_id": "material:synthetic:0",
+                "quote": "Binary search comparison bound: at most floor(log2(n)) + 1 comparisons for n greater than zero. Empty arrays require no comparisons.",
+                "occurrence": 0
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "issues": [],
+    "coverage": [
+      {
+        "source_id": "speech-test",
+        "disposition": "used",
+        "reason": "Referenced by these notes."
+      },
+      {
+        "source_id": "material:synthetic:0",
+        "disposition": "used",
+        "reason": "Referenced by these notes."
+      }
+    ],
+    "source_snapshot_id": "synthetic-material-smoke",
+    "settings_version": 1
+  },
+  "metadata": {
+    "provider": "ollama_local",
+    "model": "qwen3:4b",
+    "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+    "ollama_version": "0.33.3",
+    "prompt_version": "draft-v1",
+    "prompt_sha256": "561a7dd81cb9628093e292dcacb0e1f38d94046afa78b5dc53c01203112a441f",
+    "schema_sha256": "3895f0c4fd37fb49d2829da08bd9ef201b081c0bc25fc3b60c6d10377168c4df",
+    "provider_schema_sha256": "21b0bb30ccd91723427a8a7997ca674e633e45efd96cea77ce83ed797b25e10f",
+    "input_sha256": "ee0d0fd69483bec2753746e1fbe8ea3d8bcb509b9030fce4f7d092ca84c0816c",
+    "source_aliases": {
+      "s1": {
+        "source_id": "speech-test",
+        "quote": "Binary search requires sorted input. Compare the middle element with the target. Discard the half that cannot contain it, then repeat.",
+        "occurrence": 0
+      },
+      "s2": {
+        "source_id": "material:synthetic:0",
+        "quote": "Binary search comparison bound: at most floor(log2(n)) + 1 comparisons for n greater than zero. Empty arrays require no comparisons.",
+        "occurrence": 0
+      }
+    },
+    "request_sha256": "1928aee0bcc8aafdae78983e80e15220fa956c4d5a7a2a99419c10138700a2ff",
+    "messages_sha256": "4c12b0b6db88cfbb69a7c81705821f024437b0e5bb8ede7e9dc28a92e87804d9",
+    "adapter_version": "draft-profile-v1",
+    "options": {
+      "temperature": 0,
+      "seed": 42,
+      "num_ctx": 32768,
+      "num_predict": 6000
+    },
+    "preflight_prompt_tokens": 942,
+    "prompt_byte_upper_bound": 7046,
+    "metrics": {
+      "prompt_eval_count": 942,
+      "eval_count": 189,
+      "total_duration": 19522414800
+    },
+    "semantic_support": "not_evaluated",
+    "human_review": "pending",
+    "batch_count": 1,
+    "reused_sources": 0,
+    "input_source_count": 2,
+    "batches": [
+      {
+        "source_ids": [
+          "speech-test",
+          "material:synthetic:0"
+        ],
+        "details": {
+          "provider": "ollama_local",
+          "model": "qwen3:4b",
+          "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+          "ollama_version": "0.33.3",
+          "prompt_version": "draft-v1",
+          "prompt_sha256": "561a7dd81cb9628093e292dcacb0e1f38d94046afa78b5dc53c01203112a441f",
+          "schema_sha256": "3895f0c4fd37fb49d2829da08bd9ef201b081c0bc25fc3b60c6d10377168c4df",
+          "provider_schema_sha256": "21b0bb30ccd91723427a8a7997ca674e633e45efd96cea77ce83ed797b25e10f",
+          "input_sha256": "ee0d0fd69483bec2753746e1fbe8ea3d8bcb509b9030fce4f7d092ca84c0816c",
+          "source_aliases": {
+            "s1": {
+              "source_id": "speech-test",
+              "quote": "Binary search requires sorted input. Compare the middle element with the target. Discard the half that cannot contain it, then repeat.",
+              "occurrence": 0
+            },
+            "s2": {
+              "source_id": "material:synthetic:0",
+              "quote": "Binary search comparison bound: at most floor(log2(n)) + 1 comparisons for n greater than zero. Empty arrays require no comparisons.",
+              "occurrence": 0
+            }
+          },
+          "request_sha256": "1928aee0bcc8aafdae78983e80e15220fa956c4d5a7a2a99419c10138700a2ff",
+          "messages_sha256": "4c12b0b6db88cfbb69a7c81705821f024437b0e5bb8ede7e9dc28a92e87804d9",
+          "adapter_version": "draft-profile-v1",
+          "options": {
+            "temperature": 0,
+            "seed": 42,
+            "num_ctx": 32768,
+            "num_predict": 6000
+          },
+          "preflight_prompt_tokens": 942,
+          "prompt_byte_upper_bound": 7046,
+          "metrics": {
+            "prompt_eval_count": 942,
+            "eval_count": 189,
+            "total_duration": 19522414800
+          },
+          "semantic_support": "not_evaluated",
+          "human_review": "pending"
+        }
+      }
+    ]
+  },
+  "human_review": "pending",
+  "release_eligible": false,
+  "measurement_note": "first_preview records a callback, which can be empty; it is not a measured first-visible-prose latency."
+}

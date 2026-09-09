@@ -8,8 +8,8 @@ const {_electron:electron} = require('../../.venv/Lib/site-packages/playwright/d
   const root=path.resolve(__dirname,'../..');
   const data=path.join(root,'.local','desktop-smoke-profile');await fs.mkdir(data,{recursive:true});
   const environment={...process.env};delete environment.ELECTRON_RUN_AS_NODE;
-  const application=await electron.launch({executablePath:path.join(root,'node_modules/electron/dist/electron.exe'),
-    args:[root,'--user-data-dir='+data],env:environment});
+  const application=await electron.launch({executablePath:process.env.NOTETAKER_TEST_EXECUTABLE || path.join(root,'node_modules/electron/dist/electron.exe'),
+    args:[...(process.env.NOTETAKER_TEST_EXECUTABLE ? [] : [root]),'--user-data-dir='+data],env:environment});
   try{
     const page=await application.firstWindow();
     await page.waitForLoadState('domcontentloaded');
@@ -25,6 +25,14 @@ const {_electron:electron} = require('../../.venv/Lib/site-packages/playwright/d
       await opening;
       const setup=application.windows().find(p=>p!==page);
       await setup.getByRole('heading',{name:'Models on this computer'}).waitFor();
+      await application.evaluate(()=>{globalThis.smokeFetch=globalThis.fetch;globalThis.fetch=async()=>{throw new Error('synthetic offline');};});
+      const offline=await setup.evaluate(()=>window.desktopSetup.status());
+      assert.match(offline.message,/unavailable/i);
+      await application.evaluate(()=>{globalThis.fetch=globalThis.smokeFetch;delete globalThis.smokeFetch;});
+      await application.evaluate(({dialog},folder)=>{globalThis.smokeDialog=dialog.showOpenDialog;dialog.showOpenDialog=async()=>({canceled:false,filePaths:[folder]});},root);
+      await setup.getByRole('button',{name:'Use existing workspace folder'}).click();
+      await setup.locator('#location').filter({hasText:'Existing workspace:'}).waitFor();
+      await application.evaluate(({dialog})=>{dialog.showOpenDialog=globalThis.smokeDialog;delete globalThis.smokeDialog;});
       await setup.getByRole('button',{name:'Refresh model discovery'}).click();
       await setup.locator('#models').filter({hasText:'Ollama'}).waitFor();
       await setup.screenshot({path:path.join(root,'.local/desktop-setup.png'),fullPage:true});
@@ -51,7 +59,7 @@ const {_electron:electron} = require('../../.venv/Lib/site-packages/playwright/d
       await page.screenshot({path:path.join(root,'.local/desktop-setup.png'),fullPage:true});
     }
     await application.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];w.hide();w.show();});
-    console.log('PASS: Electron isolation, setup, local model discovery and window hide/reopen; synthetic journal checked when services are available.');
+    console.log('PASS: Electron isolation, setup, outage reporting, workspace reuse, local model discovery and window hide/reopen; synthetic journal checked when services are available.');
   }finally{
     await application.evaluate(({app,BrowserWindow})=>{for(const w of BrowserWindow.getAllWindows())w.removeAllListeners('close');app.quit();}).catch(()=>{});
   }

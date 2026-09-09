@@ -1,6 +1,7 @@
-param([switch]$NoBuild, [switch]$WithSpeech, [string]$DockerPath, [string]$SpeechModelPath)
+param([switch]$NoBuild, [switch]$WithSpeech, [string]$DockerPath, [string]$SpeechModelPath, [string]$WorkspacePath)
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
+if ($WorkspacePath) { $taskRoot = [IO.Path]::GetFullPath($WorkspacePath) }
 Set-Location -LiteralPath $taskRoot
 if (-not $DockerPath) {
     $taskDocker = Get-Command docker -ErrorAction SilentlyContinue
@@ -18,6 +19,7 @@ $taskEngine = & $DockerPath info --format '{{.OSType}}'
 if ($LASTEXITCODE -ne 0) { throw 'Open Docker Desktop and wait for its Linux engine, then run this script again.' }
 if ($taskEngine -ne 'linux') { throw 'Switch Docker Desktop to Linux containers, then run this script again.' }
 if (-not (Test-Path -LiteralPath '.local/services.env')) {
+    if ($WorkspacePath) { throw 'The selected workspace must contain its existing .local/services.env configuration.' }
     & "$PSScriptRoot/Initialize-Services.ps1"
 }
 $taskArguments = @('compose', '--env-file', '.local/services.env', '--profile', 'app')

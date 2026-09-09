@@ -1,6 +1,6 @@
 # Session transfer
 
-Updated: 2026-09-08. Current increment: **Phase 6.8 / M08 — Electron Windows application**.
+Updated: 2026-09-09. Current increment: **Phase 6.8 / M08 — Electron Windows application**.
 
 ## Latest checkpoint
 
@@ -8,7 +8,7 @@ The user requests syllabus/curriculum and PowerPoint uploads before Electron Win
 
 M08 now has an Electron host, separate setup window, local-service startup, local model discovery and per-user NSIS installer. See [M08 evidence](docs/implementation/phase-6-m08.md). Actual Electron smoke passed with synthetic journal recovery; policy/model tests passed. Initial installer build succeeded; final build/packaged install checks are next. No microphone, model download or push. Existing real-service check passed 148 PostgreSQL tests plus object/broker probes before the PDF follow-up; six material tests subsequently passed with synthetic PDF and paired large batches.
 
-Next: finish final installer and packaged launch checks, refresh the running app with the material changes while preserving volumes, commit M08 evidence. Clean-machine, signing, hardware, human quality, endurance and coordinated backup/restore remain open.
+M08 commit `fa0c175` records the host/installer increment. Final installer build and silent project-local install passed; installed executable smoke passed. Docker refresh passed, retaining existing volumes. Final SQLite run: 149 passed, one service-only skip. Chromium upload/stream/edit/reconnect/lifecycle regression passed. Real Qwen3 4B synthetic materials check: valid source-separated notes, 45.5 seconds, 190 preview callbacks; see the recorded report linked in M08. A desktop follow-up adds explicit existing-workspace reuse and accurate outage reporting; its smoke passed. Next: record final repackage/install evidence and commit verification. Clean-machine, signing, hardware, human quality, endurance and coordinated backup/restore remain open.
 
 ## User request and working rules
 

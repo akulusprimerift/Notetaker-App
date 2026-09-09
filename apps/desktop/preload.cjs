@@ -6,4 +6,5 @@ contextBridge.exposeInMainWorld('desktopSetup', Object.freeze({
   open: () => ipcRenderer.invoke('setup:open'),
   models: () => ipcRenderer.invoke('setup:models'),
   speechFolder: () => ipcRenderer.invoke('setup:speech-folder'),
+  workspaceFolder: () => ipcRenderer.invoke('setup:workspace-folder'),
 }));

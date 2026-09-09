@@ -7,7 +7,7 @@ async function run(action) {
 async function status() {
   const value = await window.desktopSetup.status();
   element('status').textContent = value.message;
-  element('location').textContent = 'Windows app data: ' + value.dataPath;
+  element('location').textContent = 'Windows app data: ' + value.dataPath + '\n' + (value.serviceRoot?'Existing workspace: '+value.serviceRoot:'Select your existing workspace folder to reuse its library when starting services.');
   element('start').disabled = value.starting;
 }
 async function models() {
@@ -22,5 +22,6 @@ element('start').onclick = () => run(async () => {element('start').disabled=true
 element('open').onclick = () => run(() => window.desktopSetup.open());
 element('refresh').onclick = () => run(models);
 element('speech').onclick = () => run(async () => {await window.desktopSetup.speechFolder();await models();});
+element('workspace').onclick = () => run(async () => {await window.desktopSetup.workspaceFolder();await status();await models();});
 void run(async () => {await status();await models();});
 setInterval(() => {void run(status);}, 3000);
