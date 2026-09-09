@@ -94,7 +94,7 @@ services:
       NOTETAKER_SPEECH_MODEL_PATH: /models
       NOTETAKER_KAFKA_BOOTSTRAP: kafka:29092
       NOTETAKER_SPEECH_THREADS: "4"
-    volumes: ["./.local/models/faster-whisper-small.en:/models:ro"]
+    volumes: ["${NOTETAKER_SPEECH_HOST_PATH:-./.local/models/faster-whisper-small.en}:/models:ro"]
     depends_on:
       api: {condition: service_healthy}
     restart: unless-stopped

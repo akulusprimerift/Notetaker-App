@@ -1,6 +1,6 @@
 # Windows desktop direction
 
-Date: 2026-09-08. Status: researched implementation direction; desktop shell and installer are not yet built.
+Date: 2026-09-08. Status: Electron selected and implemented in [M08](../implementation/phase-6-m08.md); release qualification remains open. The proposed steps below are retained as the original direction.
 
 The product is a course-neutral Windows note-taking application. The current browser interface is the development surface for the same product. Reuse the existing React interface, Python services, source validation and saved data when adding a desktop host.
 

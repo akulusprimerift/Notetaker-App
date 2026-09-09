@@ -1,10 +1,14 @@
 # Session transfer
 
-Updated: 2026-09-08. Current increment: **course materials brought forward before Phase 6.8 / M08**.
+Updated: 2026-09-08. Current increment: **Phase 6.8 / M08 — Electron Windows application**.
 
 ## Latest checkpoint
 
-The user now requests syllabus/curriculum and PowerPoint uploads before Electron Windows delivery, with streaming regeneration, local model discovery, tests and local commits. Materials implementation was captured by shared-workspace commit `8580df1`; follow-up fixes preserve actual PPTX slide order and bound long text. See [materials evidence](docs/implementation/course-materials.md). Next: finish the materials checks, then implement and verify the Electron host/installer with disclosed local-service prerequisites. No microphone, model download or push.
+The user requests syllabus/curriculum and PowerPoint uploads before Electron Windows delivery, streaming regeneration, installed local model discovery, tests and local commits. Materials initial code was captured by shared-workspace commit `8580df1`; `9ba7842` verifies ordered bounded evidence and `71ea732` adds PDF extraction and mixed transcript/slide batches. See [materials evidence](docs/implementation/course-materials.md).
+
+M08 now has an Electron host, separate setup window, local-service startup, local model discovery and per-user NSIS installer. See [M08 evidence](docs/implementation/phase-6-m08.md). Actual Electron smoke passed with synthetic journal recovery; policy/model tests passed. Initial installer build succeeded; final build/packaged install checks are next. No microphone, model download or push. Existing real-service check passed 148 PostgreSQL tests plus object/broker probes before the PDF follow-up; six material tests subsequently passed with synthetic PDF and paired large batches.
+
+Next: finish final installer and packaged launch checks, refresh the running app with the material changes while preserving volumes, commit M08 evidence. Clean-machine, signing, hardware, human quality, endurance and coordinated backup/restore remain open.
 
 ## User request and working rules
 

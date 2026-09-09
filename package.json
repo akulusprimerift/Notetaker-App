@@ -5,7 +5,9 @@
   "packageManager": "bun@1.3.10",
   "type": "module",
   "description": "Local lecture notes workspace, service foundation and evaluation contracts.",
-  "workspaces": ["apps/web"],
+  "workspaces": [
+    "apps/web"
+  ],
   "engines": {
     "node": ">=22"
   },
@@ -19,11 +21,17 @@
     "dev:web": "cd apps/web && next dev --hostname 127.0.0.1",
     "build:web": "cd apps/web && next build",
     "typecheck": "cd apps/web && next typegen && tsc --noEmit",
-    "lint": "eslint apps/web/app apps/web/public"
+    "lint": "eslint apps/web/app apps/web/public",
+    "dev:desktop": "electron .",
+    "build:desktop": "electron-builder --config electron-builder.cjs --win nsis --x64",
+    "test:desktop": "node --test tests/desktop/*.test.cjs"
   },
   "devDependencies": {
     "ajv": "8.20.0",
+    "electron": "44.3.0",
+    "electron-builder": "26.15.3",
     "eslint": "9.39.4",
     "typescript-eslint": "8.57.0"
-  }
+  },
+  "main": "apps/desktop/main.cjs"
 }

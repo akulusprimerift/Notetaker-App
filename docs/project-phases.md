@@ -1,6 +1,6 @@
 # Project phases
 
-Sequencing update (2026-09-08): the user accepts M07 implementation and explicitly brings syllabus/curriculum and PowerPoint uploads forward before M08. Active increment: course materials (formerly 7.2), then Electron Windows application and installed local model discovery. See [materials evidence](implementation/course-materials.md). Existing synthetic-only testing and release gates remain unchanged.
+Sequencing update (2026-09-08): the user accepts M07 implementation and explicitly brings syllabus/curriculum and PowerPoint uploads forward before M08. Course materials (formerly 7.2) are implemented. Active increment: Electron Windows application and installed local model discovery. See [M08 evidence](implementation/phase-6-m08.md). See [materials evidence](implementation/course-materials.md). Existing synthetic-only testing and release gates remain unchanged.
 
 Updated: 2026-09-08. This is the working phase plan for future development. Each build phase delivers student-facing features, the architecture needed to support them, and recorded completion evidence.
 
@@ -73,8 +73,8 @@ Routine implementation choices and reversible fixes can proceed within the reque
 | 6.4 / M04 | Bounded automatic notes and source-linked exports implemented; accepted as working by the user. | Retain long-lecture topic/context handling and human quality qualification as open evidence. |
 | 6.5 / M05 | Live assistance accepted by the user; M06 improves timing, removes presets and adds streaming/batching. | Preserve [historical M05 evidence](implementation/phase-6-m05.md); actual live hardware performance and human quality qualification remain open. |
 | 6.6 / M06 | Protected editing and regeneration implemented, with live pipeline improvements. | See [M06 behavior/evidence](implementation/phase-6-m06.md) and [session transfer](../SESSION_TRANSFER.md) for executed checks. Qualify actual model performance and educational quality separately. |
-| 6.7 / M07 | Active: finalization, immutable snapshots, late recovery, deletion reconciliation and browser purge implemented. Saved prompt profiles and automatic local access precede it. | See [M07 behavior/evidence](implementation/phase-6-m07.md) and the session transfer for executed checks. |
-| 6.8 / M08 | Planned. | Windows host, installer and release qualification follow M07. |
+| 6.7 / M07 | Implemented: finalization, immutable snapshots, late recovery, deletion reconciliation and browser purge implemented. Saved prompt profiles and automatic local access precede it. | See [M07 behavior/evidence](implementation/phase-6-m07.md) and the session transfer for executed checks. |
+| 6.8 / M08 | Active: Electron host, local setup, model discovery and NSIS installer implemented. | Verify packaged launch and preserve the remaining clean-machine, hardware, endurance and restore gates. |
 
 The user's current testing preference is **synthetic audio only**. No real microphone access is authorized by this plan. Controlled synthetic speech can support M03 engineering; representative real recordings and human review remain necessary to qualify transcription and educational quality. Missing real-device evidence does not prevent building that synthetic pipeline, but it prevents claiming those checks passed.
 

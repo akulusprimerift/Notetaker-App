@@ -1,6 +1,6 @@
 # Notetaker App
 
-Current work: course materials were brought forward from Phase 7.2 by the user before Phase 6.8. PPTX, DOCX, TXT and Markdown uploads now pin source text into streamed, protected note regeneration. See [materials evidence](docs/implementation/course-materials.md). Electron Windows delivery follows this increment. Earlier qualification gaps remain open.
+Current work: course materials were brought forward from Phase 7.2 by the user before Phase 6.8. PPTX, DOCX, TXT and Markdown uploads now pin source text into streamed, protected note regeneration. See [materials evidence](docs/implementation/course-materials.md). The Electron host and installer are now implemented; Windows verification is active. Earlier qualification gaps remain open.
 
 A Windows lecture note-taking application for any course or subject, focused on turning dense, content-heavy lectures into detailed, organized, trustworthy notes.
 
@@ -10,7 +10,7 @@ The current product priority is **reliable lecture capture → timestamped trans
 
 Follow the [feature and architecture phase plan](docs/project-phases.md) for all future work: Phase 6.1–6.8 maps to M01–M08, with features, architecture changes, completion evidence and local commits for every increment.
 
-**Phase 6.7 / M07: finalization and data control.** Save immutable final lecture snapshots with incomplete results visible, retain revision history, recover late audio into a new snapshot, remove audio or delete a lecture with progress and browser-copy cleanup. Saved prompt profiles reuse your instructions across lectures, and the local workspace opens without an access key. Human quality review, full-lecture hardware qualification and the M08 Windows installer remain open.
+**Phase 6.8 / M08: Windows application.** Electron host, setup and model discovery now reuse the existing workspace. M07 behavior is retained: Save immutable final lecture snapshots with incomplete results visible, retain revision history, recover late audio into a new snapshot, remove audio or delete a lecture with progress and browser-copy cleanup. Saved prompt profiles reuse your instructions across lectures, and the local workspace opens without an access key. Human quality review, full-lecture hardware qualification and the M08 Windows installer remain open.
 
 - [Finalization and data control / M07](docs/implementation/phase-6-m07.md): snapshot history, late recovery, deletion reconciliation and browser purge.
 - [Working instructions](AGENTS.md) and [session transfer](SESSION_TRANSFER.md): product intent, workflow, Bun/uv commands and the latest handoff.
@@ -30,7 +30,7 @@ With Docker Desktop's Linux engine running, provision speech once with `pwsh -Fi
 - [Phase 5 reconciliation](docs/implementation/phase-5-reconciliation.md): decisions changed from the originals and unresolved evaluation work.
 - [Phase 5 verification](docs/implementation/phase-5-verification.md): checks performed on the consolidated documents and artifact.
 
-The active implementation phase is **Phase 6.7 / M07**. M06 protected editing and live improvements are retained. M07 adds finalization/data controls; it does not close outstanding microphone, human-review, sustained-performance or Windows delivery gates. OpenAI/Claude connections remain in Phase 7. Earlier design records follow:
+The active implementation phase is **Phase 6.8 / M08**. See [Windows application](docs/implementation/phase-6-m08.md). M06 protected editing and live improvements are retained. M07 adds finalization/data controls; it does not close outstanding microphone, human-review, sustained-performance or Windows delivery gates. OpenAI/Claude connections remain in Phase 7. Earlier design records follow:
 
 - [Phase 1 product brief](docs/product/phase-1-product-brief.md): audience, first-release scope, note requirements, quality gates, and open decisions.
 - [Phase 2 student experience](docs/product/phase-2-student-experience.md): screens, lecture workflows, recording states, source inspection, editing, export, and accessibility requirements.

@@ -1,4 +1,4 @@
-param([switch]$NoBuild, [switch]$WithSpeech, [string]$DockerPath)
+param([switch]$NoBuild, [switch]$WithSpeech, [string]$DockerPath, [string]$SpeechModelPath)
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $taskRoot
@@ -22,9 +22,12 @@ if (-not (Test-Path -LiteralPath '.local/services.env')) {
 }
 $taskArguments = @('compose', '--env-file', '.local/services.env', '--profile', 'app')
 if ($WithSpeech) {
-    if (-not (Test-Path -LiteralPath '.local/models/faster-whisper-small.en/model.bin')) {
+    if (-not $SpeechModelPath) { $SpeechModelPath = Join-Path $taskRoot '.local/models/faster-whisper-small.en' }
+    $SpeechModelPath = [IO.Path]::GetFullPath($SpeechModelPath)
+    if (-not (Test-Path -LiteralPath (Join-Path $SpeechModelPath 'model.bin'))) {
         throw 'Provision the speech model with scripts/Provision-Speech.ps1 before using -WithSpeech.'
     }
+    $env:NOTETAKER_SPEECH_HOST_PATH = $SpeechModelPath.Replace('\', '/')
     $taskArguments += @('--profile', 'speech')
 }
 $taskArguments += @('up', '-d', '--wait', '--wait-timeout', '120')
