@@ -1,0 +1,3 @@
+-r requirements-speech.in
+PySide6
+pyinstaller

@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="NOTETAKER_", env_file=".env", extra="ignore")
     database_url: str = "postgresql+psycopg://notetaker:development@127.0.0.1:5432/notetaker"
     preview: bool = False
+    standalone: bool = False
+    audio_directory: str = ''
     web_origin: str = "http://127.0.0.1:3000"
     allowed_hosts: list[str] = ["127.0.0.1", "localhost", "api"]
     secure_cookies: bool = False
@@ -33,8 +35,12 @@ class Settings(BaseSettings):
             raise ValueError('Non-loopback web origins require HTTPS')
         if origin.scheme=='https' and not self.secure_cookies:
             raise ValueError('HTTPS requires secure session cookies')
-        if self.database_url.startswith("sqlite") and not self.preview:
-            raise ValueError("SQLite requires explicit NOTETAKER_PREVIEW=true; production uses PostgreSQL")
+        if self.standalone:
+            from pathlib import Path
+            if self.preview or not self.database_url.startswith('sqlite:///') or not Path(self.audio_directory).is_absolute():
+                raise ValueError('Standalone storage requires a SQLite file and an absolute audio directory')
+        if self.database_url.startswith("sqlite") and not (self.preview or self.standalone):
+            raise ValueError("SQLite requires explicit preview or standalone mode")
         if not self.database_url.startswith(("sqlite", "postgresql+psycopg://")):
             raise ValueError("Unsupported database driver")
         return self

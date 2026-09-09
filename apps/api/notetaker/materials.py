@@ -79,7 +79,10 @@ def extract(name, raw):
 def parse_upload(name, raw):
     # Keep malformed document processing out of the API process and bound runtime.
     try:
-        result = subprocess.run([sys.executable, '-m', 'notetaker.material_parser', PurePosixPath(name).suffix.lower()],
+        from pathlib import Path
+        parser = ([str(Path(sys.executable).with_name('NotetakerService.exe')), 'material-parser']
+                  if getattr(sys, 'frozen', False) else [sys.executable, '-m', 'notetaker.material_parser'])
+        result = subprocess.run([*parser, PurePosixPath(name).suffix.lower()],
             input=raw, capture_output=True, timeout=20, check=False,
             creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
         if result.returncode or len(result.stdout) > 1500000: raise ValueError('parse_failed')

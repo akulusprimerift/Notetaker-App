@@ -1,10 +1,11 @@
 """Canonical Phase 4 contract, enforced independently of provider generation grammar."""
 import json
+import sys
 from copy import deepcopy
 from pathlib import Path
 from jsonschema import Draft202012Validator
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parents[3]))
 SCHEMA = json.loads((ROOT / 'contracts/ai/note-output-materials.schema.json').read_text(encoding='utf-8'))
 PROMPT = (ROOT / 'prompts/note-generation-v3.txt').read_text(encoding='utf-8')
 VALIDATOR = Draft202012Validator(SCHEMA)

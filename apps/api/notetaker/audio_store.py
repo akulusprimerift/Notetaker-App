@@ -6,6 +6,12 @@ from botocore.exceptions import ClientError
 
 
 class AudioStore:
+    def __new__(cls, settings):
+        if settings.standalone:
+            from .local_audio_store import LocalAudioStore
+            return LocalAudioStore(settings.audio_directory)
+        return super().__new__(cls)
+
     def __init__(self, settings):
         self.available = bool(settings.s3_access_key and settings.s3_secret_key and not settings.preview)
         self.bucket = settings.audio_bucket

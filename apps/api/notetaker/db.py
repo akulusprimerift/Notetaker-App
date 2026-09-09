@@ -10,4 +10,5 @@ def database(url: str):
             connection.execute("PRAGMA foreign_keys=ON")
             connection.execute("PRAGMA busy_timeout=5000")
             connection.execute("PRAGMA journal_mode=WAL")
+            connection.execute("PRAGMA synchronous=FULL")
     return engine, sessionmaker(engine, expire_on_commit=False)
