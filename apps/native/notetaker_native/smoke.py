@@ -14,6 +14,7 @@ def run(window, destination, app):
     report = {'browser_engine':False, 'microphone_accessed':False}
     def verify():
         api = window.api
+        model_inventory = api.get('/note-models')
         course = api.post('/courses', {'name':'Synthetic native smoke'})
         lecture = api.post('/courses/'+course['id']+'/lectures', {'title':'Synthetic recording'})
         path = '/lectures/'+lecture['id']
@@ -31,7 +32,9 @@ def run(window, destination, app):
         assert not window.journal.pending(manifest['id'])
         saved = api.get(path+'/capture-runs/'+manifest['id']+'/manifest')
         assert saved['chunks'][0]['sha256'] == identity['sha256']
-        report.update(material_upload=True, synthetic_capture=True, verified_audio=True, course_id=course['id'])
+        report.update(material_upload=True, synthetic_capture=True, verified_audio=True, course_id=course['id'],
+                      detected_note_models=len(model_inventory.get('models', [])),
+                      note_models_available=model_inventory.get('available', False))
         return course, lecture
     def shown(rows):
         course, lecture = rows

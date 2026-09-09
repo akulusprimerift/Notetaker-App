@@ -109,6 +109,8 @@ class Window(QMainWindow):
         self.materials = QListWidget(); self.tabs.addTab(self.materials, 'Materials')
         prompts = QWidget(); form = QFormLayout(prompts)
         self.model = QComboBox(); self.model.setAccessibleName('Note model'); form.addRow('Note model', self.model)
+        model_help = QLabel('Choose a lecture in the library, then select a local model here. If this list is empty, open Local models first.')
+        model_help.setWordWrap(True); form.addRow(model_help)
         self.prompts = {}
         for key, label in [('detail_prompt','Detail instructions'), ('layout_prompt','Layout instructions'), ('instructions','Writing instructions')]:
             field = QPlainTextEdit(); field.setMaximumHeight(105); field.setAccessibleName(label)
@@ -475,7 +477,10 @@ class Window(QMainWindow):
                                           {'expected_version':segment['revision'],'text':text}))
 
     def record(self):
-        if not self.require_lecture(): return
+        if not self.require_lecture():
+            self.message('Select the lecture title under a course before recording. Selecting the course name is not enough.')
+            return
+        self.tabs.setCurrentIndex(0)
         try: self.recorder.start(self.lecture)
         except Exception as exc: self.error(str(exc))
 

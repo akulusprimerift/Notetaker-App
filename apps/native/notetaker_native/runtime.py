@@ -53,6 +53,13 @@ class Runtime:
         self.config_path = self.directory/'settings.json'
         self.config = json.loads(self.config_path.read_text('utf-8')) if self.config_path.exists() else {}
         self.detected = model_locations()
+        # Use an already-installed local model store by default. The previous
+        # behavior created an empty per-library store even when Ollama models
+        # were present in the user's normal location.
+        if not self.config.get('ollama_models') and self.detected['ollama']:
+            self.config['ollama_models'] = self.detected['ollama'][0]
+        if not self.config.get('speech_model') and self.detected['speech']:
+            self.config['speech_model'] = self.detected['speech'][0]
 
     def save_config(self):
         temporary = self.config_path.with_suffix('.pending')
