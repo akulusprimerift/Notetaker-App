@@ -100,7 +100,12 @@ Final verification follow-up: Chromium regression passed (36.47 seconds); native
 
 ## Final native delivery evidence
 
-Final artifacts (unsigned Windows x64):
+Final artifacts (unsigned Windows x64, refreshed after the live-workflow repair):
+
+- `.local/native-qualified/Notetaker-Native-0.3.0-Setup.exe`: 655,385,333 bytes; SHA256 `2D954EA08DC9D3B43A7E41AD807FD492337F75B71585C9AEB872B906250AF39E`.
+- `.local/native-qualified/Notetaker-Windows-x64.zip`: 682,419,243 bytes; SHA256 `51CCB8C53E0EC798F1BC3E77DC9A9C00F835E7B3444934C8967A82C614C4717C`.
+
+The previous 0.2.0 artifacts remain historical:
 
 - `.local/native-qualified/Notetaker-Native-0.2.0-Setup.exe`: 208,751,261 bytes; SHA256 `614f5ff3004b8d49370a5ba1f9191e0e75941b3b55180588d64b55bfbdbb9cb2`.
 - `.local/native-qualified/Notetaker-Windows-x64.zip`: 220,528,366 bytes; SHA256 `f0586d4ce2db236834dfafc52f4acd7c5f91ba3d5c703449d12517b1af17b722`.
