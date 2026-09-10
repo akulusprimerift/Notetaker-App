@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Notetaker logo</title>
+  <desc id="desc">An open notebook with a teal audio waveform.</desc>
+  <rect width="256" height="256" rx="56" fill="#16283b"/>
+  <path d="M54 60c0-8.8 7.2-16 16-16h50c13.3 0 25.8 5.3 35 14.6L166 70v126l-11-11.4c-9.2-9.3-21.7-14.6-35-14.6H70c-8.8 0-16-7.2-16-16V60Z" fill="#f7fbff"/>
+  <path d="M202 60c0-8.8-7.2-16-16-16h-31c-13.3 0-25.8 5.3-35 14.6L110 70v126l10-10.4c9.2-9.3 21.7-14.6 35-14.6h31c8.8 0 16-7.2 16-16V60Z" fill="#dbeaf3"/>
+  <path d="M128 62v135" stroke="#16283b" stroke-width="8" stroke-linecap="round"/>
+  <path d="M73 126h17l9-25 13 49 13-72 14 91 12-43 12 25h18" fill="none" stroke="#16c3b2" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

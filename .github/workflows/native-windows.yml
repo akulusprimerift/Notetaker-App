@@ -22,7 +22,7 @@ jobs:
           PYTHONPATH: 'apps/api;apps/api/tests;apps/native'
         run: uv run --no-project python -m pytest apps/api/tests tests/native -q
       - name: Build browser-free package
-        run: ./scripts/Build-Native.ps1 -PrepareVendor
+        run: ./scripts/Build-Native.ps1 -PrepareVendor -MakeNsis (Get-Command makensis).Source
       - name: Verify packaged synthetic workflow
         run: |
           $process = Start-Process .local/native-qualified/Notetaker/Notetaker.exe -ArgumentList '--data-dir .local/ci-native-library --smoke-test .local/ci-native-smoke' -WindowStyle Hidden -Wait -PassThru
@@ -33,11 +33,12 @@ jobs:
           name: Notetaker-Windows-x64
           path: |
             .local/native-qualified/Notetaker-Windows-x64.zip
+            .local/native-qualified/Notetaker-Native-0.3.1-Setup.exe
             .local/native-qualified/SHA256SUMS.txt
             .local/ci-native-smoke/report.json
-      - name: Prepare a reviewable GitHub release on native version tags
+      - name: Publish GitHub release on native version tags
         if: startsWith(github.ref, 'refs/tags/native-v')
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: gh release create "$env:RELEASE_TAG" .local/native-qualified/Notetaker-Windows-x64.zip .local/native-qualified/SHA256SUMS.txt --draft --title "Notetaker $env:RELEASE_TAG" --notes-file docs/native-download.md
+        run: gh release create "$env:RELEASE_TAG" .local/native-qualified/Notetaker-Native-0.3.1-Setup.exe .local/native-qualified/Notetaker-Windows-x64.zip .local/native-qualified/SHA256SUMS.txt --title "Notetaker $env:RELEASE_TAG" --notes-file docs/native-download.md

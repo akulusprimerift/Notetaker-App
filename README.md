@@ -1,5 +1,24 @@
 # Notetaker App
 
+![Notetaker logo](docs/assets/notetaker-logo.svg)
+
+## First public Windows build
+
+Notetaker turns a recorded lecture into timestamped transcription and detailed, source-linked study notes. This first public build is a browser-free native Windows application. Download the installer or portable ZIP from the [latest GitHub release](https://github.com/akulusprimerift/Notetaker-App/releases/latest).
+
+### Install and start
+
+1. On Windows 10 22H2 or Windows 11 x64, download `Notetaker-Native-0.3.1-Setup.exe` and run it. Windows may show an unsigned-app warning; choose the option to continue only if you downloaded the file from this repository's release page.
+2. Open Notetaker from the Start menu. The app creates a private local library automatically; no account, access key, Docker, Python, browser, Ollama or internet connection is required.
+3. Open **Local models** and select a local note model, or import a compatible local Qwen GGUF. Note models are not included in the download and are never downloaded by the app.
+4. Create a course and lecture, optionally add syllabus or text-based lecture materials, choose the recording input, and press **Record**.
+5. Press **Stop and save** when the lecture ends. Live transcript and note previews appear as processing catches up; saved note sections remain available even if a later generation attempt fails.
+6. Review the transcript and notes, make any edits, and export the selected saved revision.
+
+For recovery, backup, model setup, supported materials, storage location and known limitations, see [Windows download and usage](docs/native-download.md). The portable ZIP is useful when you do not want an installer; keep its `_internal` folder and `NotetakerService.exe` beside `Notetaker.exe`.
+
+This release is unsigned and has been verified with synthetic audio and an isolated Windows 11 install. Real-device recording, accessibility, long-duration endurance, coordinated backup/restore, upgrade testing and human note-quality review remain release follow-ups. macOS is planned separately and is not part of this build.
+
 Current work: course materials were brought forward from Phase 7.2 by the user before Phase 6.8. PPTX, DOCX, TXT and Markdown uploads now pin source text into streamed, protected note regeneration. See [materials evidence](docs/implementation/course-materials.md). The user has selected a browser-free native Windows rebuild. Qt Widgets, bundled local services and standalone storage now replace Electron for the Windows deliverable; verification is active. Earlier qualification gaps remain open.
 
 A Windows lecture note-taking application for any course or subject, focused on turning dense, content-heavy lectures into detailed, organized, trustworthy notes.
@@ -8,7 +27,7 @@ The current product priority is **reliable lecture capture → timestamped trans
 
 ## Native Windows download
 
-See [download and model setup](docs/native-download.md). The native package runs without Docker, Python, PowerShell, Ollama or a browser installed separately. Version 0.3.1 includes an English faster-whisper speech model, as requested by the user; note model weights remain selected local files. Inference never downloads models. Recording has input selection, a level meter and separate capture/save counters; live transcript and note previews share the study workspace. Completed note sections are saved and appended during recording once enough transcript context is available. Individual lectures can be deleted. The standalone library does not automatically import the earlier Docker library. GitHub Actions can build the downloadable ZIP; no public release has been pushed by this task.
+See [download and model setup](docs/native-download.md). The native package runs without Docker, Python, PowerShell, Ollama or a browser installed separately. Version 0.3.1 includes an English faster-whisper speech model, as requested by the user; note model weights remain selected local files. Inference never downloads models. Recording has input selection, a level meter and separate capture/save counters; live transcript and note previews share the study workspace. Completed note sections are saved and appended during recording once enough transcript context is available. Individual lectures can be deleted. The standalone library does not automatically import the earlier Docker library. GitHub Actions builds the downloadable ZIP and installer on native version tags.
 
 ## Current phase
 

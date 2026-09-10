@@ -1,4 +1,6 @@
-# Notetaker for Windows
+# Notetaker for Windows — first public build
+
+Download the installer or portable ZIP from the [GitHub releases page](https://github.com/akulusprimerift/Notetaker-App/releases). The current public build is **0.3.1**.
 
 Run `Notetaker-Native-0.3.1-Setup.exe` to install the app and its Start menu shortcut. Alternatively, extract the entire `Notetaker-Windows-x64.zip` into a folder and open `Notetaker.exe`; keep `_internal` and `NotetakerService.exe` next to it. The target is Windows 10 22H2 or Windows 11 x64; current verification was performed on Windows 11. This native Qt Widgets application contains no Chromium, Electron or WebView engine. Docker, Python, PowerShell, Ollama and a browser are not required on the receiving computer.
 
@@ -12,4 +14,19 @@ Choose a lecture and recording input, use **Record**, then **Stop and save**. Th
 
 After an interruption, **Recover saved audio** reconciles the local journal with the library. Do not erase the library folder to resolve a recording error. Notes are checked and saved separately from audio. Upload syllabus/curriculum under Course materials and lecture slides with Add slides / materials. Text-based PPTX, PDF, DOCX, TXT and Markdown are supported; images and scanned text are not interpreted.
 
-This is an unsigned development build. Synthetic verification does not qualify real microphone devices, full-hour endurance, accessibility, educational quality or release readiness. Installing a newer application folder does not remove the per-user library. No public GitHub release has been published by this implementation task.
+## Recommended first-use path
+
+1. Install with `Notetaker-Native-0.3.1-Setup.exe`, or extract `Notetaker-Windows-x64.zip` as a complete folder.
+2. Launch Notetaker and create or open a course. The native library is private to the current Windows user and opens without an access key.
+3. In **Local models**, select a note model already available on the computer or import a compatible local Qwen GGUF. The app does not download models. The bundled English speech model is ready immediately.
+4. Add course materials before recording when useful. Text from PPTX, PDF, DOCX, TXT and Markdown can support note regeneration; scanned images and slide visuals are not interpreted.
+5. Select the lecture and input, then press **Record**. Watch both the level meter and the captured/verified-saved counters. Press **Stop and save** explicitly; recording is not stopped by a temporary input warning.
+6. Let transcript and note sections catch up, then review, edit, regenerate proposals if needed, and export the saved revision you want.
+
+## Files and backups
+
+The library is stored at `%LOCALAPPDATA%\NotetakerNative`. Close Notetaker before copying that entire folder for a manual backup, and keep local model files separately. This library is intentionally separate from the older Docker/PostgreSQL development workspace and is not automatically migrated.
+
+## Release notes and limitations
+
+This is the first public, unsigned Windows build. Synthetic verification and an isolated Windows 11 installation passed, including installation, reinstall retention, audio journal recovery, local materials, themes and protected note editing. These checks do not qualify every physical microphone, accessibility, full-hour endurance, sleep/power-failure recovery, coordinated backup/restore, educational note quality or signed production distribution. macOS is planned for a later release.
