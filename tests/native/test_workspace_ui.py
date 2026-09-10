@@ -8,8 +8,43 @@ from test_capture import capture
 from test_transcription import speech
 from test_notes import notes, correction, FakeNotes
 from test_note_edits import generated
+from test_live import enable, append
 from notetaker.note_worker import plan, claim, execute
 from notetaker_native.window import Window
+
+
+def test_native_study_notes_accumulate_sections_during_open_capture(capture, tmp_path):
+    backend, client, headers, path, run = capture
+    enable(backend, client, headers, path)
+    for sequence in range(4): append(backend, client, headers, path, run, sequence)
+    app = QApplication.instance() or QApplication([])
+    class Api:
+        def get(self, route):
+            response = client.get(route); response.raise_for_status(); return response.json()
+        def post(self, route, body=None):
+            response = client.post(route, json=body or {}, headers={**headers, 'idempotency-key':str(uuid4())})
+            response.raise_for_status(); return response.json()
+    runtime = SimpleNamespace(directory=tmp_path, config={}, save_config=lambda:None,
+                              detected={'ollama':[], 'gguf':[], 'speech':[]})
+    window = Window(Api(), runtime)
+    window.show(); window.lecture = path.split('/')[-1]; window.refresh()
+    try:
+        until(app, lambda:window.state is not None)
+        text = ''
+        for revision in (1, 2):
+            plan(backend.state.sessions)
+            assert execute(backend.state.sessions, FakeNotes(), claim(backend.state.sessions), heartbeat=False)
+            until(app, lambda:not window.polling)
+            window.refresh()
+            until(app, lambda:window.selected() and window.selected()['revision'] == revision)
+            assert window.notes.toPlainText().startswith(text)
+            assert len(window.notes.toPlainText()) > len(text)
+            text = window.notes.toPlainText()
+            assert str(revision)+' sections saved' in window.pipeline_status.text()
+            assert client.get(path+'/transcript').json()['mode'] == 'live'
+    finally:
+        window.close()
+        until(app, lambda:not window.polling and not window.cleaning)
 
 
 def until(app, condition):

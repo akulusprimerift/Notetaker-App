@@ -99,6 +99,11 @@ def publish(sessions, job_id, token, output, metadata):
         resolved = validate_notes(output, evidence, aggregate=True)
         pref = db.get(NotePreference, request.preference_id)
         if metadata.get('model_digest') != pref.model_digest or metadata.get('model') != pref.model: raise ValueError('model_identity')
+        from .materials import material_sources
+        source_count = len(db.scalars(select(TranscriptSnapshotItem.version_id).where(
+            TranscriptSnapshotItem.snapshot_id == request.snapshot_id)).all())
+        source_count += len(material_sources(db, db.get(SettingsVersion, request.settings_id).material_ids))
+        metadata = {**metadata, 'pending_source_count': source_count - len(evidence['sources'])}
         revision = NoteRevision(lecture_id=lecture.id, request_id=request.id, revision=request.base_revision + 1,
             attempt_token=token, content=output, resolved_citations=resolved, metadata_json=metadata)
         db.add(revision); db.flush()

@@ -1,5 +1,7 @@
 # Notetaker App: consolidated product and technical specification
 
+Latest live-note direction (2026-09-10): audio/transcription are accepted. Notes must save successive completed sections into Study Notes during ongoing recording, after sufficient transcript context. Each request pins a bounded source group plus prior covered evidence; pending sources remain explicit, previous revisions immutable, and edited notes protected.
+
 Latest Windows direction (2026-09-09): native Qt Widgets/Multimedia with bundled local services and standalone SQLite/private audio; no browser engine. The user's live-workflow repair request explicitly authorizes a bundled faster-whisper speech model. Native 0.3.0 packages pinned small.en weights; inference stays offline, and note models remain local user selections. Provide device selection, independent captured/verified progress, real segment previews and streamed notes, and individual lecture deletion. This supersedes earlier Electron and no-bundled-speech-model wording below.
 
 Scope update (2026-09-08): user-requested course materials now precede M08. Preserve uploaded originals and extracted evidence; regenerate with streaming after uploads before or after lectures. Pin material identities in immutable settings, distinguish uploaded evidence from speech, preserve edits/final snapshots and fence stale workers. Electron is the selected Windows host; locally installed compatible models must be discoverable. Text extraction does not imply visual interpretation.

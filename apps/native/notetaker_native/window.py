@@ -127,7 +127,7 @@ class Window(QMainWindow):
         self.tabs = QTabWidget(); main.addWidget(self.tabs)
         notes_page = QWidget(); notes_layout = QVBoxLayout(notes_page)
         self.notes = QPlainTextEdit(); self.notes.setReadOnly(True); self.notes.setAccessibleName('Saved study notes')
-        self.notes.setPlaceholderText('Your saved study notes will appear here. Follow live transcription and writing below.')
+        self.notes.setPlaceholderText('Completed sections are added here throughout the lecture. Follow the next section as it is written below.')
         self.notes.setMaximumHeight(100)
         notes_layout.addWidget(self.notes, 3)
         edit_actions = QHBoxLayout(); notes_layout.addLayout(edit_actions)
@@ -409,6 +409,13 @@ class Window(QMainWindow):
         speech = 'Speech model unavailable; open Local models' if 'model_unavailable' in errors else transcript['status'].replace('_',' ')
         note_state = self.state or {}
         note_status = note_state.get('status','waiting for transcript').replace('_',' ')
+        progress = note_state.get('processing', {})
+        saved = progress.get('saved_sections', 0)
+        if note_state.get('status') == 'waiting_for_transcript': note_status = 'collecting context for the next section'
+        elif note_state.get('status') == 'generating': note_status = 'writing the next section…'
+        elif note_state.get('status') == 'queued': note_status = 'next section queued'
+        elif note_state.get('status') == 'ready' and progress.get('pending_sources'): note_status = 'collecting context for the next section'
+        if saved: note_status = str(saved)+' sections saved · '+note_status
         if not note_state.get('preference'): note_status = 'choose a model in Note preferences'
         self.pipeline_status.setText('Transcription: '+speech+' · '+str(transcript.get('processing_delay_seconds',0))+
             's pending    |    Notes: '+note_status+((' · '+note_state['error_code']) if note_state.get('error_code') else ''))

@@ -1,6 +1,20 @@
 # Session transfer
 
-Updated: 2026-09-09. Current increment: **Phase 6.8 / M08 — native Windows rebuild (no browser engine)**.
+Updated: 2026-09-10. Current increment: **Phase 6.8 / M08 — native Windows rebuild (no browser engine)**.
+
+## Incremental native note sections — 0.3.1 (2026-09-10)
+
+Active phase remains 6.8 / M08. The user accepts audio recording and transcription and requests completed note sections during ongoing recording. Each scheduled note request now pins previously covered source IDs plus a bounded new group (8 sources, approximately 180 words / 2,400 UTF-8 bytes, preserving an indivisible source). Enough context still accumulates first (24 seconds of recognized windows or 100 words). Every completed request validates all its pinned evidence, saves a cumulative immutable revision, and allows the next request through even against the same transcript snapshot. Backlogs and stopped tails continue automatically. Pending coverage stays explicit; source corrections, epochs, settings, claims and student-edit protection remain fenced. The Qt status reports saved sections and next-section progress.
+
+Migration 0013 adds nullable source selection for old-request compatibility and scopes request uniqueness to the base note revision. SQLite copies the request table atomically with foreign keys checked and re-enabled; a read-only backup of the existing 0012 native library upgraded with every existing row preserved. The actual student library was not upgraded by this check.
+
+Source synthetic real-model test: a 272.15-second repeated fixture produced live prose at 81.97 seconds and saved revisions at 126.81, 215.88 and 271.91 seconds while capture remained open. All 6,000,940 samples were captured and verified; 329 note previews were observed. This checks live sections, not completed transcript backlog or educational correctness. See [machine-readable evidence](evaluations/reports/m08-native-note-sections.json). No microphone access.
+
+Final source regression: 170 backend/native tests passed, one service-only skip; 60 JavaScript contracts, web typecheck, Ruff, planning-document verification and whitespace checks passed. New regressions cover multiple saved sections against one snapshot while capture remains open, appended speech during inference, late-section failure preservation, stopped tail coverage and actual Qt Study Notes accumulation. Existing edit/proposal, epoch and finalization checks pass.
+
+Exact follow-up: finish final installer compression, record artifact hashes, and commit the artifact evidence locally. All implementation and live checks below have passed. Full lecture hardware, human note-quality and release gates remain open. Historical 0.3.0 and Electron evidence below is retained.
+
+Bundled-worker live verification: first preview 86.99 seconds, saved sections at 125.84, 198.06 and 244.25 seconds, all before capture ended at 272.15 seconds. All 6,000,940 samples were verified; 314 note previews were observed. This uses source Qt widgets with frozen API/speech/note workers; the actual frozen GUI separately passed synthetic capture, material upload, model inventory, themes and review-dismissal smoke checks with a restricted system PATH. The final rebuild also includes idempotent recovery if a process exits after the SQLite table copy but before its version stamp; source backup/restart checks preserve every row.
 
 ## Native live-workflow repair — 0.3.0
 

@@ -25,11 +25,16 @@ def inputs(db, request):
     snapshot = snapshot_json(db, db.get(TranscriptSnapshot, request.snapshot_id))
     settings = db.get(SettingsVersion, request.settings_id)
     from .materials import material_sources
-    return {'source_snapshot_id': request.snapshot_id, 'settings_version': settings.version,
+    evidence = {'source_snapshot_id': request.snapshot_id, 'settings_version': settings.version,
         'allow_ai_explanations': settings.ai_explanations,
         'profile': {'depth': settings.depth, 'format': settings.format, 'instructions': settings.instructions, 'detail_prompt': settings.detail_prompt, 'layout_prompt': settings.layout_prompt},
         'sources': [{'id': s['id'], 'text': s['text'], 'start_ms': round(s['start_sample'] * 1000 / s['sample_rate']),
             'end_ms': round(s['end_sample'] * 1000 / s['sample_rate'])} for s in snapshot['segments']] + material_sources(db, settings.material_ids)}
+    if request.source_ids is not None:
+        ids = set(request.source_ids)
+        evidence['sources'] = [s for s in evidence['sources'] if s['id'] in ids]
+        if {s['id'] for s in evidence['sources']} != ids: raise ValueError('missing_batch_source')
+    return evidence
 
 
 def revision_json(db, revision):
@@ -55,6 +60,12 @@ def notes_json(db, lecture):
     active_request = bool(request and pref and request.preference_id == pref.id and request.settings_id == settings.id
         and job.lifecycle_epoch == lecture.lifecycle_epoch and job.audio_epoch == lecture.audio_epoch)
     stale = bool(revision and (not current_request or revision.request_id != request.id))
+    from .materials import material_sources
+    present = {s['id'] for s in snapshot_json(db, snapshot)['segments']} if snapshot else set()
+    present.update(s['id'] for s in material_sources(db, settings.material_ids))
+    covered = {c['source_id'] for c in revision.content['coverage']} if revision else set()
+    pending = len(present - covered)
+    stale = stale or bool(revision and pending)
     if not pref: status = 'choose_model'
     elif not pref.enabled: status = 'paused'
     elif active_request: status = {'due': 'queued', 'running': 'generating', 'completed': 'ready', 'failed': 'needs_attention', 'cancelled': 'waiting_for_transcript'}[job.status]
@@ -65,6 +76,7 @@ def notes_json(db, lecture):
         'profile': {'depth': settings.depth, 'format': settings.format, 'instructions': settings.instructions, 'detail_prompt': settings.detail_prompt, 'layout_prompt': settings.layout_prompt},
         'error_code': job.error_code if active_request else None,
         'processing': {'newer_transcript_pending': bool(snapshot and request and request.snapshot_id != snapshot.id),
+            'pending_sources': pending, 'saved_sections': len(revision.metadata_json.get('batches', [])) if revision else 0,
             'request_age_seconds': round((now()-request.created_at).total_seconds(),1) if request and job.status in ('due','running') else 0},
         'revision': revision_json(db, revision) if revision else None}
 
@@ -82,12 +94,17 @@ def schedule_notes(db, lecture):
     revision = latest(db, NoteRevision, lecture.id, NoteRevision.revision)
     prior = db.get(NoteRequest, revision.request_id) if revision else None
     previous_sources = {c['source_id'] for c in revision.content['coverage']} if prior and prior.settings_id == settings.id and prior.preference_id == pref.id else set()
-    present = {s['id'] for s in snapshot['segments']}
+    from .materials import material_sources
+    sources = snapshot['segments'] + material_sources(db, settings.material_ids)
+    present = {s['id'] for s in sources}
+    compatible = bool(prior and prior.settings_id == settings.id and prior.preference_id == pref.id and previous_sources <= present)
+    if not previous_sources <= present: previous_sources = set()
+    if previous_sources == present and prior.snapshot_id == snapshot['id']: return None
     fresh = [s for s in snapshot['segments'] if s['id'] not in previous_sources]
     # Wait for several short segments (24 seconds of recognized audio windows),
     # or 100 words, before live note work. Flush short tails after capture stops.
     # Corrections and changed preferences bypass the accumulation delay.
-    if transcript['mode'] == 'live' and (not revision or (prior.settings_id == settings.id and prior.preference_id == pref.id and previous_sources <= present)):
+    if transcript['mode'] == 'live' and (not revision or compatible):
         from .models import SpeechWindow, TranscriptSegment, TranscriptVersion, CaptureRun
         windows = db.execute(select(SpeechWindow.id, SpeechWindow.core_start, SpeechWindow.core_end, CaptureRun.sample_rate)
             .join(TranscriptSegment, TranscriptSegment.window_id == SpeechWindow.id)
@@ -96,9 +113,11 @@ def schedule_notes(db, lecture):
             .where(TranscriptVersion.id.in_([s['id'] for s in fresh])).distinct()).all()
         seconds = sum((end-start)/rate for _, start, end, rate in windows)
         words = sum(len(s['text'].split()) for s in fresh)
-        if seconds < 24 and words < 100: return None
+        backlog = bool(revision and revision.metadata_json.get('pending_source_count', 0))
+        if seconds < 24 and words < 100 and not backlog: return None
     old = db.scalar(select(NoteRequest).where(NoteRequest.snapshot_id == snapshot['id'],
-        NoteRequest.preference_id == pref.id, NoteRequest.settings_id == settings.id))
+        NoteRequest.preference_id == pref.id, NoteRequest.settings_id == settings.id,
+        NoteRequest.base_revision == (revision.revision if revision else 0)))
     if old: return old
     running = db.scalar(select(Job.id).where(Job.lecture_id == lecture.id, Job.kind == 'notes.generate',
         Job.status == 'running', Job.lease_expires_at > now()).limit(1))
@@ -107,13 +126,25 @@ def schedule_notes(db, lecture):
         Job.status.in_(['due', 'running'])).values(status='cancelled', error_code='superseded'))
     revision = latest(db, NoteRevision, lecture.id, NoteRevision.revision)
     request = NoteRequest(lecture_id=lecture.id, preference_id=pref.id, snapshot_id=snapshot['id'],
-        settings_id=settings.id, base_revision=revision.revision if revision else 0)
+        settings_id=settings.id, base_revision=revision.revision if revision else 0,
+        source_ids=section_sources(sources, previous_sources))
     db.add(request); db.flush()
     job = Job(lecture_id=lecture.id, kind='notes.generate', logical_key='notes:' + request.id,
         lifecycle_epoch=lecture.lifecycle_epoch, audio_epoch=lecture.audio_epoch, input_revision=request.id)
     db.add(job); db.flush()
     db.add(Outbox(lecture_id=lecture.id, event_type='notes.requested', entity_id=job.id, lifecycle_epoch=lecture.lifecycle_epoch))
     return request
+
+
+def section_sources(sources, covered):
+    """One contextual section per durable revision, including all reused evidence."""
+    selected, size, words = set(covered), 0, 0
+    pending = [s for s in sources if s['id'] not in covered]
+    for source in pending:
+        cost = len(source['text'].encode('utf-8'))
+        if size and (size + cost > 2400 or words >= 180 or len(selected - covered) >= 8): break
+        selected.add(source['id']); size += cost; words += len(source['text'].split())
+    return [s['id'] for s in sources if s['id'] in selected]
 
 
 def markdown(db, lecture, revision):

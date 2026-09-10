@@ -18,6 +18,8 @@ def main():
     parser.add_argument('--audio', type=Path, required=True, help='Controlled synthetic WAV only')
     parser.add_argument('--directory', type=Path, required=True)
     parser.add_argument('--bundle', type=Path)
+    parser.add_argument('--live-sections', type=int, default=0,
+                        help='Require this many saved revisions before the synthetic recording stops')
     args = parser.parse_args()
     args.directory = args.directory.resolve()
     if args.directory.exists(): raise RuntimeError('Use a fresh isolated verification directory')
@@ -90,8 +92,15 @@ def main():
     timer = QTimer(); timer.setInterval(1000)
     def check():
         selected = window.selected()
-        if time.monotonic()-started > 420: failed('Live workflow timed out'); return
+        if selected and window.recorder.source:
+            sections = report.setdefault('sections_saved_during_capture', [])
+            if not sections or sections[-1]['revision'] != selected['revision']:
+                sections.append({'revision':selected['revision'], 'seconds':round(time.monotonic()-started,2),
+                                 'blocks':len(selected['content']['blocks'])})
+        if time.monotonic()-started > max(420, len(pcm)/2/rate+180): failed('Live workflow timed out'); return
         if selected and previews and report.get('transcript_during_capture') and not window.recorder.source and not window.recorder.finishing:
+            if len(report.get('sections_saved_during_capture', [])) < args.live_sections:
+                failed('Too few sections were saved before recording stopped'); return
             report.update(note_preview_updates=len(previews), speech_preview_updates=len(speech_previews),
                 saved_note_revision=selected['id'], captured_samples=window.recorder.captured,
                 verified_samples=window.recorder.verified, duration_seconds=round(len(pcm)/2/rate,2))

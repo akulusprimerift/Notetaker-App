@@ -4,16 +4,74 @@ from datetime import timedelta
 import pytest
 from sqlalchemy import select
 from test_workspace import setup
-from test_capture import capture, upload
+from test_capture import capture, upload, seal
 from test_transcription import speech, finish_all
 from test_notes import notes, FakeNotes, valid, DIGEST, correction
-from test_live import enable
+from test_live import enable, append
 from notetaker.note_batches import generate_batches, BATCH_SOURCES, BATCH_BYTES
 from notetaker.note_provider import preview_text, OllamaNotes, NoteFailure
 from notetaker.note_worker import plan, claim, execute, renew
 from notetaker.speech_worker import plan_pending
 from notetaker.models import NoteRequest, Job, NoteRevision, now
 from notetaker.config import Settings
+
+
+def test_backlog_saves_separate_sections_while_capture_is_open_and_flushes_tail(capture):
+    app, client, headers, path, run = capture
+    enable(app, client, headers, path)
+    for sequence in range(4): append(app, client, headers, path, run, sequence)
+    original = client.get(path+'/transcript').json()['snapshot']
+    assert len(original['segments']) > 16
+    seen, revisions = [], []
+    class Section(FakeNotes):
+        def generate_stream(self, evidence, pref, preview):
+            assert client.get(path+'/transcript').json()['mode'] == 'live'
+            assert len(evidence['sources']) <= 8
+            seen.extend(s['id'] for s in evidence['sources'])
+            preview('Writing this section while recording continues')
+            return self.generate(evidence, pref)
+    for _ in range(2):
+        plan(app.state.sessions)
+        assert execute(app.state.sessions, Section(), claim(app.state.sessions), heartbeat=False)
+        state = client.get(path+'/notes').json()
+        revisions.append(state['revision'])
+        assert state['processing']['pending_sources'] > 0 and state['stale']
+        assert client.get(path+'/transcript').json()['mode'] == 'live'
+    assert revisions[1]['content']['blocks'][:len(revisions[0]['content']['blocks'])] == revisions[0]['content']['blocks']
+    assert revisions[1]['revision'] == revisions[0]['revision']+1
+    assert len(seen) == len(set(seen)) == 16
+    # Both sections used the same immutable transcript snapshot, without needing
+    # new speech or Stop to allow the second request through idempotency checks.
+    assert revisions[0]['content']['source_snapshot_id'] == revisions[1]['content']['source_snapshot_id'] == original['id']
+    assert seal(client, headers, path, run, last=3, samples=5760000).status_code == 200
+    finish_all(app)
+    for _ in range(20):
+        plan(app.state.sessions)
+        chosen = claim(app.state.sessions)
+        if not chosen: break
+        assert execute(app.state.sessions, FakeNotes(), chosen, heartbeat=False)
+    state = client.get(path+'/notes').json()
+    final_sources = client.get(path+'/transcript').json()['snapshot']['segments']
+    assert {c['source_id'] for c in state['revision']['content']['coverage']} == {s['id'] for s in final_sources}
+    assert state['processing']['pending_sources'] == 0 and not state['stale']
+
+
+def test_later_section_failure_keeps_saved_notes_and_appends_do_not_cancel_running_section(capture):
+    app, client, headers, path, run = capture
+    enable(app, client, headers, path)
+    for sequence in range(2): append(app, client, headers, path, run, sequence)
+    plan(app.state.sessions)
+    assert execute(app.state.sessions, FakeNotes(after=lambda:append(app, client, headers, path, run, 2)),
+        claim(app.state.sessions), heartbeat=False)
+    saved = client.get(path+'/notes').json()['revision']
+    exported = client.get(path+'/notes/revisions/'+saved['id']+'/export').text
+    plan(app.state.sessions)
+    assert not execute(app.state.sessions, FakeNotes(corrupt=True), claim(app.state.sessions), heartbeat=False)
+    state = client.get(path+'/notes').json()
+    assert state['status'] == 'needs_attention'
+    assert state['revision'] == saved
+    assert client.get(path+'/notes/revisions/'+saved['id']+'/export').text == exported
+    assert client.get(path+'/transcript').json()['mode'] == 'live'
 
 
 def test_six_second_cores_publish_before_seal_and_notes_wait_for_context(capture):
@@ -70,7 +128,7 @@ def test_stream_preview_is_visible_before_save_and_failed_text_never_becomes_rev
         def generate_stream(self, evidence, pref, preview):
             preview('This is still being written…')
             with app.state.sessions() as db:
-                request=db.scalar(select(NoteRequest))
+                request=db.scalar(select(NoteRequest).join(Job, Job.input_revision == NoteRequest.id).where(Job.status == 'running'))
                 assert request.preview=='This is still being written…'
                 assert (db.scalar(select(NoteRevision)) is not None) == self.corrupt
             assert client.get(path+'/notes').json()['status']=='generating'

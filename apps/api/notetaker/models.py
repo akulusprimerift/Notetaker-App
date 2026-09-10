@@ -311,11 +311,12 @@ class NoteRequest(Base):
     snapshot_id: Mapped[str] = mapped_column(String(36))
     settings_id: Mapped[str] = mapped_column(ForeignKey('settings_versions.id'))
     base_revision: Mapped[int] = mapped_column(Integer)
+    source_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
     preview: Mapped[str] = mapped_column(Text, default='', server_default='')
     preview_attempt: Mapped[str] = mapped_column(String(36), default='', server_default='')
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
     __table_args__ = (UniqueConstraint('id', 'lecture_id'),
-        UniqueConstraint('snapshot_id', 'preference_id', 'settings_id'),
+        UniqueConstraint('snapshot_id', 'preference_id', 'settings_id', 'base_revision', name='uq_note_request_batch'),
         ForeignKeyConstraint(['snapshot_id', 'lecture_id'], ['transcript_snapshots.id', 'transcript_snapshots.lecture_id']),
         ForeignKeyConstraint(['preference_id', 'lecture_id'], ['note_preferences.id', 'note_preferences.lecture_id']))
 

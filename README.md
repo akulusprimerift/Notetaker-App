@@ -8,7 +8,7 @@ The current product priority is **reliable lecture capture → timestamped trans
 
 ## Native Windows download
 
-See [download and model setup](docs/native-download.md). The native package runs without Docker, Python, PowerShell, Ollama or a browser installed separately. Version 0.3.0 includes an English faster-whisper speech model, as requested by the user; note model weights remain selected local files. Inference never downloads models. Recording has input selection, a level meter and separate capture/save counters; live transcript and note previews share the study workspace. Individual lectures can be deleted. The standalone library does not automatically import the earlier Docker library. GitHub Actions can build the downloadable ZIP; no public release has been pushed by this task.
+See [download and model setup](docs/native-download.md). The native package runs without Docker, Python, PowerShell, Ollama or a browser installed separately. Version 0.3.1 includes an English faster-whisper speech model, as requested by the user; note model weights remain selected local files. Inference never downloads models. Recording has input selection, a level meter and separate capture/save counters; live transcript and note previews share the study workspace. Completed note sections are saved and appended during recording once enough transcript context is available. Individual lectures can be deleted. The standalone library does not automatically import the earlier Docker library. GitHub Actions can build the downloadable ZIP; no public release has been pushed by this task.
 
 ## Current phase
 

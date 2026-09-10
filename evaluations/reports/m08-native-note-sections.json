@@ -1,0 +1,121 @@
+{
+  "phase": "6.8 / M08",
+  "version": "0.3.1",
+  "date": "2026-09-10",
+  "environment": "Windows 11, CPU local Qwen3 4B and faster-whisper small.en",
+  "source_live": {
+    "microphone_accessed": false,
+    "fixture": "synthetic-cs-sections.wav",
+    "real_models": true,
+    "note_model": "qwen3:4b",
+    "first_transcript_seconds": 17.44,
+    "transcript_during_capture": true,
+    "first_note_preview_seconds": 81.97,
+    "sections_saved_during_capture": [
+      {
+        "revision": 1,
+        "seconds": 126.81,
+        "blocks": 3
+      },
+      {
+        "revision": 2,
+        "seconds": 215.88,
+        "blocks": 7
+      },
+      {
+        "revision": 3,
+        "seconds": 271.91,
+        "blocks": 10
+      }
+    ],
+    "note_preview_updates": 329,
+    "speech_preview_updates": 10,
+    "captured_samples": 6000940,
+    "verified_samples": 6000940,
+    "duration_seconds": 272.15
+  },
+  "upgrade": {
+    "from": "0012",
+    "to": "0013",
+    "all_rows_preserved": true,
+    "foreign_keys_enabled_after_upgrade": true,
+    "integrity": "ok",
+    "interrupted_upgrade_resumed": true
+  },
+  "limits": [
+    "Synthetic repeated lecture only; no microphone accessed.",
+    "Timings include concurrent regression or packaging work and are not hardware guarantees.",
+    "Probe checks incremental saved notes before Stop, not full backlog completion or educational correctness.",
+    "PostgreSQL migration and hardware endurance are not qualified by this run."
+  ],
+  "regression": {
+    "backend_and_native_passed": 170,
+    "service_only_skipped": 1,
+    "javascript_contracts_passed": 60,
+    "typecheck": "passed",
+    "ruff": "passed",
+    "planning_docs": "passed",
+    "post_recovery_guard_focused_passed": 10
+  },
+  "bundled_live": {
+    "microphone_accessed": false,
+    "fixture": "synthetic-cs-sections.wav",
+    "real_models": true,
+    "note_model": "qwen3:4b",
+    "first_transcript_seconds": 19.28,
+    "transcript_during_capture": true,
+    "first_note_preview_seconds": 86.99,
+    "sections_saved_during_capture": [
+      {
+        "revision": 1,
+        "seconds": 125.84,
+        "blocks": 3
+      },
+      {
+        "revision": 2,
+        "seconds": 198.06,
+        "blocks": 7
+      },
+      {
+        "revision": 3,
+        "seconds": 244.25,
+        "blocks": 10
+      }
+    ],
+    "note_preview_updates": 314,
+    "speech_preview_updates": 15,
+    "captured_samples": 6000940,
+    "verified_samples": 6000940,
+    "duration_seconds": 272.15
+  },
+  "frozen_gui_smoke": {
+    "browser_engine": false,
+    "microphone_accessed": false,
+    "material_upload": true,
+    "synthetic_capture": true,
+    "verified_audio": true,
+    "detected_note_models": 2,
+    "note_models_available": true,
+    "native_widgets": true,
+    "themes": true,
+    "review_dismissal": true
+  },
+  "bundled_test_scope": "Source Qt live widgets/Recorder with frozen API, speech and note workers; frozen executable separately smoke-tested. The subsequent rebuild adds only migration restart recovery, which is separately checked.",
+  "final_bundle_upgrade": {
+    "from": "0012",
+    "to": "0013",
+    "all_rows_preserved": true,
+    "interrupted_upgrade_resumed": true,
+    "integrity": "ok"
+  },
+  "final_executables": {
+    "Notetaker.exe": {
+      "matches_tested_crc_and_length": true,
+      "sha256": "7948e189fc7b1a3d34c8df923a74bc853c9b6e8458cc9c6dd37096990434bdfa"
+    },
+    "NotetakerService.exe": {
+      "matches_tested_crc_and_length": true,
+      "sha256": "53f666622267421552a5627c53dfe2fb63e64719146f24c28f8c2dbf53d47195"
+    }
+  }
+}
