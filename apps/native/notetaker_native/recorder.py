@@ -22,6 +22,7 @@ class Recorder(QObject):
         self.starting = False
         self.captured = self.verified = 0
         self.level = 0
+        self.device_warning = None
         self.buffer = bytearray()
         self.upload_stop = threading.Event()
         self.timer = QTimer(self)
@@ -83,6 +84,7 @@ class Recorder(QObject):
         self.last_tick = time.monotonic()
         self.last_audio = self.last_tick
         self.last_checked_samples = 0
+        self.device_warning = None
         self.status.emit('Input opened · waiting for audio samples…')
 
     @staticmethod
@@ -128,17 +130,24 @@ class Recorder(QObject):
         if self.run:
             self.progress.emit({'seconds':self.captured/self.run['sample_rate'],
                 'saved_seconds':self.verified/self.run['sample_rate'], 'level':min(100,round(self.level*100))})
-        if self.source and time.monotonic()-self.last_audio > 5:
-            self.stop(gap_reason='microphone_lost')
-            self.status.emit('No audio samples received. Check Windows microphone permission and select another input. Saved audio is retained.')
+        if not self.source:
             return
-        if self.source and gap > 3 and captured_seconds < gap-2:
-            self.stop(gap_reason='sleep_or_suspension')
-            self.status.emit('Recording stopped after a pause or suspension. Review the marked gap.')
-            return
-        if self.source and self.source.error() != QAudio.Error.NoError:
-            self.stop(gap_reason='microphone_lost')
-            self.status.emit('Recording stopped because the input was lost. Saved audio is retained; review the gap.')
+        # Device warnings are informational. The user owns the recording
+        # lifetime; a transient Qt error, silence, sleep, or delayed readyRead
+        # must never end capture behind their back. The explicit Stop control
+        # seals the run and records any gap information during shutdown.
+        warning = None
+        if time.monotonic()-self.last_audio > 5:
+            warning = 'No audio samples received yet. Check Windows microphone permission or choose another input; recording remains active.'
+        elif gap > 3 and captured_seconds < gap-2:
+            warning = 'Audio input is temporarily quiet or delayed; recording remains active and saved audio is retained.'
+        elif self.source.error() != QAudio.Error.NoError:
+            warning = 'Windows reported an input warning; recording remains active. Check the selected device if audio stays quiet.'
+        if warning and warning != self.device_warning:
+            self.device_warning = warning
+            self.status.emit(warning)
+        elif not warning:
+            self.device_warning = None
 
     def upload(self, run):
         path = '/lectures/'+run['lecture']+'/capture-runs/'+run['id']

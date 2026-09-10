@@ -204,7 +204,11 @@ class Window(QMainWindow):
     def recording_message(self, text):
         self.capture_status.setText(text)
         busy = bool(self.recorder.source or self.recorder.starting or self.recorder.finishing)
+        recording = bool(self.recorder.source)
         self.record_button.setEnabled(not busy); self.input.setEnabled(not busy)
+        self.record_button.setText('● Recording…' if recording else 'Record')
+        self.record_button.setProperty('recording', recording)
+        self.record_button.style().unpolish(self.record_button); self.record_button.style().polish(self.record_button)
         self.stop_button.setEnabled(bool(self.recorder.source))
 
     def recording_progress(self, progress):
@@ -212,6 +216,7 @@ class Window(QMainWindow):
         self.clock.setText(stamp(progress['seconds'])+' captured · '+stamp(progress['saved_seconds'])+' saved')
         self.meter.setValue(progress['level'])
         if self.recorder.source:
+            self.record_button.setText('● Recording…')
             self.capture_status.setText('Recording · '+('audio detected' if progress['level'] else 'input is silent; check your microphone'))
 
     def error(self, text):

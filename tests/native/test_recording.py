@@ -62,14 +62,17 @@ def test_preferred_stereo_float_capture_saved_and_sealed(capture, tmp_path, monk
     if no_samples:
         recorder.last_audio -= 6
         recorder.check_device()
+        assert recorder.source is not None
         assert any('No audio samples received' in message for message in messages)
+        assert not recorder.finishing
+        recorder.stop()
     else:
         assert recorder.level == .25
         recorder.stop()
     wait(app,lambda:not recorder.finishing)
-    assert ('Recording interrupted' in messages[-1]) if no_samples else messages[-1] == 'Recording stopped · all captured audio verified'
+    assert messages[-1] == 'Recording stopped · all captured audio verified'
     manifest = client.get('/lectures/'+lecture['id']+'/capture-runs/'+recorder.run['id']+'/manifest').json()
     assert manifest['complete'] and manifest['final_sample_count'] == count
-    if no_samples: assert manifest['gaps'][0]['reason'] == 'microphone_lost'
+    if no_samples: assert manifest['gaps'] == []
     assert recorder.verified == recorder.captured
     assert not recorder.journal.pending(recorder.run['id'])

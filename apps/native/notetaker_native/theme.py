@@ -23,6 +23,7 @@ def stylesheet(name):
     QPushButton:disabled {{ color: {border}; }}
     QPushButton#primary {{ background: {accent}; color: {surface}; font-weight: 600; border: 0; }}
     QPushButton#primary:disabled {{ background: {border}; color: {ink}; }}
+    QPushButton#primary[recording="true"] {{ background: #a83d35; color: #ffffff; font-weight: 700; }}
     QTreeWidget {{ border: 0; background: {surface}; }}
     QTreeWidget::item {{ padding: 10px 4px; margin: 2px 0; }}
     QTreeWidget::item:selected {{ background: {bg}; color: {ink}; border-radius: 6px; }}
