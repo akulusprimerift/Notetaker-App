@@ -100,7 +100,7 @@
     "themes": true,
     "review_dismissal": true
   },
-  "bundled_test_scope": "Source Qt live widgets/Recorder with frozen API, speech and note workers; frozen executable separately smoke-tested. The subsequent rebuild adds only migration restart recovery, which is separately checked.",
+  "bundled_test_scope": "Source Qt live widgets/Recorder with frozen API, speech and note workers; final frozen executable separately smoke-tested. Final rebuild changes migration restart recovery and rebuilds the Python base-library archive. Executable CRC/length matches the live-tested binaries; final migration, restart and GUI checks passed.",
   "final_bundle_upgrade": {
     "from": "0012",
     "to": "0013",
@@ -117,5 +117,30 @@
       "matches_tested_crc_and_length": true,
       "sha256": "53f666622267421552a5627c53dfe2fb63e64719146f24c28f8c2dbf53d47195"
     }
+  },
+  "artifacts": [
+    {
+      "file": "Notetaker-Native-0.3.1-Setup.exe",
+      "bytes": 655392366,
+      "sha256": "e34b9b42786653fc549e9d93a2f1e6317b20e6cafa5eed8a56de72ecacc316d8"
+    },
+    {
+      "file": "Notetaker-Windows-x64.zip",
+      "bytes": 682427779,
+      "sha256": "8fd809e05e932f85e6965491c1f2af2c4be1f68c6e813c7abfe81c59754c29c4"
+    }
+  ],
+  "final_zip_check": {
+    "zip_integrity": "passed",
+    "changed_files_since_live_probe": [
+      "_internal/apps/api/migrations/versions/0013_incremental_note_batches.py",
+      "_internal/apps/api/migrations/versions/__pycache__/0013_incremental_note_batches.cpython-312.pyc",
+      "_internal/base_library.zip"
+    ],
+    "executable_zip_matches_bundle": {
+      "Notetaker.exe": true,
+      "NotetakerService.exe": true
+    },
+    "final_frozen_gui_and_migration_rechecked": true
   }
 }

@@ -12,6 +12,13 @@ Final source regression: 170 backend/native tests passed, one service-only skip.
 
 Bundled-worker live verification: first preview 86.99 seconds, saved sections at 125.84, 198.06 and 244.25 seconds, all before capture ended at 272.15 seconds. All 6,000,940 samples were verified; 314 note previews were observed. This uses source Qt widgets with frozen API/speech/note workers; the actual frozen GUI separately passed synthetic capture, material upload, model inventory, themes and review-dismissal smoke checks with a restricted system PATH. The final rebuild also includes idempotent recovery if a process exits after the SQLite table copy but before its version stamp; source backup/restart checks preserve every row.
 
+Final artifacts in `.local/native-qualified` (2026-09-10):
+
+- `Notetaker-Native-0.3.1-Setup.exe`: 655392366 bytes; SHA256 `e34b9b42786653fc549e9d93a2f1e6317b20e6cafa5eed8a56de72ecacc316d8`.
+- `Notetaker-Windows-x64.zip`: 682427779 bytes; SHA256 `8fd809e05e932f85e6965491c1f2af2c4be1f68c6e813c7abfe81c59754c29c4`.
+
+Final frozen GUI smoke, populated-library upgrade/restart recovery and ZIP integrity passed. The final rebuild retains the tested executable CRCs/lengths; differences are the recovery migration, its Python cache and rebuilt base-library archive. Source implementation commit: `84f1cff`.
+
 ## Historical Electron delivery
 
 Electron 44.3.0 reuses the existing loopback UI/backend. `bun run dev:desktop` opens the desktop host. `bun run build:desktop` produces `.local/desktop-dist/Notetaker-0.1.0-Setup.exe`, an unsigned per-user x64 NSIS installer with Start menu/desktop shortcuts. The installer retains app data on uninstall. The build includes the service source, pinned locks and startup scripts, but no credentials, lecture data, caches or model weights.
