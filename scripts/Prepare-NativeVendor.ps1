@@ -1,4 +1,5 @@
 $ErrorActionPreference = 'Stop'
+& "$PSScriptRoot/Prepare-NativeSpeech.ps1"
 $root = Split-Path $PSScriptRoot -Parent
 $directory = Join-Path $root '.local/native-vendor'
 New-Item -ItemType Directory -Force -Path $directory | Out-Null
@@ -25,5 +26,6 @@ uv run --no-project python scripts/native_notices.py
 if ($LASTEXITCODE) { throw 'Dependency notice collection failed' }
 $notices = Join-Path $directory 'notices'
 Invoke-WebRequest 'https://raw.githubusercontent.com/ollama/ollama/v0.33.3/LICENSE' -OutFile (Join-Path $notices 'OLLAMA-LICENSE.txt')
+Invoke-WebRequest 'https://raw.githubusercontent.com/openai/whisper/main/LICENSE' -OutFile (Join-Path $notices 'WHISPER-MODEL-LICENSE.txt')
 Invoke-WebRequest 'https://www.gnu.org/licenses/lgpl-3.0.txt' -OutFile (Join-Path $notices 'LGPL-3.0.txt')
 Invoke-WebRequest 'https://www.gnu.org/licenses/gpl-3.0.txt' -OutFile (Join-Path $notices 'GPL-3.0.txt')

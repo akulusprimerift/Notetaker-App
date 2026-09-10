@@ -1,5 +1,7 @@
 # Project phases
 
+Current priority (2026-09-09): M08 native recording/live-workflow repair. Version 0.3.0 bundles the user's requested English faster-whisper model, adds input format conversion and capture feedback, streams speech previews beside notes, protects reading position and exposes individual lecture deletion. This supersedes the earlier no-bundled-weights policy for the speech default only. Note models remain local user selections. See [M08 evidence](implementation/phase-6-m08.md).
+
 Sequencing update (2026-09-08): the user accepts M07 implementation and explicitly brings syllabus/curriculum and PowerPoint uploads forward before M08. Course materials (formerly 7.2) are implemented. Active increment: Electron Windows application and installed local model discovery. See [M08 evidence](implementation/phase-6-m08.md). See [materials evidence](implementation/course-materials.md). Existing synthetic-only testing and release gates remain unchanged.
 
 Updated: 2026-09-08. This is the working phase plan for future development. Each build phase delivers student-facing features, the architecture needed to support them, and recorded completion evidence.

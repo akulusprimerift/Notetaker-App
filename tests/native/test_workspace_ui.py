@@ -59,8 +59,14 @@ def test_native_saved_edits_survive_proposal_and_course_deletion(notes, tmp_path
         window.change_theme('Midnight')
         assert runtime.config['theme']=='Midnight'
         monkeypatch.setattr(QMessageBox,'question',lambda *_:QMessageBox.StandardButton.Yes)
-        window.delete_course()
+        sibling = window.api.post('/courses/'+window.course+'/lectures', {'title':'Keep this lecture'})
+        window.delete_lecture()
         until(app,lambda:window.lecture is None)
+        remaining = client.get('/courses/'+window.course+'/lectures').json()
+        assert [row['id'] for row in remaining] == [sibling['id']]
+        assert client.get(path+'/transcript').status_code == 404
+        window.delete_course()
+        until(app,lambda:window.course is None)
         assert client.get('/courses').json()==[]
     finally:
         window.close()

@@ -23,3 +23,18 @@ def test_native_stream_delivers_partial_prose_as_literal_text():
     finally:
         stream.stop.set(); stream.thread.join(timeout=2); http.close()
     assert not stream.thread.is_alive()
+
+
+def test_stream_append_keeps_selection_and_scroll_position():
+    from notetaker_native.window import update_text
+    from PySide6.QtGui import QTextCursor
+    app = QApplication.instance() or QApplication([])
+    field = QPlainTextEdit(); field.resize(400,120); field.show()
+    original = '\n'.join('Lecture line '+str(i) for i in range(100))
+    update_text(field,original); app.processEvents()
+    cursor = field.textCursor(); cursor.setPosition(0); cursor.setPosition(7,QTextCursor.MoveMode.KeepAnchor)
+    field.setTextCursor(cursor); field.verticalScrollBar().setValue(0)
+    update_text(field,original+'\nNext streamed sentence')
+    assert field.textCursor().selectedText()=='Lecture'
+    assert field.verticalScrollBar().value()==0
+    field.close()

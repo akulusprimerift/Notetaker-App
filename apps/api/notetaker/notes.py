@@ -204,6 +204,9 @@ def install_notes(app, current, db_session, owned_lecture, receipt):
                         job = connection.scalar(select(Job).where(Job.kind == 'notes.generate', Job.input_revision == request.id)) if request else None
                         active = bool(job and job.status == 'running' and job.lease_expires_at > now() and current_input(connection, job, lecture))
                         payload = {'attempt': request.preview_attempt if active else '', 'text': request.preview if active else '', 'active': active}
+                        if app.state.settings.standalone:
+                            from .transcription import transcript_json
+                            payload['transcript'] = transcript_json(connection, lecture)
                     except HTTPException as exc:
                         yield ('event: removed\ndata: {}\n\n' if exc.status_code==404 else 'event: expired\ndata: {}\n\n')
                         return

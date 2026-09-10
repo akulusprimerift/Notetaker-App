@@ -141,6 +141,26 @@ time.sleep(120)
     assert execute(app.state.sessions,app.state.audio_store,FakeSpeech(),new,heartbeat=False)
 
 
+def test_speech_preview_is_fenced_and_never_saved_as_transcript(speech):
+    from notetaker.speech_worker import preview
+    app,client,headers,path,run=speech
+    old=claim(app.state.sessions)
+    assert preview(app.state.sessions,*old,'Recognizing partial words')
+    state=client.get(path+'/transcript').json()
+    assert state['preview']=='Recognizing partial words'
+    assert not state['snapshot']['segments']
+    with app.state.sessions() as db:
+        db.get(Job,old[0]).lease_expires_at=now()-timedelta(seconds=1);db.commit()
+    assert client.get(path+'/transcript').json()['preview']==''
+    new=claim(app.state.sessions,old[0])
+    assert not preview(app.state.sessions,*old,'stale words')
+    assert preview(app.state.sessions,*new,'Current words')
+    assert execute(app.state.sessions,app.state.audio_store,FakeSpeech(),new,heartbeat=False)
+    state=client.get(path+'/transcript').json()
+    assert state['preview']==''
+    assert state['snapshot']['segments'][0]['text']=='Binary search requires a sorted array.'
+
+
 @pytest.mark.parametrize('change',['delete','audio_epoch','manifest'])
 def test_output_is_fenced_when_sources_change_during_inference(speech,change):
     app,client,headers,path,run=speech

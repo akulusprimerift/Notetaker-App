@@ -2,6 +2,7 @@
 from pathlib import Path
 import os
 import sys
+import hashlib
 from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs, collect_submodules, copy_metadata
 
 root = Path(SPECPATH).parents[1]
@@ -13,6 +14,20 @@ data = [(str(root/'contracts/ai'), 'contracts/ai'), (str(root/'prompts'), 'promp
         (str(root/'apps/api/migrations'), 'apps/api/migrations'),
         (str(root/'.local/native-vendor/ollama'), 'vendor/ollama'),
         (str(root/'.local/native-vendor/notices'), 'third-party-notices')]
+speech = root/'.local/models/faster-whisper-small.en'
+speech_hashes = {
+    'model.bin': '62b2a45b05ee59acb4a5341b33ee35e041395d378d418a18acfe4c9e768ee37a',
+    'config.json': '666a9605530ac1f61fa8177f3702b4dacec9966749e42610839fcc32661d5fae',
+    'tokenizer.json': '929c5252409436dce1b38a75d1abbcb5e132d170d8e324e4e04ed915fa2d22df',
+    'vocabulary.txt': 'ff77588746d3a2595d32ab5b69ffd7b95ce2441ac57533cb66fc3eb575a115cf',
+}
+for name, expected in speech_hashes.items():
+    if not (speech/name).is_file():
+        raise RuntimeError('Bundled speech model missing. Run scripts/Prepare-NativeSpeech.ps1 first.')
+    with (speech/name).open('rb') as model_file:
+        if hashlib.file_digest(model_file, 'sha256').hexdigest() != expected:
+            raise RuntimeError('Bundled speech model checksum mismatch: '+name)
+    data.append((str(speech/name), 'vendor/speech/faster-whisper-small.en'))
 for folder in ['apps/native', 'apps/api/notetaker']:
     data += [(str(file), 'application-source/'+file.parent.relative_to(root).as_posix())
              for file in (root/folder).rglob('*.py') if '__pycache__' not in file.parts]

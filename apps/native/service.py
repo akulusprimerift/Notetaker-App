@@ -49,12 +49,22 @@ def main():
         engine, sessions = database(settings.database_url)
         store, provider = AudioStore(settings), WhisperProvider(settings)
         try:
+            provider.load()
+        except Exception:
+            import logging
+            logging.warning('Speech model unavailable; recording remains independent')
+        try:
             while True:
-                plan_pending(sessions, store)
-                chosen = claim(sessions)
-                if chosen:
-                    execute(sessions, store, provider, chosen)
-                else:
+                try:
+                    plan_pending(sessions, store)
+                    chosen = claim(sessions)
+                    if chosen:
+                        execute(sessions, store, provider, chosen)
+                    else:
+                        time.sleep(.5)
+                except Exception:
+                    import logging
+                    logging.exception('Speech worker will retry; saved audio is retained')
                     time.sleep(2)
         finally:
             engine.dispose()

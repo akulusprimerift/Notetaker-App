@@ -7,11 +7,12 @@ import subprocess
 from uuid import uuid4
 
 from PySide6.QtCore import Qt, QTimer, QBuffer, QIODevice, QUrl
-from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
+from PySide6.QtGui import QTextCursor
+from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput, QMediaDevices
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QComboBox, QTreeWidget, QTreeWidgetItem, QSplitter, QTabWidget,
     QPlainTextEdit, QListWidget, QListWidgetItem, QInputDialog, QMessageBox, QFileDialog,
-    QDialog, QDialogButtonBox, QFormLayout)
+    QDialog, QDialogButtonBox, QFormLayout, QProgressBar)
 from .client import background, Stream
 from .theme import stylesheet
 from .journal import Journal
@@ -32,6 +33,24 @@ def prose(revision):
                        for block in revision['content']['blocks'])
 
 
+def update_text(field, text):
+    """Append streamed suffixes without resetting the reader's selection or scroll."""
+    previous = field.toPlainText()
+    if previous == text: return
+    scroll = field.verticalScrollBar(); position = scroll.value()
+    follow = position >= scroll.maximum()-10
+    if text.startswith(previous):
+        cursor = QTextCursor(field.document()); cursor.movePosition(QTextCursor.MoveOperation.End)
+        cursor.insertText(text[len(previous):])
+    else:
+        selection = field.textCursor()
+        anchor, at = selection.anchor(), selection.position()
+        field.setPlainText(text)
+        selection = field.textCursor(); selection.setPosition(min(anchor,len(text)))
+        selection.setPosition(min(at,len(text)), QTextCursor.MoveMode.KeepAnchor); field.setTextCursor(selection)
+    scroll.setValue(scroll.maximum() if follow else position)
+
+
 class Window(QMainWindow):
     def __init__(self, api, runtime):
         super().__init__()
@@ -41,16 +60,21 @@ class Window(QMainWindow):
         self.streams = []
         self.polling = False
         self.cleaning = False
+        self.models_polling = False
         self.rendered = None
+        self.transcript_rows = []
+        self.material_rows = None
         self.setWindowTitle('Notetaker')
         self.resize(1260, 850)
         self.setMinimumSize(850, 600)
         self.journal = Journal(runtime.directory/'recordings.db')
         self.recorder = Recorder(api, self.journal)
-        self.recorder.status.connect(self.message)
+        self.recorder.status.connect(self.recording_message)
+        self.recorder.progress.connect(self.recording_progress)
         root = QWidget()
         self.setCentralWidget(root)
         layout = QVBoxLayout(root)
+        layout.setContentsMargins(24, 12, 24, 16); layout.setSpacing(18)
         top = QHBoxLayout()
         heading = QLabel('Notetaker'); heading.setObjectName('heading')
         top.addWidget(heading); top.addStretch()
@@ -63,7 +87,8 @@ class Window(QMainWindow):
         button('Local models', self.models, top)
         layout.addLayout(top)
         splitter = QSplitter(); layout.addWidget(splitter)
-        library = QWidget(); left = QVBoxLayout(library)
+        library = QWidget(); library.setObjectName('library'); left = QVBoxLayout(library)
+        left.setSpacing(10)
         label = QLabel('Your library'); label.setObjectName('subheading'); left.addWidget(label)
         self.tree = QTreeWidget(); self.tree.setHeaderHidden(True)
         self.tree.setAccessibleName('Courses and lectures')
@@ -72,19 +97,38 @@ class Window(QMainWindow):
         button('New course', self.new_course, left)
         button('New lecture', self.new_lecture, left)
         button('Delete course', self.delete_course, left)
+        button('Delete lecture', self.delete_lecture, left)
         button('Course materials', lambda:self.upload_material(True), left)
         button('Recover saved audio', self.recover, left)
         splitter.addWidget(library)
         workspace = QWidget(); main = QVBoxLayout(workspace)
         self.title = QLabel('Choose a lecture'); self.title.setObjectName('subheading'); main.addWidget(self.title)
+        self.title.setWordWrap(True)
+        self.capture_status = QLabel('Ready to record · choose a lecture and input'); self.capture_status.setWordWrap(True)
+        self.capture_status.setTextFormat(Qt.TextFormat.PlainText); main.addWidget(self.capture_status)
+        recording = QHBoxLayout(); main.addLayout(recording)
+        self.input = QComboBox(); self.input.setAccessibleName('Recording input')
+        recording.addWidget(self.input, 1)
+        self.devices = QMediaDevices(self); self.devices.audioInputsChanged.connect(self.refresh_inputs)
+        self.refresh_inputs()
+        self.clock = QLabel('00:00 captured · 00:00 saved'); recording.addWidget(self.clock)
+        self.meter = QProgressBar(); self.meter.setRange(0,100); self.meter.setValue(0)
+        self.meter.setAccessibleName('Input audio level'); self.meter.setTextVisible(False); self.meter.setMaximumWidth(100)
+        recording.addWidget(self.meter)
         actions = QHBoxLayout(); main.addLayout(actions)
-        button('Record', self.record, actions); button('Stop and save audio', self.stop_recording, actions)
+        self.record_button = button('Record', self.record, actions); self.record_button.setObjectName('primary')
+        self.stop_button = button('Stop and save', self.stop_recording, actions); self.stop_button.setEnabled(False)
         button('Add slides / materials', lambda:self.upload_material(False), actions)
         button('Finalize', self.finalize, actions)
         button('Export', self.export, actions)
+        self.pipeline_status = QLabel('Transcription ready · select a local note model in Note preferences')
+        self.pipeline_status.setWordWrap(True); self.pipeline_status.setTextFormat(Qt.TextFormat.PlainText)
+        main.addWidget(self.pipeline_status)
         self.tabs = QTabWidget(); main.addWidget(self.tabs)
         notes_page = QWidget(); notes_layout = QVBoxLayout(notes_page)
         self.notes = QPlainTextEdit(); self.notes.setReadOnly(True); self.notes.setAccessibleName('Saved study notes')
+        self.notes.setPlaceholderText('Your saved study notes will appear here. Follow live transcription and writing below.')
+        self.notes.setMaximumHeight(100)
         notes_layout.addWidget(self.notes, 3)
         edit_actions = QHBoxLayout(); notes_layout.addLayout(edit_actions)
         button('Edit a passage', self.edit_passage, edit_actions)
@@ -102,8 +146,23 @@ class Window(QMainWindow):
         self.preview = QPlainTextEdit(); self.preview.setReadOnly(True)
         self.preview.setPlaceholderText('Live writing preview · source checks run before notes are saved')
         self.preview.setAccessibleName('Streaming note preview'); notes_layout.addWidget(self.preview, 1)
+        live = QSplitter(Qt.Orientation.Horizontal)
+        live_notes = QWidget(); live_notes_layout = QVBoxLayout(live_notes)
+        live_notes_layout.setContentsMargins(0,0,0,0)
+        live_notes_layout.addWidget(QLabel('Live notes · preview before source checks'))
+        live_notes_layout.addWidget(self.preview)
+        live.addWidget(live_notes)
+        live_speech = QWidget(); live_speech_layout = QVBoxLayout(live_speech)
+        live_speech_layout.setContentsMargins(0,0,0,0)
+        live_speech_layout.addWidget(QLabel('Live transcript · recognized speech'))
+        self.live_transcript = QPlainTextEdit(); self.live_transcript.setReadOnly(True)
+        self.live_transcript.setAccessibleName('Live transcript')
+        self.live_transcript.setPlaceholderText('Speech appears during recording after the first audio window is saved.')
+        live_speech_layout.addWidget(self.live_transcript); live.addWidget(live_speech)
+        notes_layout.addWidget(live, 2)
         self.tabs.addTab(notes_page, 'Study notes')
         self.transcript = QListWidget(); self.transcript.setWordWrap(True)
+        self.transcript.setVerticalScrollMode(QListWidget.ScrollMode.ScrollPerPixel)
         self.transcript.itemDoubleClicked.connect(self.correct_transcript)
         self.tabs.addTab(self.transcript, 'Transcript')
         self.materials = QListWidget(); self.tabs.addTab(self.materials, 'Materials')
@@ -125,11 +184,35 @@ class Window(QMainWindow):
         self.timer = QTimer(self); self.timer.timeout.connect(self.refresh); self.timer.start(2000)
         self.cleanup_timer = QTimer(self); self.cleanup_timer.timeout.connect(self.cleanup); self.cleanup_timer.start(4000)
         self.load_library()
+        self.model_timer = QTimer(self); self.model_timer.timeout.connect(self.refresh_models)
+        self.model_timer.start(3000)
         self.refresh_models()
         self.message('Private local library · no browser engine · models stay on this computer')
 
     def message(self, text):
         self.statusBar().showMessage(text)
+
+    def refresh_inputs(self):
+        selected = self.input.currentData()
+        self.input.clear()
+        default = QMediaDevices.defaultAudioInput()
+        for device in QMediaDevices.audioInputs():
+            self.input.addItem(device.description(), device)
+            if (selected and device.id() == selected.id()) or (not selected and device.id() == default.id()):
+                self.input.setCurrentIndex(self.input.count()-1)
+
+    def recording_message(self, text):
+        self.capture_status.setText(text)
+        busy = bool(self.recorder.source or self.recorder.starting or self.recorder.finishing)
+        self.record_button.setEnabled(not busy); self.input.setEnabled(not busy)
+        self.stop_button.setEnabled(bool(self.recorder.source))
+
+    def recording_progress(self, progress):
+        def stamp(seconds): return f'{int(seconds)//60:02d}:{int(seconds)%60:02d}'
+        self.clock.setText(stamp(progress['seconds'])+' captured · '+stamp(progress['saved_seconds'])+' saved')
+        self.meter.setValue(progress['level'])
+        if self.recorder.source:
+            self.capture_status.setText('Recording · '+('audio detected' if progress['level'] else 'input is silent; check your microphone'))
 
     def error(self, text):
         self.message(text)
@@ -170,6 +253,8 @@ class Window(QMainWindow):
         self.title.setText(data['name'] if kind == 'course' else data['title'])
         self.title.setTextFormat(Qt.TextFormat.PlainText)
         self.state = None; self.rendered = None; self.notes.clear(); self.preview.clear(); self.transcript.clear(); self.materials.clear()
+        self.notes.setMaximumHeight(100)
+        self.transcript_rows = []; self.material_rows = None; self.live_transcript.clear()
         for stream in self.streams: stream.stop.set()
         if self.lecture:
             stream = Stream(self.api, self.lecture); stream.changed.connect(self.streaming)
@@ -189,7 +274,38 @@ class Window(QMainWindow):
         if not self.course: self.message('Choose a course first.'); return
         course = self.course
         title, ok = QInputDialog.getText(self, 'New lecture', 'Lecture title')
-        if ok and title.strip(): self.work(lambda:self.api.post('/courses/'+course+'/lectures', {'title':title.strip()}), lambda _:self.load_library())
+        def created(row):
+            self.lecture = row['id']; self.title.setText(row['title']); self.load_library()
+            self.state = None; self.rendered = None; self.transcript_rows = []; self.material_rows = None
+            self.notes.clear(); self.preview.clear(); self.transcript.clear(); self.live_transcript.clear()
+            for stream in self.streams: stream.stop.set()
+            stream = Stream(self.api, self.lecture); stream.changed.connect(self.streaming)
+            self.streams.append(stream); stream.thread.start(); self.refresh()
+        if ok and title.strip(): self.work(lambda:self.api.post('/courses/'+course+'/lectures', {'title':title.strip()}), created)
+
+    def delete_lecture(self):
+        if not self.require_lecture(): return
+        if self.recorder.source or self.recorder.starting or self.recorder.finishing:
+            self.message('Stop and save recording before deleting a lecture.'); return
+        lecture = self.lecture
+        def confirm(state):
+            if lecture != self.lecture: return
+            if QMessageBox.question(self, 'Delete lecture',
+                    'Delete this lecture, its recording, transcript, materials and notes? This cannot be undone. Other lectures are kept.') != QMessageBox.StandardButton.Yes: return
+            def erase():
+                result = self.api.post('/lectures/'+lecture+'/deletion',
+                    {'kind':'lecture', 'expected_cursor':state['cursor']})
+                self.journal.purge(lecture)
+                for path in self.runtime.directory.glob('draft-'+lecture+'-*'): path.unlink(missing_ok=True)
+                return result
+            def done(_):
+                if self.lecture == lecture:
+                    self.lecture = None; self.state = None; self.title.setText('Choose a lecture')
+                    self.notes.clear(); self.preview.clear(); self.transcript.clear(); self.live_transcript.clear(); self.materials.clear()
+                    for stream in self.streams: stream.stop.set()
+                self.load_library(); self.message('Lecture deleted. Recording cleanup continues in the background.')
+            self.work(erase, done)
+        self.work(lambda:self.api.get('/lectures/'+lecture+'/finalization'), confirm)
 
     def delete_course(self):
         if not self.course: return
@@ -206,7 +322,7 @@ class Window(QMainWindow):
                 self.lecture = None; self.course = None; self.state = None
                 self.notes.clear(); self.preview.clear(); self.transcript.clear(); self.materials.clear()
                 self.load_library(); self.message('Course removed. Recording cleanup continues in the background.')
-            if self.recorder.source:
+            if self.recorder.source or self.recorder.starting or self.recorder.finishing:
                 self.error('Stop the recording before deleting a course.'); return
             self.work(erase, done)
         self.work(lambda:self.api.get('/courses/'+course+'/lectures'), confirm)
@@ -224,21 +340,17 @@ class Window(QMainWindow):
             first = self.state is None; self.state = state
             selected = state['editing']['selected'] or state['revision']
             if selected and selected['id'] != self.rendered:
-                self.rendered = selected['id']; self.notes.setPlainText(prose(selected))
+                self.notes.setMaximumHeight(16777215)
+                self.rendered = selected['id']; update_text(self.notes, prose(selected))
+                if state['status'] not in ('generating', 'running'): self.preview.clear()
             if first:
                 for key, field in self.prompts.items(): field.setPlainText(state['profile'][key])
                 if state['preference']: self.model.setCurrentText(state['preference']['model'])
             self.update_review(selected)
-            segments = (transcript.get('snapshot') or {}).get('segments', [])
-            current = self.transcript.currentRow(); self.transcript.clear()
-            for segment in segments:
-                seconds = segment['start_sample']/segment['sample_rate']
-                item = QListWidgetItem(f'{int(seconds//60):02d}:{int(seconds%60):02d}  '+segment['text'])
-                item.setData(Qt.ItemDataRole.UserRole, segment); self.transcript.addItem(item)
-            self.transcript.setCurrentRow(current)
-            self.materials.clear()
-            for material in materials: self.materials.addItem(material['name']+' · '+material['kind'])
-            self.message('Notes: '+state['status'].replace('_', ' ')+((' · '+state['error_code']) if state.get('error_code') else ''))
+            self.render_transcript(transcript)
+            if materials != self.material_rows:
+                self.material_rows = materials; self.materials.clear()
+                for material in materials: self.materials.addItem(material['name']+' · '+material['kind'])
         def failed(text):
             self.polling = False; self.message(text)
         background(fetch, done, failed)
@@ -268,9 +380,33 @@ class Window(QMainWindow):
 
     def streaming(self, lecture, payload):
         if lecture != self.lecture: return
-        scroll = self.preview.verticalScrollBar(); follow = scroll.value() >= scroll.maximum()-10
-        self.preview.setPlainText(payload.get('text', ''))
-        if follow: scroll.setValue(scroll.maximum())
+        if 'transcript' in payload: self.render_transcript(payload['transcript'])
+        # Retain the last preview until the validated saved revision arrives.
+        if payload.get('text'): update_text(self.preview, payload['text'])
+
+    def render_transcript(self, transcript):
+        segments = (transcript.get('snapshot') or {}).get('segments', [])
+        lines = []
+        scroll = self.transcript.verticalScrollBar(); position = scroll.value()
+        follow = position >= scroll.maximum()-10
+        for index, segment in enumerate(segments):
+            seconds = segment['start_sample']/segment['sample_rate']
+            line = f'{int(seconds//60):02d}:{int(seconds%60):02d}  '+segment['text']; lines.append(line)
+            if index < len(self.transcript_rows) and self.transcript_rows[index] == segment: continue
+            if index >= self.transcript.count(): self.transcript.addItem(QListWidgetItem())
+            item = self.transcript.item(index); item.setText(line); item.setData(Qt.ItemDataRole.UserRole, segment)
+        while self.transcript.count() > len(segments): self.transcript.takeItem(self.transcript.count()-1)
+        self.transcript_rows = segments
+        scroll.setValue(scroll.maximum() if follow else position)
+        preview = transcript.get('preview', '')
+        update_text(self.live_transcript, '\n\n'.join(lines)+ ('\n\nRecognizing · preview\n'+preview if preview else ''))
+        errors = transcript.get('errors', [])
+        speech = 'Speech model unavailable; open Local models' if 'model_unavailable' in errors else transcript['status'].replace('_',' ')
+        note_state = self.state or {}
+        note_status = note_state.get('status','waiting for transcript').replace('_',' ')
+        if not note_state.get('preference'): note_status = 'choose a model in Note preferences'
+        self.pipeline_status.setText('Transcription: '+speech+' · '+str(transcript.get('processing_delay_seconds',0))+
+            's pending    |    Notes: '+note_status+((' · '+note_state['error_code']) if note_state.get('error_code') else ''))
 
     def update_review(self, revision):
         issues = revision['content']['issues'] if revision else []
@@ -302,15 +438,21 @@ class Window(QMainWindow):
         self.work(upload, lambda _:(self.message('Material saved. Notes will use this evidence; your edits stay protected.'), self.refresh()))
 
     def refresh_models(self):
+        if self.models_polling: return
+        self.models_polling = True
         def done(data):
+            self.models_polling = False
             current = self.model.currentText(); self.model.clear()
             self.model.addItems([m['name'] for m in data['models']])
             if current: self.model.setCurrentText(current)
-        self.work(lambda:self.api.get('/note-models'), done)
+            if data['models']: self.model_timer.stop()
+        def failed(text):
+            self.models_polling = False; self.message(text)
+        background(lambda:self.api.get('/note-models'), done, failed)
 
     def models(self):
         dialog = QDialog(self); dialog.setWindowTitle('Local models'); form = QVBoxLayout(dialog)
-        label = QLabel('The application includes its inference runtime. Select model files already on your computer.\nModel weights are never downloaded automatically.'); label.setWordWrap(True); form.addWidget(label)
+        label = QLabel('Speech recognition includes a local faster-whisper model. You can select a different speech model.\nFor study notes, select your local Ollama or GGUF model files.'); label.setWordWrap(True); form.addWidget(label)
         found = self.runtime.detected
         display = QPlainTextEdit(); display.setReadOnly(True)
         display.setPlainText('\n'.join(['Detected model locations:', *found['ollama'], *found['gguf'], *found['speech']]) or 'No models detected')
@@ -481,7 +623,9 @@ class Window(QMainWindow):
             self.message('Select the lecture title under a course before recording. Selecting the course name is not enough.')
             return
         self.tabs.setCurrentIndex(0)
-        try: self.recorder.start(self.lecture)
+        if self.state and not self.state.get('preference') and self.model.currentText():
+            self.generate()
+        try: self.recorder.start(self.lecture, self.input.currentData())
         except Exception as exc: self.error(str(exc))
 
     def stop_recording(self):
@@ -533,9 +677,10 @@ class Window(QMainWindow):
             self.work(lambda:Path(filename).write_bytes(self.api.get(path)), lambda _:self.message('Selected saved notes exported.'))
 
     def closeEvent(self, event):
-        if self.recorder.source or self.recorder.finishing:
+        if self.recorder.source or self.recorder.starting or self.recorder.finishing:
             self.error('Stop and save your recording before closing the application.'); event.ignore(); return
         self.timer.stop()
         self.cleanup_timer.stop()
+        self.model_timer.stop()
         for stream in self.streams: stream.stop.set()
         event.accept()

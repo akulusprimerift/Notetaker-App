@@ -220,6 +220,8 @@ class SpeechWindow(Base):
     context_end: Mapped[int] = mapped_column(BigInteger)
     live: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     outcome: Mapped[str | None] = mapped_column(String(20))
+    preview: Mapped[str] = mapped_column(Text, default='', server_default='')
+    preview_attempt: Mapped[str] = mapped_column(String(36), default='', server_default='')
     __table_args__ = (ForeignKeyConstraint(["run_id", "lecture_id"], ["capture_runs.id", "capture_runs.lecture_id"]),
         UniqueConstraint("id", "lecture_id"), UniqueConstraint("run_id", "manifest_version", "core_start"),
         CheckConstraint("context_start <= core_start AND core_start < core_end AND core_end <= context_end", name="speech_window_bounds"))

@@ -84,12 +84,16 @@ class WhisperProvider:
             except Exception as exc:
                 raise SpeechFailure('model_unavailable') from exc
 
-    def transcribe(self, audio, window, rate):
+    def transcribe(self, audio, window, rate, on_preview=None):
         started=perf_counter(); self.load()
         try:
             segments,_=self.model.transcribe(io.BytesIO(audio),language='en',beam_size=5,
                 temperature=0,word_timestamps=True,vad_filter=True,condition_on_previous_text=False)
-            selected=owned_words(list(segments),window,rate)
+            selected=[]
+            for segment in segments:
+                selected.extend(owned_words([segment],window,rate))
+                if on_preview and selected:
+                    on_preview('\n'.join(part['text'] for part in selected))
         except SpeechFailure: raise
         except Exception as exc: raise SpeechFailure('speech_inference_failed') from exc
         with wave.open(io.BytesIO(audio),'rb') as wav:

@@ -11,7 +11,8 @@ $unexpected = Get-ChildItem -LiteralPath $bundle -Recurse -File | Where-Object {
 if ($unexpected) { throw "Browser engine found in native package: $($unexpected.FullName)" }
 Copy-Item -LiteralPath 'docs/native-download.md' -Destination (Join-Path $bundle 'READ-ME.md')
 Copy-Item -LiteralPath 'apps/api/requirements-native.lock' -Destination (Join-Path $bundle 'dependency-lock.txt')
-Compress-Archive -Path "$bundle/*" -DestinationPath .local/native-qualified/Notetaker-Windows-x64.zip -Force
+uv run --no-project python scripts/package_native_zip.py "$bundle" .local/native-qualified/Notetaker-Windows-x64.zip
+if ($LASTEXITCODE) { throw 'Native ZIP packaging failed' }
 Get-FileHash .local/native-qualified/Notetaker-Windows-x64.zip -Algorithm SHA256 | Format-List
 if ($MakeNsis) {
     & $MakeNsis apps/native/installer.nsi

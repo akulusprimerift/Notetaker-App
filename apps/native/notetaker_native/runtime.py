@@ -33,7 +33,7 @@ def model_locations():
     roots = [home/'.ollama/models', home/'.cache/lm-studio/models', home/'.lmstudio/models']
     if os.environ.get('OLLAMA_MODELS'):
         roots.insert(0, Path(os.environ['OLLAMA_MODELS']))
-    speech = [resource_root()/'.local/models', home/'.cache/huggingface/hub']
+    speech = [resource_root()/'vendor/speech', resource_root()/'.local/models', home/'.cache/huggingface/hub']
     return {'ollama': [str(p) for p in roots if (p/'manifests').is_dir()],
             'gguf': [str(p) for root in roots if root.is_dir() for p in root.glob('*/*/*.gguf')],
             'speech': [str(p.parent) for root in speech if root.is_dir() for p in root.glob('**/model.bin')

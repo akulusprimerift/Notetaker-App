@@ -109,6 +109,7 @@ def claim(sessions, job_id=None):
             if other: continue
             job.status='running'; job.attempt_token=str(uuid4()); job.lease_expires_at=now()+timedelta(seconds=LEASE_SECONDS)
             job.attempts+=1; job.error_code=None
+            window.preview=''; window.preview_attempt=job.attempt_token
             db.commit()
             return job.id,job.attempt_token
     return None
@@ -137,6 +138,15 @@ def renew(sessions, job_id, token):
         active[1].lease_expires_at=now()+timedelta(seconds=LEASE_SECONDS); db.commit(); return True
 
 
+def preview(sessions, job_id, token, text):
+    with sessions() as db:
+        active=live_attempt(db,job_id,token)
+        if not active:return False
+        window=active[2]
+        window.preview=text[:12000];window.preview_attempt=token
+        db.commit();return True
+
+
 def publish(sessions, job_id, token, result):
     with sessions() as db:
         active=live_attempt(db,job_id,token)
@@ -154,6 +164,7 @@ def publish(sessions, job_id, token, result):
             db.add(TranscriptVersion(lecture_id=lecture.id,segment_id=segment.id,revision=1,
                 author='machine',generation_id=generation.id,**data))
         window.outcome=result['outcome'];job.status='completed';job.lease_expires_at=None;job.error_code=None
+        window.preview='';window.preview_attempt=''
         db.flush()
         # Original chunk jobs complete only when all current inference windows for their run complete.
         run_windows=[(w,j) for w,j,_ in windows_for(db,lecture) if w.run_id==run.id]
@@ -170,7 +181,8 @@ def fail(sessions, job_id, token, failure):
     with sessions() as db:
         active=live_attempt(db,job_id,token)
         if not active:return
-        lecture,job,_,_=active
+        lecture,job,window,_=active
+        window.preview='';window.preview_attempt=''
         job.error_code=failure.code;job.lease_expires_at=None
         job.status='due' if failure.retryable and (job.attempts<5 or failure.code in ('model_unavailable','resource_busy')) else 'failed'
         delay=60 if failure.code=='model_unavailable' else min(60,2**min(job.attempts,6))
@@ -198,7 +210,11 @@ def execute(sessions, store, provider, claimed, heartbeat=True):
             except Exception as exc: raise SpeechFailure('audio_integrity_unavailable') from exc
         with inference_slot(sessions) as acquired:
             if not acquired: raise SpeechFailure('resource_busy')
-            result=provider.transcribe(audio,window,run.sample_rate)
+            if isinstance(provider, WhisperProvider):
+                result=provider.transcribe(audio,window,run.sample_rate,
+                    on_preview=lambda text:preview(sessions,job_id,token,text))
+            else:
+                result=provider.transcribe(audio,window,run.sample_rate)
         return publish(sessions,job_id,token,result)
     except SpeechFailure as exc:
         fail(sessions,job_id,token,exc);return False

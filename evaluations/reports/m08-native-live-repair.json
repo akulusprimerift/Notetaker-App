@@ -1,0 +1,39 @@
+{
+  "environment": "Windows 11 x64",
+  "synthetic_only": true,
+  "microphone_accessed": false,
+  "fixture": "synthetic-cs.wav",
+  "duration_seconds": 68.04,
+  "source_run": {
+    "first_transcript_seconds": 18.62,
+    "first_note_preview_seconds": 68.24,
+    "note_preview_updates": 87,
+    "speech_preview_updates": 1,
+    "captured_samples": 1500235,
+    "verified_samples": 1500235,
+    "transcript_during_capture": true,
+    "saved_note_revision": true
+  },
+  "bundled_worker_run": {
+    "gui": "source Qt widgets with the final Recorder implementation",
+    "workers": "frozen packaged API, speech, notes and CPU Ollama",
+    "speech_model": "bundled faster-whisper-small.en",
+    "note_model": "existing local qwen3:4b",
+    "first_transcript_seconds": 15.41,
+    "first_note_preview_seconds": 74.47,
+    "note_preview_updates": 85,
+    "speech_preview_updates": 3,
+    "captured_samples": 1500235,
+    "verified_samples": 1500235,
+    "transcript_during_capture": true,
+    "saved_note_revision": true
+  },
+  "intermediate_failure": "A GUI-timer-paced synthetic source stopped at 61 seconds under build load. Drain-before-watchdog handling and an elapsed-clock synthetic input corrected the test; the full rerun verified every sample.",
+  "qualification_limits": [
+    "No physical microphone or Windows permission prompt was exercised.",
+    "Single synthetic trials under concurrent build load are not latency guarantees.",
+    "Speech previews contain recognized segments, not token-by-token decoding.",
+    "First saved notes were verified; this is not a final complete-lecture quality evaluation.",
+    "Full-hour endurance, accessibility and human educational review remain open."
+  ]
+}
