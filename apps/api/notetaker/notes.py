@@ -174,6 +174,11 @@ def markdown(db, lecture, revision):
         'Model: ' + escape(revision.metadata_json['model']), '', 'Check important claims against the sources. Student changes are not AI-verified.', '']
     for block in revision.content['blocks']:
         lines += ['## ' + escape(block['topic']), '']
+        if block.get('diagram'):
+            from .visual_notes import diagram_description, diagram_stale
+            lines += ['AI-created schematic: ' + escape(block['diagram']['caption']), '', escape(diagram_description(block['diagram'])), '']
+            if diagram_stale(block):
+                lines += ['Review diagram: student changes may no longer match the retained schematic.', '']
         for passage in block['passages']:
             lines.append('Evidence: ' + ('student revision; original source links retained' if passage.get('student_edited') else passage['evidence_kind'].replace('_', ' ')))
             lines.append('')
@@ -202,6 +207,7 @@ class ModelChoice(BaseModel):
     expected_version: int = Field(ge=0)
     model: str = Field(min_length=1, max_length=160)
     enabled: bool = True
+    cloud_consent: bool = False
     depth: Literal['detailed', 'standard', 'brief'] | None = None
     format: Literal['topic_outline', 'cornell', 'question_answer'] | None = None
     detail_prompt: str | None = Field(default=None, max_length=2000)
@@ -210,7 +216,8 @@ class ModelChoice(BaseModel):
 
 
 def install_notes(app, current, db_session, owned_lecture, receipt):
-    app.state.note_provider = OllamaNotes(app.state.settings)
+    from .cloud_notes import NoteProviders
+    app.state.note_provider = NoteProviders(app.state.settings)
 
     @app.get('/lectures/{lecture_id}/notes/stream')
     def stream(lecture_id: str, session=Depends(current), db=Depends(db_session)):
@@ -269,6 +276,9 @@ def install_notes(app, current, db_session, owned_lecture, receipt):
         # Check mutation authority before provider I/O; never hold a SQL lock over inference.
         from .security import mutation, authenticate
         mutation(request, session)
+        from .cloud_notes import is_cloud
+        if body.enabled and is_cloud(body.model) and not body.cloud_consent:
+            error(422, 'cloud_consent_required', 'Confirm sending this lecture transcript, selected material text and note prompts to the chosen cloud provider.')
         owner = session.owner_id
         action = 'notes.model:' + lecture_id
         existing, _, _ = receipt(db, request, session, action, body.model_dump())
@@ -278,7 +288,7 @@ def install_notes(app, current, db_session, owned_lecture, receipt):
         db.rollback()
         if body.enabled:
             try: installed, _ = app.state.note_provider.verify(body.model)
-            except NoteFailure: error(503, 'model_unavailable', 'This local model is unavailable or unsupported. Refresh the model list.')
+            except NoteFailure: error(503, 'model_unavailable', 'This model or saved connection is unavailable. Refresh models or reconnect the provider.')
         session = authenticate(db, request.cookies.get('nt_session'))
         existing, key, fingerprint = receipt(db, request, session, action, body.model_dump())
         lecture = lock_lecture(db, owned_lecture(db, owner, lecture_id).id)
@@ -317,9 +327,13 @@ def install_notes(app, current, db_session, owned_lecture, receipt):
         return notes_json(db, lecture)
 
     @app.get('/lectures/{lecture_id}/notes/revisions/{revision_id}/export')
-    def export(lecture_id: str, revision_id: str, session=Depends(current), db=Depends(db_session)):
+    def export(lecture_id: str, revision_id: str, format: Literal['markdown', 'html'] = 'markdown', session=Depends(current), db=Depends(db_session)):
         lecture = owned_lecture(db, session.owner_id, lecture_id)
         revision = db.scalar(select(NoteRevision).where(NoteRevision.id == revision_id, NoteRevision.lecture_id == lecture_id))
         if not revision: error(404, 'unavailable', 'This saved note revision is unavailable.')
+        if format == 'html':
+            from .visual_notes import html_notes
+            return Response(html_notes(lecture.title, revision.content, markdown(db, lecture, revision)), media_type='text/html; charset=utf-8',
+                headers={'Content-Disposition': f'attachment; filename="lecture-notes-r{revision.revision}.html"', 'X-Content-Type-Options': 'nosniff'})
         return Response(markdown(db, lecture, revision), media_type='text/markdown; charset=utf-8',
             headers={'Content-Disposition': f'attachment; filename="lecture-notes-r{revision.revision}.md"', 'X-Content-Type-Options': 'nosniff'})

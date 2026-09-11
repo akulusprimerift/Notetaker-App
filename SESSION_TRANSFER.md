@@ -1,5 +1,15 @@
 # Session transfer
 
+## Visual notes and API/subscription connections — 2026-09-11
+
+Active phase remains **6.8 / M08**. The user requested visual notes for diagram-heavy classes and explicitly selected both API-key and subscription connections. Implemented native source-linked schematics, inert self-contained HTML export of selected generated/student/final revisions, diagram comparison and preserved edit/undo behavior. Optional schema fields keep old revisions valid without a migration. Draft prompt v2 preserves v1 history. The diagram vocabulary is labeled concepts and directed relationships, not molecular geometry or recovered slide images.
+
+AI connections stores API keys using current-user Windows DPAPI; uses OpenAI Chat Completions/Claude Messages; and offers official-client ChatGPT/Codex and Claude/Claude Code subscription bridges with separate sign-in profiles, browser login and sign-out. Each lecture requires explicit cloud consent. No silent provider fallback. Updated connections invalidate their prior model identity and require reapplying preferences. See [full behavior, sources and limitations](docs/implementation/visual-notes-providers.md).
+
+Executed: 182 backend/native tests passed with one service-only skip; three further subscription protocol tests passed; 60 JavaScript contracts, web typecheck/lint/build and Ruff passed. Native diagram screenshot inspected. Installed Codex app-server started in an isolated signed-out profile and rejected generation before any lecture text was submitted. Live API keys, paid inference, successful subscription sign-in and Claude client compatibility remain untested. Claude's current developer and Agent SDK subscription guidance is inconsistent; verify distribution support with Anthropic before advertising universal subscription compatibility. No microphone, student data access, external inference, model download or push.
+
+Version 0.4.0 packaging completed on Windows 11: `Notetaker-Windows-x64.zip` is 688535600 bytes (SHA256 `8b138a0489c8cce920a1e8fa9308416ad83107671d76300a72644abe6a91ba41`) and `Notetaker-Native-0.4.0-Setup.exe` is 661483894 bytes (SHA256 `eb295b999a6ed9211d7816e01b10ad58f72794b594ee11a8c482d28002d0d833`). PyInstaller build, ZIP packaging, NSIS installer generation and browser-engine scan passed. The frozen synthetic smoke passed material upload, audio save/recovery, native widgets, themes and review dismissal with no microphone access. Exact next work is real account sign-in and a synthetic biology/chemistry example on each chosen provider, followed by representative human diagram review. Existing hardware, accessibility, endurance, backup/restore and release qualification gates remain open. Historical checkpoints follow.
+
 Updated: 2026-09-10. Current increment: **Phase 6.8 / M08 — native Windows rebuild (no browser engine)**.
 
 ## Incremental native note sections — 0.3.1 (2026-09-10)

@@ -1,5 +1,7 @@
 # Project phases
 
+Current priority (2026-09-11): M08 remains the single active phase. The user brings visual notes and both API-key/subscription connections forward from Phase 7. Native schematics, saved-revision HTML export and opt-in cloud adapters are implemented; account/provider and scientific-quality qualification remain open. See [evidence and limitations](implementation/visual-notes-providers.md). Earlier release gaps remain open.
+
 Current priority (2026-09-10): M08 incremental native notes, version 0.3.1. Audio/transcription are accepted by the user. Pin small source groups per note request, save cumulative immutable sections during capture, continue through backlogs, display saved-section progress, and retain student edits. Migration 0013 preserves existing library history. See [M08 evidence](implementation/phase-6-m08.md).
 
 Current priority (2026-09-09): M08 native recording/live-workflow repair. Version 0.3.0 bundles the user's requested English faster-whisper model, adds input format conversion and capture feedback, streams speech previews beside notes, protects reading position and exposes individual lecture deletion. This supersedes the earlier no-bundled-weights policy for the speech default only. Note models remain local user selections. See [M08 evidence](implementation/phase-6-m08.md).

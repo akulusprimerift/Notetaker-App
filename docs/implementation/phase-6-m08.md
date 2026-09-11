@@ -1,5 +1,7 @@
 # Phase 6.8 / M08 — Windows application
 
+2026-09-11 increment: [visual notes and AI connections](visual-notes-providers.md) adds native source-linked schematics, selected-revision/final-snapshot HTML export and explicit API/subscription provider choices. M08 remains active; provider account and diagram-quality qualification are separate from existing release gates. See the session transfer for package evidence.
+
 Updated: 2026-09-09. Active phase. The user-selected native Qt Widgets application and standalone installer are implemented and synthetically verified on Windows 11. The Electron section below is historical. Native delivery needs no separate Docker, Python, PowerShell, Ollama or browser installation; existing local model files are selected explicitly.
 
 ## Incremental native note sections — 0.3.1

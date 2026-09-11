@@ -85,6 +85,7 @@ class Runtime:
                    NOTETAKER_AUDIO_DIRECTORY=str(self.directory/'audio'), NOTETAKER_WEB_ORIGIN=self.url,
                    NOTETAKER_OLLAMA_URL=f'http://127.0.0.1:{self.ollama_port}',
                    NOTETAKER_SPEECH_MODEL_PATH=self.config.get('speech_model', ''),
+                   NOTETAKER_PROVIDER_DIRECTORY=str(self.directory/'connections'),
                    PYTHONPATH=os.pathsep.join([str(resource_root()/'apps/api'), str(resource_root()/'apps/native')]))
         self.env = env
         migrate = self.spawn(command('migrate'), 'migration', env)

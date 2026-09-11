@@ -143,7 +143,7 @@ class OllamaNotes:
         try: output = json.loads(response['message']['content'])
         except (KeyError, TypeError, ValueError): raise NoteFailure('invalid_output') from None
         return canonical(output, evidence, citations), {'provider': 'ollama_local', 'model': preference.model, 'model_digest': installed['digest'],
-            'ollama_version': self.request('version').get('version'), 'prompt_version': 'draft-v1',
+            'ollama_version': self.request('version').get('version'), 'prompt_version': 'draft-v2',
             'prompt_sha256': digest(DRAFT_PROMPT), 'schema_sha256': digest(compact(SCHEMA)),
             'provider_schema_sha256': digest(compact(DRAFT_GRAMMAR)), 'input_sha256': digest(compact(evidence)),
             'source_aliases': citations, 'request_sha256': digest(compact(request_evidence)),

@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     speech_threads: int = 4
     kafka_bootstrap: str = "127.0.0.1:9092"
     ollama_url: str = "http://127.0.0.1:11434"
+    provider_directory: str = ''
 
     @model_validator(mode="after")
     def validate_mode(self):

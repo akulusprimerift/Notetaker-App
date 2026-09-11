@@ -17,6 +17,7 @@ from .client import background, Stream
 from .theme import stylesheet
 from .journal import Journal
 from .recorder import Recorder
+from .visual_notes import VisualNotes
 
 
 def button(label, callback, layout):
@@ -85,6 +86,8 @@ class Window(QMainWindow):
         self.theme.currentTextChanged.connect(self.change_theme)
         top.addWidget(self.theme)
         button('Local models', self.models, top)
+        from .connections import connection_dialog
+        button('AI connections', lambda:connection_dialog(self), top)
         layout.addLayout(top)
         splitter = QSplitter(); layout.addWidget(splitter)
         library = QWidget(); library.setObjectName('library'); left = QVBoxLayout(library)
@@ -121,7 +124,7 @@ class Window(QMainWindow):
         button('Add slides / materials', lambda:self.upload_material(False), actions)
         button('Finalize', self.finalize, actions)
         button('Export', self.export, actions)
-        self.pipeline_status = QLabel('Transcription ready · select a local note model in Note preferences')
+        self.pipeline_status = QLabel('Transcription ready · select a note model in Note preferences')
         self.pipeline_status.setWordWrap(True); self.pipeline_status.setTextFormat(Qt.TextFormat.PlainText)
         main.addWidget(self.pipeline_status)
         self.tabs = QTabWidget(); main.addWidget(self.tabs)
@@ -161,6 +164,8 @@ class Window(QMainWindow):
         live_speech_layout.addWidget(self.live_transcript); live.addWidget(live_speech)
         notes_layout.addWidget(live, 2)
         self.tabs.addTab(notes_page, 'Study notes')
+        self.visual_notes = VisualNotes()
+        self.tabs.addTab(self.visual_notes, 'Visual notes')
         self.transcript = QListWidget(); self.transcript.setWordWrap(True)
         self.transcript.setVerticalScrollMode(QListWidget.ScrollMode.ScrollPerPixel)
         self.transcript.itemDoubleClicked.connect(self.correct_transcript)
@@ -168,7 +173,7 @@ class Window(QMainWindow):
         self.materials = QListWidget(); self.tabs.addTab(self.materials, 'Materials')
         prompts = QWidget(); form = QFormLayout(prompts)
         self.model = QComboBox(); self.model.setAccessibleName('Note model'); form.addRow('Note model', self.model)
-        model_help = QLabel('Choose a lecture in the library, then select a local model here. If this list is empty, open Local models first.')
+        model_help = QLabel('Choose a lecture, then select a local model or a saved cloud connection. Open Local models or AI connections to set one up.')
         model_help.setWordWrap(True); form.addRow(model_help)
         self.prompts = {}
         for key, label in [('detail_prompt','Detail instructions'), ('layout_prompt','Layout instructions'), ('instructions','Writing instructions')]:
@@ -187,7 +192,7 @@ class Window(QMainWindow):
         self.model_timer = QTimer(self); self.model_timer.timeout.connect(self.refresh_models)
         self.model_timer.start(3000)
         self.refresh_models()
-        self.message('Private local library · no browser engine · models stay on this computer')
+        self.message('Private local library · local transcription · cloud notes only by your choice')
 
     def message(self, text):
         self.statusBar().showMessage(text)
@@ -257,7 +262,7 @@ class Window(QMainWindow):
         self.lecture = data['id'] if kind == 'lecture' else None
         self.title.setText(data['name'] if kind == 'course' else data['title'])
         self.title.setTextFormat(Qt.TextFormat.PlainText)
-        self.state = None; self.rendered = None; self.notes.clear(); self.preview.clear(); self.transcript.clear(); self.materials.clear()
+        self.state = None; self.rendered = None; self.notes.clear(); self.visual_notes.show_revision(None); self.preview.clear(); self.transcript.clear(); self.materials.clear()
         self.notes.setMaximumHeight(100)
         self.transcript_rows = []; self.material_rows = None; self.live_transcript.clear()
         for stream in self.streams: stream.stop.set()
@@ -282,7 +287,7 @@ class Window(QMainWindow):
         def created(row):
             self.lecture = row['id']; self.title.setText(row['title']); self.load_library()
             self.state = None; self.rendered = None; self.transcript_rows = []; self.material_rows = None
-            self.notes.clear(); self.preview.clear(); self.transcript.clear(); self.live_transcript.clear()
+            self.notes.clear(); self.visual_notes.show_revision(None); self.preview.clear(); self.transcript.clear(); self.live_transcript.clear()
             for stream in self.streams: stream.stop.set()
             stream = Stream(self.api, self.lecture); stream.changed.connect(self.streaming)
             self.streams.append(stream); stream.thread.start(); self.refresh()
@@ -306,7 +311,7 @@ class Window(QMainWindow):
             def done(_):
                 if self.lecture == lecture:
                     self.lecture = None; self.state = None; self.title.setText('Choose a lecture')
-                    self.notes.clear(); self.preview.clear(); self.transcript.clear(); self.live_transcript.clear(); self.materials.clear()
+                    self.notes.clear(); self.visual_notes.show_revision(None); self.preview.clear(); self.transcript.clear(); self.live_transcript.clear(); self.materials.clear()
                     for stream in self.streams: stream.stop.set()
                 self.load_library(); self.message('Lecture deleted. Recording cleanup continues in the background.')
             self.work(erase, done)
@@ -325,7 +330,7 @@ class Window(QMainWindow):
                 return result
             def done(_):
                 self.lecture = None; self.course = None; self.state = None
-                self.notes.clear(); self.preview.clear(); self.transcript.clear(); self.materials.clear()
+                self.notes.clear(); self.visual_notes.show_revision(None); self.preview.clear(); self.transcript.clear(); self.materials.clear()
                 self.load_library(); self.message('Course removed. Recording cleanup continues in the background.')
             if self.recorder.source or self.recorder.starting or self.recorder.finishing:
                 self.error('Stop the recording before deleting a course.'); return
@@ -347,6 +352,7 @@ class Window(QMainWindow):
             if selected and selected['id'] != self.rendered:
                 self.notes.setMaximumHeight(16777215)
                 self.rendered = selected['id']; update_text(self.notes, prose(selected))
+                self.visual_notes.show_revision(selected)
                 if state['status'] not in ('generating', 'running'): self.preview.clear()
             if first:
                 for key, field in self.prompts.items(): field.setPlainText(state['profile'][key])
@@ -378,7 +384,7 @@ class Window(QMainWindow):
             if any(row['lecture_id'] == self.lecture and row['kind'] == 'lecture' for row in rows):
                 self.lecture = None; self.state = None
                 for stream in self.streams: stream.stop.set()
-                self.notes.clear(); self.preview.clear(); self.transcript.clear(); self.materials.clear(); self.load_library()
+                self.notes.clear(); self.visual_notes.show_revision(None); self.preview.clear(); self.transcript.clear(); self.materials.clear(); self.load_library()
         def failed(text):
             self.cleaning = False; self.message(text)
         background(run, done, failed)
@@ -417,8 +423,19 @@ class Window(QMainWindow):
         elif note_state.get('status') == 'ready' and progress.get('pending_sources'): note_status = 'collecting context for the next section'
         if saved: note_status = str(saved)+' sections saved · '+note_status
         if not note_state.get('preference'): note_status = 'choose a model in Note preferences'
+        preference = note_state.get('preference') or {}
+        from notetaker.cloud_notes import is_cloud
+        location = 'Cloud: '+preference['model'] if is_cloud(preference.get('model', '')) else 'Local'
+        errors = {'provider_authentication':'Sign in again or update the API key in AI connections.',
+            'provider_limit':'Provider usage limit reached. Check billing or subscription limits.',
+            'provider_limit_or_failure':'Provider stopped generation. Check account limits and model access.',
+            'connection_unavailable':'Reconnect the provider and apply its model again.',
+            'subscription_client_unavailable':'Update or reconnect the official subscription client.',
+            'provider_timeout':'The cloud provider timed out; saved notes are retained.',
+            'unexpected_tool_request':'The provider requested an unsupported action; saved notes are retained.'}
+        error = note_state.get('error_code')
         self.pipeline_status.setText('Transcription: '+speech+' · '+str(transcript.get('processing_delay_seconds',0))+
-            's pending    |    Notes: '+note_status+((' · '+note_state['error_code']) if note_state.get('error_code') else ''))
+            's pending    |    Notes: '+note_status+' · '+location+((' · '+errors.get(error,error)) if error else ''))
 
     def update_review(self, revision):
         issues = revision['content']['issues'] if revision else []
@@ -456,7 +473,7 @@ class Window(QMainWindow):
             self.models_polling = False
             current = self.model.currentText(); self.model.clear()
             self.model.addItems([m['name'] for m in data['models']])
-            if current: self.model.setCurrentText(current)
+            if current: self.model.setCurrentIndex(self.model.findText(current))
             if data['models']: self.model_timer.stop()
         def failed(text):
             self.models_polling = False; self.message(text)
@@ -501,10 +518,17 @@ class Window(QMainWindow):
 
     def generate(self):
         if not self.require_lecture() or not self.state: return
-        if not self.model.currentText(): self.message('Select or import a local note model first.'); return
+        if not self.model.currentText(): self.message('Select a local model or configure an AI connection first.'); return
         path = '/lectures/'+self.lecture+'/notes/model'
         body = {key:field.toPlainText() for key, field in self.prompts.items()}
         body.update(model=self.model.currentText(), enabled=True, expected_version=(self.state['preference'] or {}).get('version',0))
+        from notetaker.cloud_notes import is_cloud
+        if is_cloud(body['model']):
+            if QMessageBox.question(self, 'Use cloud notes for this lecture?',
+                'Send this lecture transcript, selected material text and note prompts to '+body['model']+' for ongoing note generation? '
+                'API charges or subscription limits apply. Audio transcription stays local.') != QMessageBox.StandardButton.Yes:
+                return
+            body['cloud_consent'] = True
         self.work(lambda:self.api.post(path, body))
 
     def load_profile(self):
@@ -578,7 +602,10 @@ class Window(QMainWindow):
         dialog = QDialog(self); dialog.setWindowTitle('Compare with your saved notes'); layout = QVBoxLayout(dialog)
         panes = QHBoxLayout(); layout.addLayout(panes)
         for revision in [self.selected(),proposal]:
-            field = QPlainTextEdit(prose(revision)); field.setReadOnly(True); panes.addWidget(field)
+            tabs = QTabWidget()
+            field = QPlainTextEdit(prose(revision)); field.setReadOnly(True); tabs.addTab(field, 'Text')
+            visuals = VisualNotes(); visuals.show_revision(revision); tabs.addTab(visuals, 'Diagrams')
+            panes.addWidget(tabs)
         choices = QHBoxLayout(); layout.addLayout(choices)
         def resolve(action):
             fields = {'proposal_id':proposal['id']}
@@ -672,9 +699,11 @@ class Window(QMainWindow):
                 if not history.currentItem(): return
                 row = history.currentItem().data(Qt.ItemDataRole.UserRole)
                 if not row.get('snapshot_id'): self.message('This request has no completed snapshot yet.'); return
-                filename, _ = QFileDialog.getSaveFileName(dialog,'Export immutable snapshot','Final lecture.md','Markdown (*.md)')
+                filename, chosen = QFileDialog.getSaveFileName(dialog,'Export immutable snapshot','Final lecture.html','Visual HTML (*.html);;Markdown (*.md)')
                 if filename:
                     endpoint = '/lectures/'+lecture+'/final-snapshots/'+row['snapshot_id']+'/export'
+                    if chosen.startswith('Visual') or filename.lower().endswith('.html'):
+                        endpoint += '?format=html'
                     self.work(lambda:Path(filename).write_bytes(self.api.get(endpoint)),lambda _:self.message('Immutable snapshot exported.'))
             button('Export selected snapshot',export_snapshot,layout)
             button('Close',dialog.accept,layout); dialog.resize(700,400); dialog.exec()
@@ -683,9 +712,11 @@ class Window(QMainWindow):
     def export(self):
         revision = self.selected()
         if not revision: return
-        filename, _ = QFileDialog.getSaveFileName(self, 'Export selected saved notes', 'Study notes.md', 'Markdown (*.md)')
+        filename, chosen = QFileDialog.getSaveFileName(self, 'Export selected saved notes', 'Study notes.html', 'Visual HTML (*.html);;Markdown (*.md)')
         if filename:
             path = '/lectures/'+self.lecture+'/notes/'+('edits/' if revision.get('student') else 'revisions/')+revision['id']+'/export'
+            if chosen.startswith('Visual') or filename.lower().endswith('.html'):
+                path += '?format=html'
             self.work(lambda:Path(filename).write_bytes(self.api.get(path)), lambda _:self.message('Selected saved notes exported.'))
 
     def closeEvent(self, event):

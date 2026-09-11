@@ -292,9 +292,14 @@ def install_lifecycle(app,current,db_session,owned_lecture,receipt):
         return {'id':row.id,'created_at':row.created_at.isoformat()+'Z',**row.content}
 
     @app.get('/lectures/{lecture_id}/final-snapshots/{snapshot_id}/export')
-    def export(lecture_id:str,snapshot_id:str,session=Depends(current),db=Depends(db_session)):
+    def export(lecture_id:str,snapshot_id:str,format:Literal['markdown','html']='markdown',session=Depends(current),db=Depends(db_session)):
         owned_lecture(db,session.owner_id,lecture_id);row=db.get(m.FinalSnapshot,snapshot_id)
         if not row or row.lecture_id!=lecture_id:error(404,'unavailable','This final snapshot is unavailable.')
+        if format == 'html':
+            from .visual_notes import html_notes
+            notes = row.content.get('notes')
+            return Response(html_notes(row.content['title'], notes['content'] if notes else {'blocks': []}, row.markdown),
+                media_type='text/html', headers={'Content-Disposition':'attachment; filename="final-lecture.html"', 'X-Content-Type-Options':'nosniff'})
         return Response(row.markdown,media_type='text/markdown',headers={'Content-Disposition':'attachment; filename="final-lecture.md"'})
 
     @app.post('/lectures/{lecture_id}/deletion',status_code=202)

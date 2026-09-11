@@ -1,5 +1,7 @@
 # Notetaker for Windows — first public build
 
+The local **0.4.0 development build** additionally has **Visual notes**, HTML export and **AI connections**. OpenAI/Claude APIs are separately billed; subscription options require installed official clients and account sign-in through your system browser. Cloud processing is explicit per lecture; audio transcription remains local. See [setup behavior and verification limits](implementation/visual-notes-providers.md). The public 0.3.1 instructions below describe the earlier release, whose downloads are unchanged.
+
 Download the installer or portable ZIP from the [GitHub releases page](https://github.com/akulusprimerift/Notetaker-App/releases). The current public build is **0.3.1**.
 
 Run `Notetaker-Native-0.3.1-Setup.exe` to install the app and its Start menu shortcut. Alternatively, extract the entire `Notetaker-Windows-x64.zip` into a folder and open `Notetaker.exe`; keep `_internal` and `NotetakerService.exe` next to it. The target is Windows 10 22H2 or Windows 11 x64; current verification was performed on Windows 11. This native Qt Widgets application contains no Chromium, Electron or WebView engine. Docker, Python, PowerShell, Ollama and a browser are not required on the receiving computer.

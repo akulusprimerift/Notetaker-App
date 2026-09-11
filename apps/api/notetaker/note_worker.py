@@ -176,7 +176,8 @@ def execute(sessions, provider, chosen, heartbeat=True):
 def main():
     settings = Settings()
     engine, sessions = database(settings.database_url)
-    provider = OllamaNotes(settings)
+    from .cloud_notes import NoteProviders
+    provider = NoteProviders(settings)
     try:
         while True:
             try:

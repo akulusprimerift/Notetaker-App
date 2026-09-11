@@ -43,6 +43,11 @@ def validate_notes(output, evidence, aggregate=False):
     sources = {s['id']: s for s in evidence['sources']}
     blocks, passages, cited, resolved = set(), set(), set(), []
     for block in output['blocks']:
+        if 'diagram' in block:
+            from .visual_notes import validate_diagram
+            validate_diagram(block['diagram'])
+            if not any(p['sources'] for p in block['passages']):
+                raise ValueError('diagram_evidence_required')
         if block['id'] in blocks: raise ValueError('duplicate_block')
         blocks.add(block['id'])
         for passage in block['passages']:

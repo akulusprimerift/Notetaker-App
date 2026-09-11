@@ -1,10 +1,11 @@
 """Convert model-written prose to canonical notes using server-owned source identity."""
 import json
+from copy import deepcopy
 from jsonschema import Draft202012Validator
 from .note_contract import ROOT, SCHEMA, compact, validate_notes
 
 DRAFT_SCHEMA = json.loads((ROOT/'contracts/ai/note-draft.schema.json').read_text(encoding='utf-8'))
-DRAFT_PROMPT = (ROOT/'prompts/note-draft-v1.txt').read_text(encoding='utf-8')
+DRAFT_PROMPT = (ROOT/'prompts/note-draft-v2.txt').read_text(encoding='utf-8')
 
 
 def grammar(node):
@@ -70,7 +71,10 @@ def canonical(draft, evidence, citations):
             cited.update(c['source_id'] for c in references)
             passages.append({'id': f'b{index+1}p{number+1}', 'text': passage['text'],
                 'evidence_kind': 'uncertainty' if block['kind'] == 'uncertainty' else ('material_paraphrase' if any(c['source_id'].startswith('material:') for c in references) else 'lecture_paraphrase'), 'sources': references})
-        blocks.append({'id': f'b{index+1}', 'topic': block['topic'], 'kind': block['kind'], 'passages': passages})
+        result = {'id': f'b{index+1}', 'topic': block['topic'], 'kind': block['kind'], 'passages': passages}
+        if 'diagram' in block:
+            result['diagram'] = deepcopy(block['diagram'])
+        blocks.append(result)
     issues = [{**issue, 'source_ids': list(dict.fromkeys(c['source_id'] for c in refs(issue['source_ids'])))} for issue in draft['issues']]
     coverage = [{'source_id': source['id'], 'disposition': 'used' if source['id'] in cited else 'omitted',
         'reason': 'Referenced by these notes.' if source['id'] in cited else 'This generated draft did not use this passage; review the source for missing detail.'}

@@ -1,5 +1,7 @@
 # Notetaker App
 
+Development update (2026-09-11): native visual schematics and HTML export, plus optional OpenAI/Claude API keys and official-client subscription connections, are implemented for the 0.4.0 development build. See [behavior, tests and provider limitations](docs/implementation/visual-notes-providers.md). Live accounts/inference and scientific diagram quality remain unqualified; the public 0.3.1 download below is unchanged.
+
 ![Notetaker logo](docs/assets/notetaker-logo.svg)
 
 ## First public Windows build

@@ -180,7 +180,7 @@ def install_edits(app, current, db_session, owned_lecture, receipt):
         return edit_json(db, edit)
 
     @app.get('/lectures/{lecture_id}/notes/edits/{edit_id}/export')
-    def export(lecture_id: str, edit_id: str, session=Depends(current), db=Depends(db_session)):
+    def export(lecture_id: str, edit_id: str, format: Literal['markdown', 'html'] = 'markdown', session=Depends(current), db=Depends(db_session)):
         from .notes import markdown
         lecture = owned_lecture(db, session.owner_id, lecture_id)
         edit = db.scalar(select(NoteEdit).where(NoteEdit.id == edit_id, NoteEdit.lecture_id == lecture_id))
@@ -188,5 +188,9 @@ def install_edits(app, current, db_session, owned_lecture, receipt):
         base = db.get(NoteRevision, edit.generated_id)
         revision = SimpleNamespace(request_id=base.request_id, revision=edit.version, content=edit.content,
             metadata_json={**base.metadata_json, 'student_revision': True})
+        if format == 'html':
+            from .visual_notes import html_notes
+            return Response(html_notes(lecture.title, edit.content, markdown(db, lecture, revision)), media_type='text/html; charset=utf-8',
+                headers={'Content-Disposition': f'attachment; filename="lecture-notes-student-{edit.version}.html"', 'X-Content-Type-Options': 'nosniff'})
         return Response(markdown(db, lecture, revision), media_type='text/markdown; charset=utf-8',
             headers={'Content-Disposition': f'attachment; filename="lecture-notes-student-{edit.version}.md"', 'X-Content-Type-Options': 'nosniff'})
