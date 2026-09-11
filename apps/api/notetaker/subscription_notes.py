@@ -32,7 +32,7 @@ def client_environment(provider, directory):
 
 class ClientProcess:
     def __init__(self, args, env, cwd, timeout=600):
-        from notetaker_native.process_job import ProcessJob
+        from .process_job import ProcessJob
         self.job = ProcessJob()
         self.process = None
         self.events = queue.Queue(maxsize=128)

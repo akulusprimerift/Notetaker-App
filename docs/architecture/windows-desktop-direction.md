@@ -1,14 +1,14 @@
 # Windows desktop direction
 
-Date: 2026-09-09. The user explicitly selected a native Windows application with no browser engine. Qt Widgets replaces Electron for the deliverable. Python, Qt, faster-whisper and the CPU Ollama executable are bundled; models remain user-selected local files. An explicit standalone SQLite/private-file profile removes Docker dependencies while retaining backend source, revision and deletion contracts. Existing Docker libraries are preserved separately. See [native download](../native-download.md) and [M08](../implementation/phase-6-m08.md). The Electron proposals below are historical and do not control the native implementation.
+Date: 2026-09-11. The user selected Electron as the only Windows host. The hardened Electron shell reuses the Next.js/React workspace, authenticated FastAPI contracts, Docker service lifecycle and Chromium audio-capture implementation. Models remain user-selected local files; no model weights are downloaded by the app. The previous Qt/native standalone profile has been removed from the repository. See [M08](../implementation/phase-6-m08.md).
 
 The product is a course-neutral Windows note-taking application. The current browser interface is the development surface for the same product. Reuse the existing React interface, Python services, source validation and saved data when adding a desktop host.
 
-## Proposed first desktop increment
+## Electron desktop increment
 
-Use an Electron desktop host for the first Windows proof of concept. This is an engineering recommendation based on the existing JavaScript UI and Chromium audio-capture implementation, not a completed compatibility result. Electron's bundled renderer gives a specific browser runtime to test. Tauri remains an alternative if installation size becomes a demonstrated priority; it introduces a Rust host and a Windows WebView2 distribution decision. Both have documented Windows installer paths: [Electron Forge Squirrel.Windows](https://www.electronforge.io/config/makers/squirrel.windows) and [Tauri Windows installers](https://v2.tauri.app/distribute/windows-installer/).
+Use the existing Electron desktop host for the Windows delivery. Electron's bundled renderer gives the capture and navigation flow a specific Chromium runtime to qualify, while the Docker/FastAPI services remain the development service profile. Tauri is not part of this delivery decision.
 
-Bring a small desktop-host experiment forward after the current note-generation repair and writing-preference checks. Keep complete installer/upgrade qualification in M08 and continue long-lecture note processing in M04. The experiment must not claim that merely opening a localhost page is a finished installable product.
+The current increment turns the host experiment into the primary Windows path. Keep complete installer/upgrade qualification in M08 and continue long-lecture note processing in M04. The installable app must keep the service boundary, capture recovery, source protection and explicit model selection visible to students.
 
 1. Launch a single app window with a normal Windows title and icon. Reuse the existing interface and authenticated API.
 2. Detect the local services, show their startup progress, and offer clear recovery when Docker or Ollama is unavailable. For the first experiment, disclose these prerequisites; do not silently install them or bundle model weights.

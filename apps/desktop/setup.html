@@ -1,1 +1,33 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self';"><title>Notetaker setup</title><link rel="stylesheet" href="setup.css"></head><body><main><p class="brand">notetaker.</p><h1>Your Windows lecture workspace.</h1><p>Record lectures, follow the transcript, and receive detailed notes from your local models.</p><section><h2>Local services</h2><p>The Windows app requires Docker Desktop with Linux containers, PowerShell 7, and Ollama for note generation. First startup builds the application services and may download software dependencies. It never downloads model weights.</p><p id="status" role="status">Checking services…</p><button id="start">Start local services</button><button id="open">Open workspace</button><button id="workspace">Use existing workspace folder</button><p>Services continue processing when this window closes. Audio and database files remain in Docker volumes; window settings and recovery drafts remain in your Windows user profile. Uninstalling the app retains these files.</p></section><section><h2>Models on this computer</h2><p>Installed Ollama models appear in each lecture’s model chooser. Other detected files are listed for reference; they are not automatically imported or used.</p><button id="refresh">Refresh model discovery</button><button id="speech">Choose existing speech model folder</button><pre id="models" aria-live="polite"></pre></section><p id="error" role="alert"></p><p id="location"></p></main><script src="setup.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'">
+  <title>Notetaker setup</title>
+  <link rel="stylesheet" href="setup.css">
+</head>
+<body>
+  <main>
+    <header class="setup-header">
+      <div class="brand-mark" aria-hidden="true">n</div>
+      <div><p class="eyebrow">NOTETAKER · WINDOWS</p><h1>Your local study space.</h1><p class="lede">One calm place for recordings, transcripts and detailed notes. Your lecture library stays on this computer.</p></div>
+    </header>
+    <p class="privacy"><span class="dot"></span> Private by default <span>·</span> Audio and notes stay in your chosen local workspace</p>
+
+    <section class="setup-card" aria-labelledby="services-title">
+      <div class="card-icon" aria-hidden="true">01</div>
+      <div class="card-content"><p class="eyebrow">FIRST, GET READY</p><h2 id="services-title">Local services</h2><p>Notetaker uses Docker Desktop with Linux containers, PowerShell 7, and Ollama for local note generation. First startup can take a few minutes while the service images build. Model weights are never downloaded by the app.</p><p id="status" class="status" role="status">Checking services…</p><div class="actions"><button id="start" class="primary">Start local services</button><button id="open" class="secondary">Open workspace</button></div><button id="workspace" class="quiet">Use an existing workspace folder</button><p class="supporting">Services continue processing while this setup window is closed. App data and recovery drafts are kept in your Windows user profile. Uninstalling the app retains them.</p></div>
+    </section>
+
+    <section class="setup-card" aria-labelledby="models-title">
+      <div class="card-icon" aria-hidden="true">02</div>
+      <div class="card-content"><p class="eyebrow">THEN, CHECK YOUR MODELS</p><h2 id="models-title">Models on this computer</h2><p>Installed Ollama models appear in a lecture’s note chooser. Speech recognition uses a local faster-whisper folder. Detected files are listed for reference only; Notetaker never imports or downloads them automatically.</p><div class="actions"><button id="refresh" class="secondary">Refresh model discovery</button><button id="speech" class="quiet">Choose speech model folder</button></div><pre id="models" aria-live="polite">Looking for local models…</pre></div>
+    </section>
+
+    <p id="error" class="error" role="alert"></p>
+    <p id="location" class="location"></p>
+  </main>
+  <script src="setup.js"></script>
+</body>
+</html>

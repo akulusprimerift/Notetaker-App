@@ -4,7 +4,7 @@ Updated 2026-09-11. **6.8 / M08 remains active.** The user brought visual notes 
 
 ## Student workflow
 
-The native **Visual notes** tab draws source-linked schematics alongside explanatory passages. Ask for process diagrams, cycles or concept maps in the existing custom layout prompt, then apply and write notes. Text-only preferences remain supported. This first visual vocabulary uses labeled nodes and directed relationships; it does not draw molecular bond geometry, anatomical illustrations or reconstruct unread slide images.
+The Electron **Visual notes** tab draws source-linked schematics alongside explanatory passages. Ask for process diagrams, cycles or concept maps in the existing custom layout prompt, then apply and write notes. Text-only preferences remain supported. This first visual vocabulary uses labeled nodes and directed relationships; it does not draw molecular bond geometry, anatomical illustrations or reconstruct unread slide images.
 
 **Export** offers self-contained HTML with diagrams, prose, source versions, a source appendix and review record, or Markdown with readable diagram descriptions. Export uses the selected saved generated/student revision. Final snapshot HTML uses frozen content and the stored export record. Comparison includes diagrams for both revisions. Student edits retain the original schematic with a review notice; keep, merge, replace and undo retain existing immutable-history behavior.
 
@@ -18,7 +18,7 @@ Select the connection in **Note preferences**, then confirm cloud processing for
 
 Optional bounded diagram objects extend the draft/canonical material-note schemas. Old JSON revisions remain valid; no migration or historical rewrite is required. Draft prompt v2 distinguishes schematics from missing visual evidence. Validation rejects unknown properties, duplicate node IDs, absent edge endpoints and diagrams without cited passages. This checks structure/source identity, not scientific accuracy.
 
-The app renders its own SVG shapes with escaped model labels. Qt SVG requires no WebEngine. HTML exports contain escaped text and app-generated inline SVG, no external assets or scripts, and a restrictive content security policy. The earlier web development profile keeps its text presentation; this feature targets native Windows.
+The app renders its own SVG shapes with React text nodes and escaped model labels; arbitrary model HTML and JavaScript are never executed. HTML exports contain escaped text and app-generated inline SVG, no external assets or scripts, and a restrictive content security policy. The Electron renderer and export path share the same source-linked content contract.
 
 The provider dispatcher retains contextual batches, canonical validation, streamed previews, settings/attempt/epoch fencing and protected publication. OpenAI uses streamed Chat Completions; Anthropic uses Messages. Provider/model and a connection-generation identifier bind preferences and provenance; cloud model weights are not claimed immutable.
 
@@ -32,10 +32,10 @@ Subscription bridges use Codex app-server JSON-RPC and Claude Code print-mode ev
 
 ## Executed evidence
 
-- Windows isolated SQLite/synthetic regression: **182 backend/native tests passed, one service-only skip**. Covers visual validation/export, edits/undo, cloud consent, DPAPI, streamed API responses, authentication/quota/redirect failures and connection replacement.
+- Windows isolated SQLite/synthetic regression: **175 backend tests passed, one service-only skip**. Covers visual validation/export, edits/undo, cloud consent, DPAPI, streamed API responses, authentication/quota/redirect failures and connection replacement.
 - **Three additional subscription-protocol tests passed** for authentication gates, incremental messages and unexpected approval rejection.
 - Installed Codex app-server started in a fresh signed-out profile and returned authentication-required before any note text was submitted. This is startup/protocol evidence, not authenticated inference.
-- **60 JavaScript contracts**, web typecheck, ESLint and production build passed. Ruff passed for API/native code. Native diagram screenshot inspected; corrected a Qt SVG text-stroke rendering issue.
+- **60 JavaScript contracts**, web typecheck, ESLint and production build passed. Ruff passed for the API. The previous desktop diagram reader was replaced by the Electron React/SVG reader in this increment.
 
 Initial tests encountered the known Windows default pytest-directory permission issue and a duplicate module filename. A fresh project-local directory and distinct filename resolved them. A mutable-reference test exposed a missing diagram deep copy; fixed and rerun successfully.
 

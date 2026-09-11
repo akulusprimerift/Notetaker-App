@@ -71,11 +71,13 @@ async function startServices() {
   } finally {starting=false;}
 }
 
-function authorize(event) {
-  if (![window, setupWindow].some(w => w && !w.isDestroyed() && event.sender === w.webContents && event.senderFrame === w.webContents.mainFrame) || event.senderFrame.url !== setupURL)
-    throw new Error('This action is available only in Windows setup.');
+function authorize(event, allowWorkspace = false) {
+  const exactWindow = [window, setupWindow].some(w => w && !w.isDestroyed() && event.sender === w.webContents && event.senderFrame === w.webContents.mainFrame);
+  const allowedFrame = event.senderFrame.url === setupURL || (allowWorkspace && localPage(event.senderFrame.url));
+  if (!exactWindow || !allowedFrame)
+    throw new Error('This action is available only in Notetaker setup or workspace.');
 }
-function register(name, action) {ipcMain.handle(name, async (event) => {authorize(event);return action();});}
+function register(name, action, allowWorkspace = false) {ipcMain.handle(name, async (event) => {authorize(event, allowWorkspace);return action();});}
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
@@ -133,6 +135,7 @@ else {
       if(!found.speech)throw new Error('Choose a folder containing model.bin and config.json. No model was downloaded.');
       speechPath=chosen.filePaths[0];await saveConfig();
     });
+    register('app:open-setup',showSetup,true);
     try {if(await healthy())await window.loadURL(ORIGIN);else await setup();}
     catch {message='Could not open the local workspace. Check Docker Desktop and retry.';await setup();}
     window.show();

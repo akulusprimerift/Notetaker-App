@@ -17,7 +17,7 @@ Audio preservation is independent of inference. Never silently discard sources, 
 
 ## Stack and boundaries
 
-The user selected a browser-free native Windows rebuild on 2026-09-09. For the Windows deliverable, use Qt Widgets/Qt Multimedia in `apps/native`, bundled Python/speech/CPU Ollama runtimes, and the explicit standalone SQLite/private-file storage profile. No Chromium, Electron or WebView engine is allowed in that package. Preserve the earlier PostgreSQL/Docker/React workspace as a separate development profile; do not silently migrate or delete its data. Model weights remain user-selected local files. The older stack bullets below describe that development profile.
+The user selected an Electron-based Windows rebuild on 2026-09-11. For the Windows deliverable, use the existing Next.js/React workspace inside the hardened Electron shell, with the Docker/FastAPI services and explicit local model selection. The Qt native application and its standalone profile have been removed from the delivery path. Preserve the existing PostgreSQL/Docker/React workspace and its student data; do not silently migrate or delete it. Model weights remain user-selected local files.
 
 - Next.js, React and strict TypeScript; accessible semantic HTML and existing CSS patterns.
 - Browser AudioWorklet/worker capture, IndexedDB audio recovery and durable local edit drafts.

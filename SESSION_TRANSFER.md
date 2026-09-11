@@ -1,150 +1,43 @@
 # Session transfer
 
-## Visual notes and API/subscription connections — 2026-09-11
+## Electron workspace and native retirement — 2026-09-11
 
-Active phase remains **6.8 / M08**. The user requested visual notes for diagram-heavy classes and explicitly selected both API-key and subscription connections. Implemented native source-linked schematics, inert self-contained HTML export of selected generated/student/final revisions, diagram comparison and preserved edit/undo behavior. Optional schema fields keep old revisions valid without a migration. Draft prompt v2 preserves v1 history. The diagram vocabulary is labeled concepts and directed relationships, not molecular geometry or recovered slide images.
+Active phase remains **6.8 / M08**. The user reported that the application was difficult to navigate and visually janky, asked for a cleaner NotebookLM-inspired experience, and selected Electron as the only Windows host. The earlier Qt/native application and its standalone storage/packaging profile were removed from the repository. The existing Electron host, React workspace, FastAPI services and Docker development profile are now the single delivery path.
 
-AI connections stores API keys using current-user Windows DPAPI; uses OpenAI Chat Completions/Claude Messages; and offers official-client ChatGPT/Codex and Claude/Claude Code subscription bridges with separate sign-in profiles, browser login and sign-out. Each lecture requires explicit cloud consent. No silent provider fallback. Updated connections invalidate their prior model identity and require reapplying preferences. See [full behavior, sources and limitations](docs/implementation/visual-notes-providers.md).
+## Completed in this increment
 
-Executed: 182 backend/native tests passed with one service-only skip; three further subscription protocol tests passed; 60 JavaScript contracts, web typecheck/lint/build and Ruff passed. Native diagram screenshot inspected. Installed Codex app-server started in an isolated signed-out profile and rejected generation before any lecture text was submitted. Live API keys, paid inference, successful subscription sign-in and Claude client compatibility remain untested. Claude's current developer and Agent SDK subscription guidance is inconsistent; verify distribution support with Anthropic before advertising universal subscription compatibility. No microphone, student data access, external inference, model download or push.
+- Added focused lecture navigation with persistent course and lecture links in the sidebar.
+- Added lecture sections for Study notes, Transcript, Materials, Capture, Visual notes and Finish.
+- Kept one recorder mounted while switching sections so a tab change cannot dispose an active recording.
+- Added microphone input selection in the Electron renderer using the browser media-device API.
+- Ported source-linked visual schematics into a safe React/SVG reader. Model labels are rendered as text nodes; arbitrary HTML and JavaScript are never executed.
+- Added an Electron-only workspace-settings action that opens the existing local service/model setup window through a narrowly authorized IPC call.
+- Moved Windows child-process ownership into `apps/api/notetaker/process_job.py` so subscription bridges do not depend on the removed native package.
+- Removed the native Qt application, native tests, native dependency locks, native packaging scripts/workflow, native-only download/third-party documents and native evaluation reports.
+- Updated the README, phase plan, desktop direction, M08 evidence and visual/provider evidence to describe Electron as the only Windows host.
 
-Version 0.4.0 packaging completed on Windows 11: `Notetaker-Windows-x64.zip` is 688535600 bytes (SHA256 `8b138a0489c8cce920a1e8fa9308416ad83107671d76300a72644abe6a91ba41`) and `Notetaker-Native-0.4.0-Setup.exe` is 661483894 bytes (SHA256 `eb295b999a6ed9211d7816e01b10ad58f72794b594ee11a8c482d28002d0d833`). PyInstaller build, ZIP packaging, NSIS installer generation and browser-engine scan passed. The frozen synthetic smoke passed material upload, audio save/recovery, native widgets, themes and review dismissal with no microphone access. Exact next work is real account sign-in and a synthetic biology/chemistry example on each chosen provider, followed by representative human diagram review. Existing hardware, accessibility, endurance, backup/restore and release qualification gates remain open. Historical checkpoints follow.
+## Existing behavior preserved
 
-Updated: 2026-09-10. Current increment: **Phase 6.8 / M08 — native Windows rebuild (no browser engine)**.
+The shared React/API path still owns local audio journaling and recovery, live timestamped transcription, protected corrections, contextual streamed note sections, saved prompt profiles, source inspection/playback, course materials, model selection, revision comparison, keep/merge/replace/undo, finalization, immutable snapshots, deletion reconciliation, browser-copy purge and exports. The Electron host continues to reuse the existing loopback API and Docker service lifecycle. Existing development workspace data and service credentials are preserved; no migration or deletion of student data was performed.
 
-## Incremental native note sections — 0.3.1 (2026-09-10)
+Visual note data remains validated by the API. The Electron reader describes diagrams as cited explanatory schematics, not recovered slide/board images. OpenAI/Claude API and subscription connection code remains in the shared service scope and continues to require explicit per-lecture consent; live account/provider qualification is still open.
 
-Active phase remains 6.8 / M08. The user accepts audio recording and transcription and requests completed note sections during ongoing recording. Each scheduled note request now pins previously covered source IDs plus a bounded new group (8 sources, approximately 180 words / 2,400 UTF-8 bytes, preserving an indivisible source). Enough context still accumulates first (24 seconds of recognized windows or 100 words). Every completed request validates all its pinned evidence, saves a cumulative immutable revision, and allows the next request through even against the same transcript snapshot. Backlogs and stopped tails continue automatically. Pending coverage stays explicit; source corrections, epochs, settings, claims and student-edit protection remain fenced. The Qt status reports saved sections and next-section progress.
+## Verification status
 
-Migration 0013 adds nullable source selection for old-request compatibility and scopes request uniqueness to the base note revision. SQLite copies the request table atomically with foreign keys checked and re-enabled; a read-only backup of the existing 0012 native library upgraded with every existing row preserved. The actual student library was not upgraded by this check.
+Executed in this increment:
 
-Source synthetic real-model test: a 272.15-second repeated fixture produced live prose at 81.97 seconds and saved revisions at 126.81, 215.88 and 271.91 seconds while capture remained open. All 6,000,940 samples were captured and verified; 329 note previews were observed. This checks live sections, not completed transcript backlog or educational correctness. See [machine-readable evidence](evaluations/reports/m08-native-note-sections.json). No microphone access.
+- `bun run test`: 60 JavaScript contract/capture tests passed.
+- `bun run test:desktop`: 2 Electron policy/model-discovery tests passed.
+- `node tests/desktop/smoke.cjs`: Electron isolation, setup, outage reporting, workspace reuse, model discovery, hide/reopen and synthetic journal checks passed.
+- `bun run typecheck`, `bun run lint`, `bun run build:web`, `bun run verify:docs`, `uv run --no-project ruff check apps/api` and `git diff --check` passed.
+- `PYTHONPATH=apps/api; uv run --no-project python -m pytest apps/api/tests -q --basetemp .local/pytest-run-0911`: 175 passed, 1 service-only skip.
+- `bun run build:desktop`: unsigned x64 Electron NSIS installer built under `.local/desktop-dist`.
+- Native files were removed only after checking their tracked paths and moving the one shared process-job dependency.
 
-Final source regression: 170 backend/native tests passed, one service-only skip; 60 JavaScript contracts, web typecheck, Ruff, planning-document verification and whitespace checks passed. New regressions cover multiple saved sections against one snapshot while capture remains open, appended speech during inference, late-section failure preservation, stopped tail coverage and actual Qt Study Notes accumulation. Existing edit/proposal, epoch and finalization checks pass.
+These checks use synthetic data/audio only. They do not qualify real microphone behavior, full-hour endurance, accessibility, educational usefulness, authenticated provider inference, coordinated backup/restore, clean-machine installation or release readiness.
 
-This requested increment is implemented and verified on the named synthetic Windows environment. Version 0.3.1 installer/ZIP are rebuilt; no installer was run against the student library and nothing was pushed. Next work: user confirmation on a real lecture, full-lecture Windows hardware/endurance and human note-quality/release gates. Full lecture hardware, human note-quality and release gates remain open. Historical 0.3.0 and Electron evidence below is retained.
+## Environment and next work
 
-Bundled-worker live verification: first preview 86.99 seconds, saved sections at 125.84, 198.06 and 244.25 seconds, all before capture ended at 272.15 seconds. All 6,000,940 samples were verified; 314 note previews were observed. This uses source Qt widgets with frozen API/speech/note workers; the actual frozen GUI separately passed synthetic capture, material upload, model inventory, themes and review-dismissal smoke checks with a restricted system PATH. The final rebuild also includes idempotent recovery if a process exits after the SQLite table copy but before its version stamp; source backup/restart checks preserve every row.
+Bun is the JavaScript runtime; uv manages Python. The development workspace runs with Docker Desktop Linux containers, PowerShell 7, a local Ollama service and the provisioned faster-whisper model. `bun run dev:desktop` opens the Electron shell after services are available. `bun run build:desktop` creates the unsigned Electron NSIS installer under `.local/desktop-dist`.
 
-Final artifacts in `.local/native-qualified` (2026-09-10):
-
-- `Notetaker-Native-0.3.1-Setup.exe`: 655392366 bytes; SHA256 `e34b9b42786653fc549e9d93a2f1e6317b20e6cafa5eed8a56de72ecacc316d8`.
-- `Notetaker-Windows-x64.zip`: 682427779 bytes; SHA256 `8fd809e05e932f85e6965491c1f2af2c4be1f68c6e813c7abfe81c59754c29c4`.
-
-Final frozen GUI smoke, populated-library upgrade/restart recovery and ZIP integrity passed. The final rebuild retains the tested executable CRCs/lengths; differences are the recovery migration, its Python cache and rebuilt base-library archive. Source implementation commit: `84f1cff`.
-
-## Native live-workflow repair — 0.3.0
-
-The user reported missing recording/transcription and a slow, rough native UI. Latest instructions explicitly authorize bundling a faster-whisper model and require lecture deletion and visible transcription/note streaming. The previous no-bundled-weights policy is superseded for the pinned English small.en speech model only. The native installer now includes the four model files, checks their SHA256 values at build time and discovers its bundled model in fresh libraries. Explicit existing model choices remain intact.
-
-Recording setup now runs API admission off the GUI thread, accepts supported preferred stereo/float formats and converts to mono PCM, offers input selection, displays audio level and captured/verified durations, and keeps capture active until the explicit Stop and save button is pressed. Silence, delayed callbacks and transient Qt input warnings are reported without stopping the run; saved gaps are only recorded for an explicit interruption/recovery path. The red `● Recording…` button is the visible active indicator. The speech worker retries database errors instead of exiting. Additive migration 0012 stores disposable attempt-fenced speech previews; finalized source revisions stay immutable. The native stream carries transcript updates, preserving scroll and selection while displaying actual segment previews and live note text beside saved notes. Individual lecture deletion uses the existing reviewed-cursor/tombstone cleanup API. New lecture creation opens the lecture; new recording enables the displayed local note model when no preference exists. Model discovery retries while the local runtime starts.
-
-Executed early checks: 162 backend/native tests passed with one service-only skip; 30 targeted speech/recording/stream tests passed, then seven native tests including individual lecture deletion passed. Ruff, 60 JavaScript contracts, documentation and whitespace checks passed. A real local-model synthetic 68.04-second native Recorder run verified all 1,500,235 samples, showed transcript during capture at 18.62 seconds and first note preview at 68.24 seconds, with 87 note-preview updates and a saved note revision. No physical microphone was accessed. Source report: `.local/native-live-repair/report.json`. Final packaging/installed checks and updated evidence follow below when executed. Existing Docker libraries and user data remain unchanged; no push.
-
-## Latest native checkpoint
-
-Repair follow-up: the final nine native tests pass, including delayed GUI timer/drained input, no-sample gaps, isolated bundled-model discovery and sibling-preserving lecture deletion. A packaged-worker run uncovered a timer-ordering interruption at 61 seconds; Recorder now drains queued frames before diagnosing loss and distinguishes captured coverage from elapsed UI time. The synthetic source now advances independently of UI timers. The rerun verified all 1,500,235 samples, showed transcript during capture at 15.41 seconds and first note preview at 74.47 seconds, with 85 note updates and a saved revision. See [repair evidence](evaluations/reports/m08-native-live-repair.json). Frozen GUI smoke with a restricted Windows PATH also passed upload/recovery, both themes and review dismissal. Final installer refresh and installation evidence follows at the end of this document.
-
-The user explicitly selected a native Windows rebuild with no browser engine, self-contained runtime delivery, course deletion, dismissible review notices and Slate/Midnight themes. Local commits `4e6eda2` and `9004123` contain the appearance/deletion and standalone-storage increments. Native implementation is committed in `0aa030e`, with follow-up `f94e8d5`; shared-workspace documentation commit `8f53a65` was preserved. Final package/install/reinstall/uninstall verification has passed. See the final native delivery section in the M08 evidence and the checkpoint below. The Electron checkpoint below is historical and is not the requested deliverable.
-
-## Earlier Electron checkpoint
-
-The user requested syllabus/curriculum and PowerPoint uploads before Electron Windows delivery, streaming regeneration, installed local model discovery, tests and local commits. Implemented and verified in local commits: shared-workspace `8580df1` initial materials, `9ba7842` ordered bounded evidence, `71ea732` PDF extraction and mixed transcript/slide batches, `fa0c175` Electron host/installer, and `cb3bec5` existing-workspace reuse and installed-app evidence. See [materials evidence](docs/implementation/course-materials.md) and [M08 evidence](docs/implementation/phase-6-m08.md).
-
-Final artifact: `.local/desktop-dist/Notetaker-0.1.0-Setup.exe`, 111,595,802 bytes, unsigned x64 NSIS. SHA256 `3D3EB8E9ABB177B81D22C8D027B21520DC93DB7FB8F14F0A23F39E590BD91448`. Installed test copy: `.local/desktop-install/Notetaker.exe`; a Notetaker Start menu shortcut exists. Final rebuild, silent install/reinstall and installed-executable smoke passed; reinstall retained the isolated `.local/desktop-smoke-profile` configuration. Smoke verified sandbox/isolation, setup authority, separate setup, outage reporting, existing-workspace selection, local model discovery, window hide/show and synthetic journal recovery. No microphone access.
-
-Final SQLite regression: 149 passed, one service-only skip. Earlier PostgreSQL run: all 148 pre-PDF tests plus real storage/broker probes passed. Final Chromium upload/stream/edit/reconnect/lifecycle regression passed. All 60 JavaScript contracts, two desktop policy/model tests, typecheck, ESLint, Ruff, production build and documentation checks passed. Docker rebuild/rollout passed; existing data volumes retained and all services healthy. Qwen3 4B synthetic transcript-plus-slide generation produced valid source-separated notes in 45.5 seconds with 190 preview callbacks; first callback was empty, so first-visible-prose latency is not qualified. See `evaluations/reports/m08-material-smoke.json`.
-
-Windows prerequisites are Docker Desktop Linux containers, PowerShell 7 and Ollama. Setup's **Use existing workspace folder** can select `C:/ezNote/Notetaker App` to reuse the existing library when starting services. Creating a separate desktop library requires an explicit choice. No model weights were downloaded, no external inference was used and no Git push was performed.
-
-Exact next work: M08 release qualification remains open—clean-machine prerequisite/install checks, versioned upgrade/uninstall retention, signing, automated coordinated backup/restore with deletion-journal replay, full-hour endurance and accessibility. Real microphone/device qualification and human lecture-quality review remain blocked on the user's synthetic-only testing preference and representative review inputs. Do not call this development installer release-ready. All requested implementation changes in this session are committed; see Git history for the final evidence-only commit.
-
-## User request and working rules
-
-The user asked to first add saved prompt profiles and remove the single-use access key, then implement finalization and data control: coordinated final processing, immutable snapshots, incomplete results, retained history, audio/lecture deletion, epoch fencing, object reconciliation and browser-copy purge.
-
-Read [AGENTS.md](AGENTS.md), [README.md](README.md), [project phases](docs/project-phases.md) and [M07 implementation](docs/implementation/phase-6-m07.md). Use Bun and uv. Synthetic audio only; no microphone access. Preserve unrelated local data. Commit locally; do not push. Do not confuse implemented behavior with human quality, device durability or Windows release qualification.
-
-## Completed entry increment
-
-Local commit `ce0bb63` — **Add saved prompt profiles and open local workspace without codes**.
-
-- Migration 0008 adds owner-scoped prompt profiles with all three prompt fields, names, expected-version updates and idempotent creation.
-- Profiles load into the lecture form; applying/generating remains explicit. Historical settings are unchanged.
-- `/session/open` opens the single local owner without a code. Existing courses and sessions are preserved. Same-origin POST, local-only origin, HTTP-only/same-site session, CSRF and ownership protections remain. The bootstrap endpoint and startup-code flow are removed; the old table remains inert for additive compatibility.
-- Browser validation subsequently caught an extra-fields bug in profile submission; the M07 changes include its correction.
-
-## M07 implementation
-
-- Migration 0009: finalization requests, final snapshots, audio-removal flag, deletions and object inventory.
-- The API background coordinator resumes finalization/deletion work after restart, independently of browser connection and Kafka delivery.
-- Finalize closes audio intake, processes all verified islands, finishes current notes, and freezes transcript, selected notes, settings, issues and Markdown export. Missing data and failures are explicit. Student edits during finalization require review/retry. Available-only creates an incomplete snapshot and cancels pending work.
-- Existing sealed manifests and corrected sources are retained. Reopen for late audio permits recovery into a new final revision without mutating earlier snapshots.
-- Audio removal fences old uploads/speech/note attempts and pauses generation; transcript, notes, source text, edits and snapshots remain. Retained transcript corrections and explicitly resumed transcript-only generation work.
-- Lecture deletion fences reads/writes immediately, then reconciles all reserved/discovered objects and deletes dependent database content. Minimal tombstones and non-content receipts remain. Storage failures retry; completed prefixes are periodically rescanned for late writes.
-- Browser deletion polling purges IndexedDB audio, full-lecture note drafts and tab-local transcript corrections. Local tombstones fence stale writes. A disconnected browser keeps its copy until reconnect and then purges it. Temporary audio URLs are revoked. Exports/backups and physically remnant disk blocks are outside logical app deletion.
-- SSE distinguishes deleted content from an expired session, preventing reconnect cleanup from mistakenly returning to the workspace-opening screen.
-
-## Verification checkpoint
-
-- 144 backend tests passed on PostgreSQL 17.11 in isolated schemas, including real object deletion and late-object reconciliation in a separate synthetic bucket. Synthetic SeaweedFS readback and Kafka round trip passed.
-- Final full SQLite run: **143 passed, one skipped** (the real-object drill runs in the PostgreSQL service check). A subsequent finalization wording regression run passed 11 lifecycle tests with that same one service-only skip.
-- 60 JavaScript contracts passed. Type checks, ESLint, Ruff, production Next.js build, whitespace checks and documentation verification passed (194 local file links, 32 scenarios, eight milestones, six open gates).
-- Chromium integration passed: all previous M06 reconnect/edit/stream behavior, saved profiles, no-cookie access, immutable snapshot reading, audio removal, lecture deletion and disconnected-draft purge on reconnect. The final rerun after UI placement and recorder cleanup changes passed. Screenshots inspected: `.local/m07-finalization.png` and `.local/m07-browser-mobile.png`.
-- Local Docker rebuild/rollout passed; API, web, speech, notes and storage services are healthy. Existing student data volumes are retained. The final API/worker refresh applies clearer incomplete-result wording.
-
-## Environment
-
-Bun 1.3.10: `.local/tools/bun/bun-windows-x64/bun.exe`; add its directory to PATH. uv is installed; set `UV_CACHE_DIR` to the project's `.local/uv-cache` and `PYTHONUTF8=1` on Windows. Use `uv run --no-project` with the existing `.venv`. Set `PYTHONPATH=apps/api;apps/api/tests` for browser tests.
-
-Run backend tests with `uv run --no-project python -m pytest apps/api/tests -q`. `scripts/Test-Services.ps1` uses temporary PostgreSQL schemas and synthetic storage/broker probes. The browser test starts isolated loopback API/Next ports and uses synthetic providers; use a fresh project-local `--basetemp` with `-p no:cacheprovider` to avoid Windows temp ownership conflicts. Only its own subprocess tree is stopped.
-
-Docker: `%LOCALAPPDATA%/Programs/DockerDesktop/resources/bin/docker.exe`. Start/apply with `scripts/Start-App.ps1 -WithSpeech` (no unlock-code parameter). App: `http://127.0.0.1:3000`. No microphone, cloud inference, model download or Git push was performed.
-
-## Local commits
-
-The entry increment is `ce0bb63`. During verification, the shared workspace received commit `33a0da3` (titled “Phase 6.6”), containing the M07 implementation; it was preserved. The final local follow-up records evidence and clarifies incomplete-result wording. Use Git history for its exact hash. No push was performed by this task.
-
-## Prior checkpoint and next work
-
-M06 commit `ea5c7fa` implemented protected edits and genuine live streaming. Keep its evidence in [M06 implementation](docs/implementation/phase-6-m06.md) and [real-model synthetic smoke](evaluations/reports/m06-live-smoke.json). Its final synthetic 60-second input gave first transcript at 12.14 seconds and streamed prose at 57.67 seconds; those were not full-hour performance qualification.
-
-M08 Windows host/installer, service lifecycle, upgrade/backup/restore and release qualification follow M07. Actual microphone/device failure, representative lecture recognition, human educational-quality review, RAM/VRAM/cold-warm distributions and full-hour endurance remain open. Optional collapsed overview and semantic topic decomposition remain deferred. M07 does not authorize deleting existing student lectures as a verification shortcut.
-
-## Native Windows change (2026-09-09)
-
-The user selected a browser-free native Windows rebuild. M08 remains active. Course deletion now tombstones the course and all children atomically, checks the reviewed lecture list, and uses existing durable audio deletion reconciliation. Slate/Midnight themes and revision-specific dismissible review notices are implemented in the existing development UI. Two new deletion tests, all 60 JavaScript contracts, typecheck, ESLint and Ruff passed. Native Qt Widgets delivery with bundled services is in progress; the old Electron installer is not the requested final deliverable.
-
-The native profile explicitly selects standalone SQLite (WAL, FULL synchronous writes) and private filesystem audio, instead of requiring Docker services. Existing PostgreSQL development libraries remain unchanged. Audio writes are checksum verified, immutable on retries, atomically published and path constrained. Full backend regression: 157 passed, one service-only skip. Native packaging dependencies are pinned separately; no model weights are bundled or downloaded. Native GUI/packaging verification is ongoing.
-
-## Native implementation checkpoint
-
-Implemented a browser-free Qt Widgets/Qt Multimedia workspace, native recording journal and recovery, local material uploads, streaming previews, saved preferences/profiles, protected passage edits, revision comparison/keep/append/replace/undo, source inspection/playback, final snapshot export, course deletion, Slate/Midnight themes and revision-scoped review dismissal. Native writes use the existing authenticated/version-fenced API. Model discovery inspects conventional local Ollama, LM Studio and speech-model folders; importing a local GGUF creates a unique model name and never pulls weights.
-
-Windows child processes are owned by a kill-on-close job; no unrelated services are stopped. Audio persists before upload; every receipt field must match before releasing queued bytes. Native shutdown waits for audio verification, device/pause gaps are recorded, and deletion polling purges journals/drafts. The native library is separate from the preserved Docker workspace.
-
-Executed: five native tests cover GUI-thread delivery, restart/receipt/gap persistence, owned process shutdown, literal streaming text, and real API-backed native protected-edit/regeneration/course-deletion controls. All passed. Source and frozen-executable synthetic smoke passed uploads, audio recovery/readback, themes and review dismissal. Bundled Ollama CPU inference produced eight tokens with existing Qwen3 4B; bundled faster-whisper processed one second of synthetic silence in 8.471 seconds. This verifies runtime loading, not lecture quality or sustained latency. Full backend regression earlier in this increment: 157 passed, one service-only skip. Web typecheck, lint, 60 contracts and production build passed; documentation links/coverage passed.
-
-Packaging resolved a developer-PATH ICU DLL collision by using controlled lookup and the Windows ICU API. Package scans found no Chromium, Electron, WebView or QtWebEngine binary. Final ZIP/NSIS rebuild and isolated install/reinstall checks are the exact next verification step. Artifacts are under `.local/native-qualified`; do not publish until the final artifact checks are recorded. No microphone access, model download, external inference or Git push was performed.
-
-Final verification follow-up: Chromium regression passed (36.47 seconds); native plus material regression passed (11 tests). The installed native executable passed isolated upload/audio/theme/review smoke. Material mutations now follow the same owner→course lock order as course deletion and lecture creation, preventing a PostgreSQL lock inversion. Native callback failures reach visible error handling, and smoke mode requires an explicit isolated data folder. Final artifacts are being refreshed with these small fixes; no PostgreSQL rerun is claimed because Docker's service engine is stopped.
-
-## Final native delivery evidence
-
-Final artifacts (unsigned Windows x64, refreshed after the live-workflow repair):
-
-- `.local/native-qualified/Notetaker-Native-0.3.0-Setup.exe`: 655,383,599 bytes; SHA256 `927B6B7EAE1575BC76AFB2010BC30E1DCACD072979A09E96AB2445C3FFD93E89`.
-- `.local/native-qualified/Notetaker-Windows-x64.zip`: 682,418,725 bytes; SHA256 `709BD17570295820F29FE561AC3F0EB8E13A0BD1C8F7A84A99C93E4BE7B83036`.
-
-The previous 0.2.0 artifacts remain historical:
-
-- `.local/native-qualified/Notetaker-Native-0.2.0-Setup.exe`: 208,751,261 bytes; SHA256 `614f5ff3004b8d49370a5ba1f9191e0e75941b3b55180588d64b55bfbdbb9cb2`.
-- `.local/native-qualified/Notetaker-Windows-x64.zip`: 220,528,366 bytes; SHA256 `f0586d4ce2db236834dfafc52f4acd7c5f91ba3d5c703449d12517b1af17b722`.
-
-Final native install and installed-executable smoke passed on Windows 11 with PATH restricted to Windows system directories. No microphone was accessed. Native material upload, synthetic WAV capture/recovery/readback, both themes and review dismissal passed. Uninstall removed the test executable while leaving its library database byte-for-byte unchanged. Reinstallation reopened the earlier course; an additional in-place reinstall also left the library unchanged. Installed GUI/service executables match the final package; the GUI uses the Windows GUI subsystem. No browser-engine binary was found. The local test installation remains at `.local/native-installed`; its test data is under `.local/native-installed-library`, separate from the default user library.
-
-[Machine-readable delivery evidence](evaluations/reports/m08-native-delivery.json) and [bundled runtime probe](evaluations/reports/m08-native-models.json) record the checks. Final combined backend/native regression: 162 passed, one service-only skip. Browser regression, 60 JavaScript contracts, typecheck, lint, Ruff, production web build, documentation and whitespace checks passed. The last narrow native/material follow-up also passed 11 tests. PostgreSQL was not rerun because Docker's engine was stopped; earlier PostgreSQL evidence remains historical.
-
-GitHub Actions now builds the portable ZIP and checksums, tests it, and prepares a draft release on explicitly pushed `native-v*` tags. This workflow has not been run on GitHub in this task. No push or public release was performed. The installer can be uploaded as a release asset after review. Consumers need local model weights, not separately installed inference applications.
-
-M08 release qualification remains open: truly clean-machine testing, signed publication, version-to-version upgrades, coordinated backup/restore tooling, full-hour endurance, accessibility, physical device/sleep/power-failure tests and representative human note-quality review. Synthetic checks and same-version reinstall are not substitutes for these gates. Existing Docker libraries remain intact and separate; automatic migration into the native library is not implemented.
+Next work after this commit: continue M08 clean-machine, upgrade, endurance, accessibility, restore and quality gates. Do not restore the removed native app or its workflow.
