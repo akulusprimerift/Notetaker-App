@@ -59,6 +59,8 @@ services:
       NOTETAKER_S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       NOTETAKER_S3_SECRET_KEY: ${S3_SECRET_KEY}
       NOTETAKER_OLLAMA_URL: http://host.docker.internal:11434
+      NOTETAKER_PROVIDER_BRIDGE_URL: ${NOTETAKER_PROVIDER_BRIDGE_URL:-}
+      NOTETAKER_PROVIDER_BRIDGE_TOKEN: ${NOTETAKER_PROVIDER_BRIDGE_TOKEN:-}
     command: ["sh", "-c", "python -m alembic upgrade head && python -m uvicorn notetaker.main:app --app-dir apps/api --host 0.0.0.0 --port 8010 --no-access-log"]
     ports: ["127.0.0.1:8010:8010"]
     depends_on:
@@ -77,6 +79,8 @@ services:
     environment:
       NOTETAKER_DATABASE_URL: postgresql+psycopg://notetaker:${POSTGRES_PASSWORD}@postgres:5432/notetaker
       NOTETAKER_OLLAMA_URL: http://host.docker.internal:11434
+      NOTETAKER_PROVIDER_BRIDGE_URL: ${NOTETAKER_PROVIDER_BRIDGE_URL:-}
+      NOTETAKER_PROVIDER_BRIDGE_TOKEN: ${NOTETAKER_PROVIDER_BRIDGE_TOKEN:-}
     command: ["python", "-m", "notetaker.note_worker"]
     depends_on:
       api: {condition: service_healthy}

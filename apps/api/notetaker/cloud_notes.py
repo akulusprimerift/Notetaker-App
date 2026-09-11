@@ -5,6 +5,7 @@ from .note_provider import OllamaNotes, NoteFailure, preview_text
 from .note_draft import prepare, draft_messages, canonical, DRAFT_SCHEMA, DRAFT_PROMPT
 from .note_contract import compact
 from .provider_connections import Connections, PROVIDERS
+from .provider_bridge import ProviderBridge, ProviderBridgeError
 from .security import digest
 
 
@@ -15,19 +16,38 @@ def is_cloud(model):
 class NoteProviders:
     def __init__(self, settings, transport=None):
         self.local = OllamaNotes(settings)
+        bridge_url = getattr(settings, 'provider_bridge_url', '')
+        self.bridge = ProviderBridge(bridge_url, getattr(settings, 'provider_bridge_token', '')) if bridge_url else None
         self.connections = Connections(settings.provider_directory if settings.standalone else '')
         self.transport = transport
+
+    def inventory(self):
+        return self.bridge.inventory() if self.bridge else self.connections.inventory()
 
     def models(self):
         try:
             local = self.local.models()
         except NoteFailure:
             local = []
-        return local + self.connections.inventory()
+        return local + self.inventory()
+
+    def model_inventory(self):
+        try:
+            local = self.local.models()
+            available = True
+        except NoteFailure:
+            local, available = [], False
+        try:
+            connections = self.inventory()
+        except NoteFailure:
+            connections = []
+        return local + connections, available
 
     def verify(self, model, expected=None):
         if not is_cloud(model):
             return self.local.verify(model, expected)
+        if self.bridge:
+            return self.bridge.verify(model, expected)
         try:
             provider, name = model.split('/', 1)
             row = self.connections.read(provider)
@@ -49,7 +69,9 @@ class NoteProviders:
         messages = draft_messages(request)
         if len(compact(messages).encode()) > 100000:
             raise NoteFailure('context_limit')
-        if provider in ('chatgpt', 'claude-subscription'):
+        if self.bridge:
+            raw, metrics = self.bridge.generate(preference.model, preference.model_digest, messages, on_preview)
+        elif provider in ('chatgpt', 'claude-subscription'):
             from .subscription_notes import subscription_generate
             raw, metrics = subscription_generate(provider, row, messages, self.connections.directory, on_preview)
         else:
@@ -116,3 +138,48 @@ class NoteProviders:
             raise NoteFailure('model_unavailable') from None
         if not complete: raise NoteFailure('truncated_output')
         return raw, tokens
+
+    def save_connection(self, provider, model, api_key='', executable=''):
+        if self.bridge:
+            try:
+                return self.bridge.save(provider, model, api_key, executable)
+            except ProviderBridgeError as exc:
+                raise ValueError(exc.message) from None
+        self.connections.save(provider, model, api_key, executable)
+        return {'provider': provider}
+
+    def remove_connection(self, provider):
+        if self.bridge:
+            try:
+                return self.bridge.remove(provider)
+            except ProviderBridgeError as exc:
+                raise ValueError(exc.message) from None
+        self.connections.remove(provider)
+        return {'provider': provider}
+
+    def sign_in_connection(self, provider):
+        if self.bridge:
+            try:
+                return self.bridge.sign_in(provider)
+            except ProviderBridgeError as exc:
+                raise ValueError(exc.message) from None
+        from .subscription_notes import sign_in
+        row = self.connections.read(provider)
+        if not row:
+            raise ValueError('Save the subscription connection before signing in.')
+        sign_in(provider, row['executable'], str(self.connections.directory))
+        return {'provider': provider}
+
+    def sign_out_connection(self, provider):
+        if self.bridge:
+            try:
+                return self.bridge.sign_out(provider)
+            except ProviderBridgeError as exc:
+                raise ValueError(exc.message) from None
+        from .subscription_notes import sign_out
+        row = self.connections.read(provider)
+        if not row:
+            raise ValueError('This subscription is not connected.')
+        sign_out(provider, row['executable'], str(self.connections.directory))
+        self.connections.remove(provider)
+        return {'provider': provider}

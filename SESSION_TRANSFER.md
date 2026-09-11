@@ -1,10 +1,17 @@
 # Session transfer
 
-## Electron workspace and native retirement — 2026-09-11
+## Electron workspace and provider/materials usability — 2026-09-11
 
 Active phase remains **6.8 / M08**. The user reported that the application was difficult to navigate and visually janky, asked for a cleaner NotebookLM-inspired experience, and selected Electron as the only Windows host. The earlier Qt/native application and its standalone storage/packaging profile were removed from the repository. The existing Electron host, React workspace, FastAPI services and Docker development profile are now the single delivery path.
 
 ## Completed in this increment
+
+- Fixed local note-model discovery: supported Ollama families now include Gemma and other common local text models instead of silently limiting the chooser to Qwen.
+- Added visible model-list status, refresh feedback, local/provider grouping and explicit per-lecture cloud-processing consent in Note preferences.
+- Added an Electron-host provider bridge and Note preferences connection UI for OpenAI API, Claude API, ChatGPT subscription through Codex and Claude subscription through Claude Code. Connection files use Electron Windows protected storage; the Docker services receive only authenticated bridge requests and never store provider secrets.
+- Added official-client selection, sign-in, sign-out and disconnect actions without collecting provider passwords or extracting another app's tokens.
+- Replaced the materials upload row with a spaced two-step source card, explicit save action, selected-file review, file-size feedback and readable saved-material previews.
+- Removed the Electron application menu bar containing Notetaker, Edit and View. Workspace settings remain available from the in-app button.
 
 - Added focused lecture navigation with persistent course and lecture links in the sidebar.
 - Added lecture sections for Study notes, Transcript, Materials, Capture, Visual notes and Finish.
@@ -21,24 +28,25 @@ Active phase remains **6.8 / M08**. The user reported that the application was d
 
 The shared React/API path still owns local audio journaling and recovery, live timestamped transcription, protected corrections, contextual streamed note sections, saved prompt profiles, source inspection/playback, course materials, model selection, revision comparison, keep/merge/replace/undo, finalization, immutable snapshots, deletion reconciliation, browser-copy purge and exports. The Electron host continues to reuse the existing loopback API and Docker service lifecycle. Existing development workspace data and service credentials are preserved; no migration or deletion of student data was performed.
 
-Visual note data remains validated by the API. The Electron reader describes diagrams as cited explanatory schematics, not recovered slide/board images. OpenAI/Claude API and subscription connection code remains in the shared service scope and continues to require explicit per-lecture consent; live account/provider qualification is still open.
+Visual note data remains validated by the API. The Electron reader describes diagrams as cited explanatory schematics, not recovered slide/board images. OpenAI/Claude API and subscription connections now run through the Electron host bridge and still require explicit per-lecture consent; live account/provider qualification is still open.
 
 ## Verification status
 
 Executed in this increment:
 
 - `bun run test`: 60 JavaScript contract/capture tests passed.
-- `bun run test:desktop`: 3 Electron policy/model-discovery/startup-discovery tests passed.
+- `bun run test:desktop`: 4 Electron policy/model-discovery/startup-discovery/provider-bridge tests passed.
 - `node tests/desktop/smoke.cjs`: Electron isolation, setup, outage reporting, workspace reuse, model discovery, hide/reopen and synthetic journal checks passed.
 - `bun run typecheck`, `bun run lint`, `bun run build:web`, `bun run verify:docs`, `uv run --no-project ruff check apps/api` and `git diff --check` passed.
-- `PYTHONPATH=apps/api; uv run --no-project python -m pytest apps/api/tests -q --basetemp .local/pytest-run-0911`: 175 passed, 1 service-only skip.
+- `PYTHONPATH=apps/api; uv run --no-project python -m pytest apps/api/tests -q --basetemp .local/pytest-run-0911`: the fresh full run reached 174 passed and 1 service-only skip, with one pre-existing SQLite note-edit case failing once; that exact test passed in an isolated rerun. An earlier fresh full run reached 175 passed and 1 skip.
 - `bun run build:desktop`: unsigned x64 Electron NSIS installer built under `.local/desktop-dist`.
+- `bun run build:web` and the updated production renderer compiled with the materials/provider changes.
 - Native files were removed only after checking their tracked paths and moving the one shared process-job dependency.
 
-These checks use synthetic data/audio only. They do not qualify real microphone behavior, full-hour endurance, accessibility, educational usefulness, authenticated provider inference, coordinated backup/restore, clean-machine installation or release readiness.
+These checks use synthetic data/audio only. The provider bridge test uses a protected-storage test double and no live credentials. They do not qualify real microphone behavior, full-hour endurance, accessibility, educational usefulness, authenticated provider inference, coordinated backup/restore, clean-machine installation or release readiness.
 
 ## Environment and next work
 
 Bun is the JavaScript runtime; uv manages Python. The development workspace runs with Docker Desktop Linux containers, PowerShell 7, a local Ollama service and the provisioned faster-whisper model. `bun run dev:desktop` opens the Electron shell after services are available. `bun run build:desktop` creates the unsigned Electron NSIS installer under `.local/desktop-dist`.
 
-Next work after this commit: continue M08 clean-machine, upgrade, endurance, accessibility, restore and quality gates. Do not restore the removed native app or its workflow.
+Next work after this commit: restart the Docker profile from Electron so existing service containers receive the provider-bridge settings, then continue M08 clean-machine, upgrade, endurance, accessibility, restore and live-provider qualification gates. Do not restore the removed native app or its workflow.

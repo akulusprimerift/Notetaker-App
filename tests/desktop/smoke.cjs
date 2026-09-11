@@ -20,8 +20,9 @@ const {_electron:electron} = require('../../.venv/Lib/site-packages/playwright/d
       await page.getByRole('heading',{name:'Your lecture library.'}).waitFor();
       const denied=await page.evaluate(async()=>{try{await window.desktopSetup.models();return false;}catch{return true;}});
       assert.equal(denied,true);
+      assert.equal(await application.evaluate(({Menu})=>Menu.getApplicationMenu()),null);
       const opening=application.waitForEvent('window');
-      await application.evaluate(({Menu})=>Menu.getApplicationMenu().items[0].submenu.items[1].click());
+      await page.getByRole('button',{name:'Workspace settings',exact:true}).click();
       await opening;
       const setup=application.windows().find(p=>p!==page);
       await setup.getByRole('heading',{name:'Models on this computer'}).waitFor();
@@ -30,7 +31,7 @@ const {_electron:electron} = require('../../.venv/Lib/site-packages/playwright/d
       assert.match(offline.message,/unavailable/i);
       await application.evaluate(()=>{globalThis.fetch=globalThis.smokeFetch;delete globalThis.smokeFetch;});
       await application.evaluate(({dialog},folder)=>{globalThis.smokeDialog=dialog.showOpenDialog;dialog.showOpenDialog=async()=>({canceled:false,filePaths:[folder]});},root);
-      await setup.getByRole('button',{name:'Use existing workspace folder'}).click();
+      await setup.getByRole('button',{name:'Use an existing workspace folder'}).click();
       await setup.locator('#location').filter({hasText:'Existing workspace:'}).waitFor();
       await application.evaluate(({dialog})=>{dialog.showOpenDialog=globalThis.smokeDialog;delete globalThis.smokeDialog;});
       await setup.getByRole('button',{name:'Refresh model discovery'}).click();

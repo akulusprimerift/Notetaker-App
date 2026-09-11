@@ -142,7 +142,8 @@ def create_app(settings: Settings | None = None):
         try:
             with engine.connect() as conn:
                 conn.execute(text("SELECT 1 FROM alembic_version"))
-            return {"status":"ok"}
+            from urllib.parse import urlsplit
+            return {"status":"ok", "provider_bridge_port":urlsplit(settings.provider_bridge_url).port if settings.provider_bridge_url else None}
         except SQLAlchemyError:
             return JSONResponse({"status":"unavailable"}, status_code=503)
 

@@ -10,4 +10,5 @@ contextBridge.exposeInMainWorld('desktopSetup', Object.freeze({
 }));
 contextBridge.exposeInMainWorld('desktopApp', Object.freeze({
   openSetup: () => ipcRenderer.invoke('app:open-setup'),
+  chooseProviderClient: () => ipcRenderer.invoke('provider:choose-client'),
 }));

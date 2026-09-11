@@ -215,6 +215,14 @@ class ModelChoice(BaseModel):
     instructions: str | None = Field(default=None, max_length=1000)
 
 
+class ProviderConnectionInput(BaseModel):
+    model_config = ConfigDict(extra='forbid', strict=True)
+    provider: Literal['openai', 'anthropic', 'chatgpt', 'claude-subscription']
+    model: str = Field(min_length=1, max_length=120)
+    api_key: str = Field(default='', max_length=8192)
+    executable: str = Field(default='', max_length=520)
+
+
 def install_notes(app, current, db_session, owned_lecture, receipt):
     from .cloud_notes import NoteProviders
     app.state.note_provider = NoteProviders(app.state.settings)
@@ -263,8 +271,81 @@ def install_notes(app, current, db_session, owned_lecture, receipt):
 
     @app.get('/note-models')
     def models(session=Depends(current)):
-        try: return {'models': app.state.note_provider.models(), 'available': True}
-        except NoteFailure: return {'models': [], 'available': False}
+        try:
+            if hasattr(app.state.note_provider, 'model_inventory'):
+                available_models, available = app.state.note_provider.model_inventory()
+            else:
+                available_models, available = app.state.note_provider.models(), True
+            return {'models': available_models, 'available': available,
+                'message': '' if available else 'Ollama is not reachable. Start it and refresh the model list.'}
+        except NoteFailure as exc:
+            return {'models': [], 'available': False,
+                'message': 'The local model service is unavailable. Start Ollama and refresh the model list.' if exc.code == 'model_unavailable'
+                    else 'The local model list is unavailable. Restart Notetaker and try again.'}
+
+    @app.get('/provider-connections')
+    def provider_connections(session=Depends(current)):
+        try:
+            return {'connections': app.state.note_provider.inventory()}
+        except NoteFailure:
+            error(503, 'provider_bridge_unavailable', 'The desktop provider bridge is unavailable. Restart Notetaker and try again.')
+
+    @app.post('/provider-connections')
+    def save_provider_connection(body: ProviderConnectionInput, request: Request, session=Depends(current), db=Depends(db_session)):
+        action = 'provider.connection.save:' + body.provider
+        existing, key, fingerprint = receipt(db, request, session, action, body.model_dump())
+        if existing:
+            return {'connections': app.state.note_provider.inventory()}
+        try:
+            app.state.note_provider.save_connection(body.provider, body.model, body.api_key, body.executable)
+        except (ValueError, NoteFailure) as exc:
+            db.rollback()
+            error(422, 'provider_connection_invalid', str(exc) if isinstance(exc, ValueError) else 'The provider connection could not be saved.')
+        db.add(CommandReceipt(owner_id=session.owner_id, action=action, key=key, fingerprint=fingerprint, result_id=body.provider))
+        db.commit()
+        return {'connections': app.state.note_provider.inventory()}
+
+    @app.delete('/provider-connections/{provider}')
+    def remove_provider_connection(provider: str, request: Request, session=Depends(current), db=Depends(db_session)):
+        action = 'provider.connection.remove:' + provider
+        existing, key, fingerprint = receipt(db, request, session, action, {})
+        if not existing:
+            try:
+                app.state.note_provider.remove_connection(provider)
+            except (ValueError, NoteFailure) as exc:
+                db.rollback()
+                error(422, 'provider_connection_invalid', str(exc) if isinstance(exc, ValueError) else 'The provider connection could not be removed.')
+            db.add(CommandReceipt(owner_id=session.owner_id, action=action, key=key, fingerprint=fingerprint, result_id=provider))
+            db.commit()
+        return {'connections': app.state.note_provider.inventory()}
+
+    @app.post('/provider-connections/{provider}/sign-in')
+    def sign_in_provider(provider: str, request: Request, session=Depends(current), db=Depends(db_session)):
+        action = 'provider.connection.sign-in:' + provider
+        existing, key, fingerprint = receipt(db, request, session, action, {})
+        if not existing:
+            try:
+                app.state.note_provider.sign_in_connection(provider)
+            except (ValueError, NoteFailure) as exc:
+                db.rollback()
+                error(422, 'provider_sign_in_failed', str(exc) if isinstance(exc, ValueError) else 'Provider sign-in failed. Try again with the official client.')
+            db.add(CommandReceipt(owner_id=session.owner_id, action=action, key=key, fingerprint=fingerprint, result_id=provider))
+            db.commit()
+        return {'connections': app.state.note_provider.inventory()}
+
+    @app.post('/provider-connections/{provider}/sign-out')
+    def sign_out_provider(provider: str, request: Request, session=Depends(current), db=Depends(db_session)):
+        action = 'provider.connection.sign-out:' + provider
+        existing, key, fingerprint = receipt(db, request, session, action, {})
+        if not existing:
+            try:
+                app.state.note_provider.sign_out_connection(provider)
+            except (ValueError, NoteFailure) as exc:
+                db.rollback()
+                error(422, 'provider_sign_out_failed', str(exc) if isinstance(exc, ValueError) else 'Provider sign-out failed. Try again with the official client.')
+            db.add(CommandReceipt(owner_id=session.owner_id, action=action, key=key, fingerprint=fingerprint, result_id=provider))
+            db.commit()
+        return {'connections': app.state.note_provider.inventory()}
 
     @app.get('/lectures/{lecture_id}/notes')
     def read(lecture_id: str, session=Depends(current), db=Depends(db_session)):

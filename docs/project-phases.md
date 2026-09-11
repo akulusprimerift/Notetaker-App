@@ -109,7 +109,7 @@ Phase 6 / M01 has a [verified private workspace foundation](implementation/phase
 
 ## Later provider connections
 
-Phase 7 will add optional user-owned OpenAI/ChatGPT and Claude model connections through supported provider APIs, with protected Windows credential storage, explicit cloud processing choices and cost controls. Account login and subscription compatibility must be verified against official provider support at implementation time. This does not defer automatic note writing, which is the current M04 priority. See [M04 provider requirements](implementation/phase-6-m04.md#later-openai-and-claude-connections).
+The user brought optional user-owned OpenAI/ChatGPT and Claude model connections into M08. The Electron host now provides the protected-storage bridge, official-client sign-in path and explicit per-lecture cloud-processing choice; account login, paid inference and subscription compatibility still require live provider qualification. Phase 7 retains advanced provider expansion, measured cost controls and broader account support. This does not defer automatic local note writing. See [M04 provider requirements](implementation/phase-6-m04.md#later-openai-and-claude-connections).
 
 ## Windows host next step
 

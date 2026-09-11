@@ -1,5 +1,5 @@
 'use strict';
-const {app, BrowserWindow, Menu, dialog, ipcMain, session} = require('electron');
+const {app, BrowserWindow, dialog, ipcMain, session} = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const {spawn} = require('node:child_process');
@@ -7,23 +7,27 @@ const {pathToFileURL} = require('node:url');
 const {ORIGIN, localPage, audioPermission} = require('./policy.cjs');
 const {discoverModels} = require('./models.cjs');
 const {findPowerShell} = require('./powershell.cjs');
+const {ProviderBridge} = require('./provider-bridge.cjs');
 
 app.setName('Notetaker');
 const explicitData = app.commandLine.getSwitchValue('user-data-dir');
 if (explicitData && path.isAbsolute(explicitData)) app.setPath('userData', explicitData);
 app.enableSandbox();
-let window, setupWindow, quitting = false, starting = false, message = 'Checking local services…', speechPath = '', serviceRoot = '';
+let window, setupWindow, providerBridge, bridgeConfig, quitting = false, starting = false, message = 'Checking local services…', speechPath = '', serviceRoot = '';
 const setupURL = pathToFileURL(path.join(__dirname, 'setup.html')).href;
 const runtime = () => app.isPackaged ? path.join(app.getPath('userData'), 'services') : path.resolve(__dirname, '../..');
 const configPath = () => path.join(app.getPath('userData'), 'desktop-settings.json');
 async function saveConfig() {await fs.writeFile(configPath(),JSON.stringify({speechPath,serviceRoot}));}
 
-async function healthy() {
+async function healthStatus() {
   try {
     const response = await fetch(ORIGIN + '/api/health', {signal:AbortSignal.timeout(2500), redirect:'error'});
-    return response.ok && (await response.json()).status === 'ok';
+    const data=await response.json();
+    return {ok:response.ok&&data.status==='ok',providerBridgePort:data.provider_bridge_port};
   } catch { return false; }
 }
+async function healthy() {const status=await healthStatus();return status!==false&&status.ok;}
+async function bridgeReady() {const status=await healthStatus();return status!==false&&status.ok&&(!bridgeConfig||status.providerBridgePort===bridgeConfig.port);}
 async function setup() {
   await window.loadURL(setupURL);
 }
@@ -36,9 +40,9 @@ async function showSetup() {
   setupWindow.webContents.on('will-navigate',(event,url)=>{if(url!==setupURL)event.preventDefault();});
   await setupWindow.loadURL(setupURL);
 }
-async function startServices() {
+async function startServices(force=false) {
   if (starting) return;
-  if (await healthy()) {message='Your local workspace is ready.';return;}
+  if (!force && await healthy()) {message='Your local workspace is ready.';return;}
   const powershell = await findPowerShell();
   if (!powershell) throw new Error('PowerShell 7 was not found. Install PowerShell 7, restart Notetaker, and try again.');
   if (app.isPackaged && !serviceRoot) {
@@ -60,7 +64,8 @@ async function startServices() {
     if(serviceRoot)args.push('-WorkspacePath',serviceRoot);
     if ((await discoverModels({speechPath})).speech) args.push('-WithSpeech', '-SpeechModelPath', speechPath);
     const child = spawn(powershell, args, {cwd:runtime(), windowsHide:true,
-      env:{...process.env, ...(app.isPackaged ? {COMPOSE_PROJECT_NAME:serviceRoot?'notetaker':'notetaker-desktop'} : {})}, stdio:['ignore','pipe','pipe']});
+      env:{...process.env, ...(bridgeConfig ? {NOTETAKER_PROVIDER_BRIDGE_URL:bridgeConfig.url,NOTETAKER_PROVIDER_BRIDGE_TOKEN:bridgeConfig.token} : {}),
+        ...(app.isPackaged ? {COMPOSE_PROJECT_NAME:serviceRoot?'notetaker':'notetaker-desktop'} : {})}, stdio:['ignore','pipe','pipe']});
     // Logs stay on this device and do not contain supplied source text.
     let output = '';
     child.stdout.on('data', data => {output=(output+data.toString()).slice(-32000);});
@@ -86,6 +91,9 @@ if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => {if(window){window.show();window.focus();}});
   app.whenReady().then(async () => {
+    providerBridge = new ProviderBridge(app.getPath('userData'), require('electron').safeStorage);
+    try {bridgeConfig=await providerBridge.start();}
+    catch (error) {console.error('Provider bridge could not start:', error.message);bridgeConfig=null;}
     try {const config=JSON.parse(await fs.readFile(configPath(),'utf8'));speechPath=config.speechPath || '';serviceRoot=config.serviceRoot || '';} catch { /* First launch. */ }
     if (!speechPath && !app.isPackaged) speechPath=path.join(runtime(),'.local/models/faster-whisper-small.en');
     window = new BrowserWindow({width:1360,height:950,minWidth:760,minHeight:600,title:'Notetaker',show:false,icon:path.join(__dirname,'icon.ico'),
@@ -109,12 +117,10 @@ else {
         message:'Finish and save your recording before quitting.',detail:'Hide keeps recording and this workspace running. Quit closes the recorder; already journaled audio remains recoverable. Local services continue processing.'})
         .then(result => {if(result.response===1)window.hide();if(result.response===2){quitting=true;app.quit();}});
     });
-    Menu.setApplicationMenu(Menu.buildFromTemplate([
-      {label:'Notetaker',submenu:[{label:'Workspace',click:async()=>{window.show();if(window.webContents.getURL()===setupURL && await healthy())await window.loadURL(ORIGIN);}},
-        {label:'Setup and local models',click:()=>void showSetup()}, {type:'separator'}, {label:'Quit',click:()=>window.close()}]},
-      {label:'Edit',submenu:[{role:'undo'},{role:'redo'},{type:'separator'},{role:'cut'},{role:'copy'},{role:'paste'},{role:'selectAll'}]},
-      {label:'View',submenu:[{role:'resetZoom'},{role:'zoomIn'},{role:'zoomOut'},{role:'togglefullscreen'}]}
-    ]));
+    // Keep navigation inside the workspace. The default Electron menu bar is
+    // intentionally removed so the desktop shell does not compete with the
+    // lecture navigation.
+    require('electron').Menu.setApplicationMenu(null);
     register('setup:status',async()=>({starting,message:starting?message:await healthy()?'Your local workspace is ready.':message.startsWith('Could not')?message:'Local workspace unavailable. Start Docker Desktop and the local services.',dataPath:app.getPath('userData'),serviceRoot}));
     register('setup:start',startServices);
     register('setup:open',async()=>{if(!(await healthy()))throw new Error('Start local services first.');if(window.webContents.getURL()===setupURL)await window.loadURL(ORIGIN);window.show();if(setupWindow&&!setupWindow.isDestroyed())setupWindow.close();});
@@ -139,8 +145,17 @@ else {
       speechPath=chosen.filePaths[0];await saveConfig();
     });
     register('app:open-setup',showSetup,true);
-    try {if(await healthy())await window.loadURL(ORIGIN);else await setup();}
+    register('provider:choose-client',async()=>{
+      const chosen=await dialog.showOpenDialog(window,{properties:['openFile'],title:'Select the official provider client',filters:[{name:'Windows executable',extensions:['exe']}]});
+      return chosen.canceled ? '' : chosen.filePaths[0];
+    },true);
+    try {
+      if(await bridgeReady()) await window.loadURL(ORIGIN);
+      else if(await healthy()&&bridgeConfig){await startServices(true);if(await bridgeReady())await window.loadURL(ORIGIN);else await setup();}
+      else await setup();
+    }
     catch {message='Could not open the local workspace. Check Docker Desktop and retry.';await setup();}
     window.show();
   });
 }
+app.on('before-quit', () => {quitting=true;void providerBridge?.close();});

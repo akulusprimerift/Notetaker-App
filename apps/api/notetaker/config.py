@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     kafka_bootstrap: str = "127.0.0.1:9092"
     ollama_url: str = "http://127.0.0.1:11434"
     provider_directory: str = ''
+    provider_bridge_url: str = ''
+    provider_bridge_token: str = ''
 
     @model_validator(mode="after")
     def validate_mode(self):
@@ -29,6 +31,12 @@ class Settings(BaseSettings):
         if (model_url.scheme != 'http' or model_url.hostname not in ('127.0.0.1', 'localhost', 'host.docker.internal')
                 or model_url.username or model_url.password or model_url.path or model_url.query or model_url.fragment):
             raise ValueError('The local note provider must use a local Ollama endpoint')
+        if self.provider_bridge_url:
+            bridge = urlsplit(self.provider_bridge_url)
+            if (bridge.scheme != 'http' or bridge.hostname not in ('127.0.0.1', 'localhost', 'host.docker.internal')
+                    or bridge.username or bridge.password or bridge.path not in ('', '/') or bridge.query or bridge.fragment
+                    or not self.provider_bridge_token or len(self.provider_bridge_token) < 32):
+                raise ValueError('The provider bridge must use an authenticated local HTTP endpoint')
         origin=urlsplit(self.web_origin)
         if origin.scheme not in ('http','https') or not origin.hostname or origin.path or origin.query or origin.fragment:
             raise ValueError('Set a single web origin without a path')

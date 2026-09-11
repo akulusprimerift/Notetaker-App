@@ -235,9 +235,10 @@ def test_long_unicode_transcript_sources_have_exact_resolvable_spans():
 def test_provider_excludes_remote_aliases_and_unknown_tokenizers():
     provider = OllamaNotes(Settings(preview=True,database_url='sqlite://'))
     base = {'name':'qwen3:4b','digest':DIGEST,'size':10000000,'details':{'format':'gguf','family':'qwen3'}}
-    provider.request = lambda *args,**kwargs: {'models':[base,{**base,'name':'remote','remote_host':'https://ollama.com'},
+    gemma = {**base,'name':'gemma4:e4b','details':{'format':'gguf','family':'gemma4'}}
+    provider.request = lambda *args,**kwargs: {'models':[base,gemma,{**base,'name':'remote','remote_host':'https://ollama.com'},
         {**base,'name':'other','details':{'format':'gguf','family':'unknown'}},{**base,'name':'tiny','size':200}]}
-    assert [m['name'] for m in provider.models()] == ['qwen3:4b']
+    assert [m['name'] for m in provider.models()] == ['qwen3:4b','gemma4:e4b']
     with pytest.raises(ValueError): Settings(ollama_url='https://ollama.com')
 
 

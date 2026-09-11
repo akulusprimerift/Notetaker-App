@@ -85,7 +85,7 @@ def test_migration_creates_foundation_and_is_repeatable(setup):
     migrate(app)
     tables=set(inspect(app.state.engine).get_table_names())
     assert {'owners','sessions','courses','lectures','settings_versions','jobs','outbox_events','inbox_events','command_receipts','lecture_updates'}<=tables
-    assert client.get('/health').json()=={"status":"ok"}
+    assert client.get('/health').json()=={"status":"ok", "provider_bridge_port":None}
 
 
 def test_sqlite_is_explicit_preview_only():

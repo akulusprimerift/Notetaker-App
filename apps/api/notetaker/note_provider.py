@@ -8,6 +8,8 @@ from .security import digest
 
 CONTEXT = 32768
 OUTPUT = 6000
+SUPPORTED_FAMILIES = ('qwen2', 'qwen3', 'gemma', 'gemma2', 'gemma3', 'gemma4', 'llama', 'mistral', 'mixtral',
+    'phi', 'deepseek', 'granite', 'command-r')
 
 
 def preview_text(raw):
@@ -72,7 +74,7 @@ class OllamaNotes:
             for m in self.request('tags').get('models', [])
             if not m.get('remote_host') and not m.get('remote_model') and m.get('size', 0) > 1_000_000
             and m.get('details', {}).get('format') == 'gguf'
-            and m.get('details', {}).get('family') in ('qwen2', 'qwen3')
+            and m.get('details', {}).get('family') in SUPPORTED_FAMILIES
             and re.fullmatch(r'[a-f0-9]{64}', m.get('digest', ''))
             and 0 < len(m.get('name', '')) <= 160 and 'cloud' not in m['name'].lower()]
 

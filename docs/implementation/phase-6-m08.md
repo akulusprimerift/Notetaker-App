@@ -6,7 +6,7 @@ Updated 2026-09-11. M08 is the active implementation phase. The user superseded 
 
 Electron 44.3.0 hosts the existing Next.js/React workspace in a sandboxed, context-isolated renderer. `bun run dev:desktop` opens the desktop shell. `bun run build:desktop` creates an unsigned per-user x64 NSIS installer under `.local/desktop-dist`, with Start menu and desktop shortcuts. Uninstall retains app data. The installer includes the service source and pinned locks, but no credentials, lecture data, caches or model weights.
 
-The shell starts or reconnects to the Docker/FastAPI workspace, offers existing-workspace selection, discovers local Ollama and speech-model files, and keeps mutable configuration in the per-user Electron data directory. The app manages only its startup helper; unrelated Docker workloads are not stopped. Hiding the window keeps recording and background processing alive. Explicit Quit explains what happens to a recording journal and already-confirmed audio.
+The shell starts or reconnects to the Docker/FastAPI workspace, offers existing-workspace selection, discovers local Ollama and speech-model files, and keeps mutable configuration and protected provider connections in the per-user Electron data directory. An authenticated Electron-host bridge lets the Docker API/worker use selected API or official subscription connections without placing provider secrets in service volumes or API responses. The app manages only its startup helper; unrelated Docker workloads are not stopped. Hiding the window keeps recording and background processing alive. Explicit Quit explains what happens to a recording journal and already-confirmed audio.
 
 ## Workspace navigation increment
 
@@ -16,13 +16,15 @@ The Visual notes section ports the source-linked schematic reader into the Elect
 
 All earlier lecture behavior remains in the shared React/API path: local audio journal and recovery, live timestamped transcription, protected corrections, contextual streamed note sections, saved prompt profiles, source inspection/playback, materials, revision comparison, keep/merge/replace/undo, final snapshots, deletion reconciliation and browser-copy purge. Local note models remain explicit selections. Cloud API/subscription connections remain opt-in per lecture and subject to provider/account qualification.
 
+Note preferences now reports local model availability, groups compatible local Ollama models separately from connected providers, and exposes connection setup for OpenAI API, Claude API, ChatGPT/Codex subscription and Claude Code subscription. Materials use a two-step upload card with explicit save, size/type guidance and extracted-text review. The Electron application menu bar is removed; workspace settings remain in the renderer.
+
 ## Security boundary
 
 Renderer Node integration is disabled, context isolation and sandboxing are enabled, navigation and new windows are restricted, and the webview tag is blocked. The microphone permission handler accepts only audio requests from the exact loopback workspace origin and asks the user before granting access. Setup IPC checks the exact sender frame; workspace settings can only request the setup window. Lecture/model text has no filesystem or shell authority.
 
 ## Verification
 
-The existing Electron policy/model-discovery tests cover loopback navigation, audio-only permission checks, installed-model metadata, missing providers and speech-model detection. The desktop smoke covers renderer isolation, denied setup IPC from the lecture page, separate setup/model discovery, synthetic IndexedDB audio preservation across journal reopen, workspace reuse, service-outage messaging and window hide/show. It never requests a microphone.
+The existing Electron policy/model-discovery tests cover loopback navigation, audio-only permission checks, installed-model metadata, missing providers and speech-model detection. The provider-bridge test covers authenticated access, protected connection files, inventory, verification and removal using a storage test double. The desktop smoke covers renderer isolation, denied setup IPC from the lecture page, separate setup/model discovery, no application menu, synthetic IndexedDB audio preservation across journal reopen, workspace reuse, service-outage messaging and window hide/show. It never requests a microphone.
 
 The shared JavaScript contracts, web typecheck, lint, production build, API tests, Ruff, documentation checks and whitespace checks remain the relevant verification set. Synthetic audio cannot qualify physical microphone behavior, sustained performance, accessibility, educational usefulness, live provider compatibility or release readiness.
 
