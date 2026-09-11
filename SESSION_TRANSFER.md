@@ -12,6 +12,7 @@ Active phase remains **6.8 / M08**. The user reported that the application was d
 - Added microphone input selection in the Electron renderer using the browser media-device API.
 - Ported source-linked visual schematics into a safe React/SVG reader. Model labels are rendered as text nodes; arbitrary HTML and JavaScript are never executed.
 - Added an Electron-only workspace-settings action that opens the existing local service/model setup window through a narrowly authorized IPC call.
+- Hardened PowerShell 7 startup discovery so Electron checks PATH and standard machine/user install locations before launching Docker; missing PowerShell now produces a direct setup message instead of a raw spawn error.
 - Moved Windows child-process ownership into `apps/api/notetaker/process_job.py` so subscription bridges do not depend on the removed native package.
 - Removed the native Qt application, native tests, native dependency locks, native packaging scripts/workflow, native-only download/third-party documents and native evaluation reports.
 - Updated the README, phase plan, desktop direction, M08 evidence and visual/provider evidence to describe Electron as the only Windows host.
@@ -27,7 +28,7 @@ Visual note data remains validated by the API. The Electron reader describes dia
 Executed in this increment:
 
 - `bun run test`: 60 JavaScript contract/capture tests passed.
-- `bun run test:desktop`: 2 Electron policy/model-discovery tests passed.
+- `bun run test:desktop`: 3 Electron policy/model-discovery/startup-discovery tests passed.
 - `node tests/desktop/smoke.cjs`: Electron isolation, setup, outage reporting, workspace reuse, model discovery, hide/reopen and synthetic journal checks passed.
 - `bun run typecheck`, `bun run lint`, `bun run build:web`, `bun run verify:docs`, `uv run --no-project ruff check apps/api` and `git diff --check` passed.
 - `PYTHONPATH=apps/api; uv run --no-project python -m pytest apps/api/tests -q --basetemp .local/pytest-run-0911`: 175 passed, 1 service-only skip.

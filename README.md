@@ -23,6 +23,8 @@ The workspace is organized around a course sidebar and lecture sections: Study n
 
 The installer is a development distribution, not a release-ready offline bundle. It retains app data on uninstall. Real-device recording, accessibility, long-duration endurance, coordinated backup/restore, upgrade testing, signing and human note-quality review remain open qualification work. Use synthetic audio for engineering checks unless physical microphone testing is explicitly authorized.
 
+If setup reports “PowerShell 7 was not found”, install PowerShell 7 from Microsoft, restart Notetaker, and start the services again. Windows PowerShell 5.1 is a separate product and is not sufficient for the service startup scripts.
+
 ## Current phase
 
 The active implementation phase is **6.8 / M08 — Electron Windows application**. See the [feature and architecture phase plan](docs/project-phases.md), [M08 evidence](docs/implementation/phase-6-m08.md), and [desktop direction](docs/architecture/windows-desktop-direction.md).

@@ -6,6 +6,7 @@ const {spawn} = require('node:child_process');
 const {pathToFileURL} = require('node:url');
 const {ORIGIN, localPage, audioPermission} = require('./policy.cjs');
 const {discoverModels} = require('./models.cjs');
+const {findPowerShell} = require('./powershell.cjs');
 
 app.setName('Notetaker');
 const explicitData = app.commandLine.getSwitchValue('user-data-dir');
@@ -38,6 +39,8 @@ async function showSetup() {
 async function startServices() {
   if (starting) return;
   if (await healthy()) {message='Your local workspace is ready.';return;}
+  const powershell = await findPowerShell();
+  if (!powershell) throw new Error('PowerShell 7 was not found. Install PowerShell 7, restart Notetaker, and try again.');
   if (app.isPackaged && !serviceRoot) {
     let configured=false;
     try {await fs.access(path.join(runtime(),'.local/services.env'));configured=true;} catch { /* First setup. */ }
@@ -56,7 +59,7 @@ async function startServices() {
     const args = ['-NoProfile', '-File', path.join(runtime(), 'scripts', 'Start-App.ps1')];
     if(serviceRoot)args.push('-WorkspacePath',serviceRoot);
     if ((await discoverModels({speechPath})).speech) args.push('-WithSpeech', '-SpeechModelPath', speechPath);
-    const child = spawn('pwsh.exe', args, {cwd:runtime(), windowsHide:true,
+    const child = spawn(powershell, args, {cwd:runtime(), windowsHide:true,
       env:{...process.env, ...(app.isPackaged ? {COMPOSE_PROJECT_NAME:serviceRoot?'notetaker':'notetaker-desktop'} : {})}, stdio:['ignore','pipe','pipe']});
     // Logs stay on this device and do not contain supplied source text.
     let output = '';
