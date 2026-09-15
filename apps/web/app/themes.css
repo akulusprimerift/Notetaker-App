@@ -12,3 +12,30 @@ pre,.study-block pre{background:var(--sidebar);color:var(--ink)}.status-dot{back
 button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
 .theme-choice{display:flex;align-items:center;gap:10px;margin:0}.theme-choice select{margin:0;width:auto;padding:5px 8px;border-radius:6px}.course-delete{margin:28px 0}.note-review h3{margin:0}.note-review .section-row{align-items:center}
 :root[data-theme=dark] .error{background:#351b2a;color:#ffc4b6;border-color:#885262}:root[data-theme=dark] .recording-badge{background:#3c2030;color:#ffbd9b}
+
+/* Every workspace surface shares the selected palette, including nested controls. */
+.materials-uploader,.material-card,.materials-library-empty,.provider-connections,
+.transcript-panel,.transcript-editor textarea,.note-controls select,.note-controls textarea{
+  background:var(--surface);color:var(--ink);border-color:var(--line)
+}
+.materials-guidance,.materials-actions,.materials-empty-file,.selected-material,
+.materials-step-body input[type=file],.model-picker-status,.transcript-editor,
+.transcript-history,.note-source blockquote{background:var(--soft);color:var(--ink);border-color:var(--line)}
+.materials-guidance-icon,.selected-material-icon,.material-badge{background:var(--sidebar);color:var(--accent)}
+.cloud-consent{background:var(--warning-bg);color:var(--warning-ink);border-color:var(--line)}
+.materials-step-number{color:var(--bg)}
+.material-card-footer,.material-preview,.material-page,.provider-connection-row,
+.study-block,.note-editing,.note-comparison>div,.live-progress{border-color:var(--line)}
+.note-revision,.transcript-empty,.recording-segments summary{color:var(--muted)}
+.visual-diagram{color:var(--muted);--diagram-bg:var(--bg)}
+input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
+input[type=file]::file-selector-button{padding:7px 10px;margin-right:10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);cursor:pointer}
+.materials-step-body select{padding:10px 12px;border:1px solid var(--line);border-radius:8px;font:inherit}
+.course-link:hover,.lecture-link:hover,.nav-library:hover{background:var(--soft);color:var(--ink)}
+.lecture-tabs button.active{box-shadow:inset 0 -3px var(--accent);background:var(--soft)}
+.lecture-tabs button{min-height:58px}
+.page-heading{margin-bottom:30px}.preview-notice{margin-bottom:26px}
+.course-card{border-top:3px solid var(--accent)}
+.course-card:hover,.lecture-row:hover{border-color:var(--accent);box-shadow:0 6px 22px #00000012}
+:root[data-theme=dark] .note-paper{box-shadow:0 8px 32px #00000024}
+@media(prefers-reduced-motion:no-preference){.course-card,.lecture-row,.lecture-tabs button{transition:background .15s,border-color .15s,box-shadow .15s}}

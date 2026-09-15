@@ -50,3 +50,7 @@ These checks use synthetic data/audio only. The provider bridge test uses a prot
 Bun is the JavaScript runtime; uv manages Python. The development workspace runs with Docker Desktop Linux containers, PowerShell 7, a local Ollama service and the provisioned faster-whisper model. `bun run dev:desktop` opens the Electron shell after services are available. `bun run build:desktop` creates the unsigned Electron NSIS installer under `.local/desktop-dist`.
 
 Next work after this commit: restart the Docker profile from Electron so existing service containers receive the provider-bridge settings, then continue M08 clean-machine, upgrade, endurance, accessibility, restore and live-provider qualification gates. Do not restore the removed native app or its workflow.
+
+## Current priority — 2026-09-15
+
+Active phase: M08 usability repairs. Midnight nested surfaces now use theme colors, with clearer selected lecture sections. Synthetic Chromium checks passed eight affected text/background pairs at 4.5:1 in both themes; Midnight image inspected; lint/typecheck passed. Next: finish dedicated account linking and API-key setup. User sequencing: these fixes → Phase 7 → standalone Windows app → macOS. Prior release qualification gaps remain open.

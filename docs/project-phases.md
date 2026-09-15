@@ -118,3 +118,7 @@ The [desktop direction](architecture/windows-desktop-direction.md) records the u
 ## User-selected Electron Windows profile — 2026-09-11
 
 The user superseded the native Qt direction and selected Electron as the only Windows host. Electron uses the existing hardened loopback Next.js renderer, FastAPI domain contracts, Docker service lifecycle, browser capture journal and local model discovery. No Qt, PySide6, standalone native library or native packaging workflow remains in the repository. Existing Docker/PostgreSQL student data is preserved and reused only through the explicit existing-workspace choice. Clean-machine, physical audio, endurance, accessibility, restore and educational-quality qualification remain open.
+
+## User sequencing — 2026-09-15
+
+M08 remains the only active phase while theme/navigation and account-connection usability are repaired. After these fixes, proceed to Phase 7, then standalone Windows distribution, then macOS development. Keep existing Electron/Docker data and earlier qualification gaps; do not claim M08 release readiness from these usability changes.

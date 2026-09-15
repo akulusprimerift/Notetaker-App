@@ -37,3 +37,7 @@ Before upgrading service software, finish recording and allow audio saves and in
 Open gates are clean Windows installation and prerequisite experience, upgrade/uninstall retention on a separate machine, signed distribution, actual microphone/device failures, full-hour endurance, human educational-quality review, accessibility qualification and coordinated restore. The installer is a development distribution with Docker/PowerShell/Ollama prerequisites, not a standalone offline bundle. The user currently authorizes synthetic audio only.
 
 References: [Electron security](https://www.electronjs.org/docs/latest/tutorial/security), [Electron sandboxing](https://www.electronjs.org/docs/latest/tutorial/sandbox), and the [phase plan](../project-phases.md).
+
+## Midnight contrast and navigation — 2026-09-15
+
+M08 remains active. Repaired nested materials, provider, model, transcript and visual surfaces to use the selected palette. Added stronger active-section and course-card cues. Executed: synthetic Chromium rendering and 4.5:1 text contrast checks for eight affected surface/text pairs in both themes (`bun tests/desktop/theme-contrast.cjs`); inspected the Midnight rendering; frontend lint/typecheck and whitespace checks passed. Full accessibility and real-device qualification remain open. Next: dedicated account linking and API-key setup, then Phase 7; standalone Windows packaging after Phase 7, followed by macOS development, as requested by the user.
