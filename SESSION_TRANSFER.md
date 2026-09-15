@@ -1,5 +1,20 @@
 # Session transfer
 
+## Account linking and theme repair — 2026-09-15
+
+Active phase: **6.8 / M08**. User sequencing is these usability repairs → Phase 7 → standalone Windows distribution → macOS. Existing Docker/PostgreSQL student data is unchanged; release gates remain open.
+
+- Midnight contrast repair committed separately as `01251db`: nested materials/model/provider/transcript surfaces now follow the palette; selected sections are clearer.
+- Accounts & API keys opens from the sidebar, the narrow-window top bar, or Note preferences. It is a modal over the workspace, so opening it does not navigate away or unmount recording.
+- ChatGPT linking starts the official app-server browser flow, opens only an allowlisted provider HTTPS URL through Electron, verifies a paid account, and loads the provider model catalog. The pinned Codex 0.154.0 Windows helper is bundled with its license/notice; no executable chooser, password collection, token import, or model download is involved. Disconnect an existing ChatGPT connection before linking another account.
+- OpenAI and Claude API setup needs only a key. Validation/model discovery precedes protected-storage replacement; model selection remains per lecture. The OpenAI picker filters out known non-chat model families; catalog availability does not prove successful inference for every listed model.
+- Claude subscription linking is unavailable for new connections: Anthropic requires approval for third-party subscription login. Existing saved rows are preserved and can be disconnected. The requested all-model subscription access is not delivered: ChatGPT provides Codex-accessible models, and Claude needs provider approval.
+- Connections retain CSRF, authenticated host requests, idempotency receipts, per-provider mutation exclusion and model-digest fencing. Failed key validation preserves a working key. Paid inference and real-account browser completion have not been exercised.
+
+Executed checks: 60 JavaScript contracts; 10 desktop tests; 10 backend cloud/connection tests; Chromium account UI flows with synthetic API responses (key-only payload, sign-in payload, cleared key, Escape/focus restoration, 400px layout and actual Midnight materials rendering); eight affected text/background pairs pass 4.5:1 in each theme. Pinned helper initialize/account-read passed in a fresh signed-out profile after fixing required profile creation and process-exit cleanup. Typecheck, lint, production web build, Python lint, documentation checks, whitespace checks and frozen Bun install passed. The unsigned x64 NSIS installer was rebuilt under `.local/desktop-dist`; the packaged helper also passed its isolated signed-out protocol check. An initial pytest run hit existing temporary/cache-folder permissions; a fresh `.local` base/cache run passed.
+
+Next: qualify real browser sign-in and authenticated note generation with user-owned accounts; do not claim that mocked tests qualify providers. Claude login requires a provider-approved integration. Then scope Phase 7.1 (emphasis, catch-up and terminology); standalone packaging follows Phase 7 and macOS follows Windows. Real microphone, educational quality, endurance, accessibility, clean install, upgrade and restore gates remain open.
+
 ## Electron workspace and provider/materials usability — 2026-09-11
 
 Active phase remains **6.8 / M08**. The user reported that the application was difficult to navigate and visually janky, asked for a cleaner NotebookLM-inspired experience, and selected Electron as the only Windows host. The earlier Qt/native application and its standalone storage/packaging profile were removed from the repository. The existing Electron host, React workspace, FastAPI services and Docker development profile are now the single delivery path.

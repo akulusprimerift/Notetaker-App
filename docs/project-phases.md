@@ -1,5 +1,7 @@
 # Project phases
 
+Current priority (2026-09-15): M08 theme and account usability repairs are implemented with synthetic evidence. ChatGPT links through a bundled helper and exposes Codex models; API setup accepts a key; Claude subscription login requires provider approval. Live account qualification remains open. Next sequence: Phase 7, standalone Windows distribution, then macOS. See [current handoff](../SESSION_TRANSFER.md).
+
 Current priority (2026-09-11): M08 remains the single active phase. The user selected Electron as the Windows host and requests a cleaner, NotebookLM-inspired workspace. Visual notes and both API-key/subscription connections remain in the shared service scope; account/provider and scientific-quality qualification remain open. See [evidence and limitations](implementation/visual-notes-providers.md). Earlier release gaps remain open.
 
 Current priority (2026-09-10): M08 incremental note sections. Audio/transcription are accepted by the user. Pin small source groups per note request, save cumulative immutable sections during capture, continue through backlogs, display saved-section progress, and retain student edits. Migration 0013 preserves existing library history. See [M08 evidence](implementation/phase-6-m08.md).

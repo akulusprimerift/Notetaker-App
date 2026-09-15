@@ -91,7 +91,7 @@ if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => {if(window){window.show();window.focus();}});
   app.whenReady().then(async () => {
-    providerBridge = new ProviderBridge(app.getPath('userData'), require('electron').safeStorage);
+    providerBridge = new ProviderBridge(app.getPath('userData'), require('electron').safeStorage, {openExternal:url=>require('electron').shell.openExternal(url), codexExecutable:app.isPackaged?path.join(process.resourcesPath,'account-client/bin/codex.exe'):path.join(__dirname,'../../node_modules/@openai/codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin/codex.exe')});
     try {bridgeConfig=await providerBridge.start();}
     catch (error) {console.error('Provider bridge could not start:', error.message);bridgeConfig=null;}
     try {const config=JSON.parse(await fs.readFile(configPath(),'utf8'));speechPath=config.speechPath || '';serviceRoot=config.serviceRoot || '';} catch { /* First launch. */ }
@@ -145,10 +145,6 @@ else {
       speechPath=chosen.filePaths[0];await saveConfig();
     });
     register('app:open-setup',showSetup,true);
-    register('provider:choose-client',async()=>{
-      const chosen=await dialog.showOpenDialog(window,{properties:['openFile'],title:'Select the official provider client',filters:[{name:'Windows executable',extensions:['exe']}]});
-      return chosen.canceled ? '' : chosen.filePaths[0];
-    },true);
     try {
       if(await bridgeReady()) await window.loadURL(ORIGIN);
       else if(await healthy()&&bridgeConfig){await startServices(true);if(await bridgeReady())await window.loadURL(ORIGIN);else await setup();}

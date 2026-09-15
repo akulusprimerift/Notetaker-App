@@ -44,3 +44,11 @@ Initial tests encountered the known Windows default pytest-directory permission 
 Live API credentials, paid model inference, successful browser sign-in, authenticated Codex generation and Claude Code installation/inference were not exercised. No microphone, student lecture data, cloud inference or model download was used. Mock streams do not qualify live providers. Representative biology/chemistry diagrams need human scientific review; dense graphs may need simpler prompts.
 
 The session transfer records final 0.4.0 package/smoke evidence. No public release, push or installation over the student library is performed. Existing release gates remain open.
+
+## Provider usability correction — 2026-09-15
+
+The account panel replaces the executable/model-ID form. OpenAI and Claude API keys discover text-model choices before saving; ChatGPT uses a pinned bundled Codex helper, provider-owned browser login, paid-plan verification and paginated model discovery. Existing lecture consent and revision fencing remain required. No model weights are downloaded. Model availability comes from the chosen connection and is not a guarantee that every catalog entry supports the note adapter.
+
+The exact requested subscription experience has external limits. [OpenAI app-server documentation](https://learn.chatgpt.com/docs/app-server) exposes browser login and a Codex model list, not the complete ChatGPT website menu. [Anthropic's Agent SDK documentation](https://code.claude.com/docs/en/agent-sdk) requires prior approval for third-party Claude subscription login; new Claude subscription linking is unavailable until that is obtained. Claude API-key access remains supported. Existing connection files are preserved for explicit disconnect.
+
+Checked model discovery against [OpenAI Models](https://developers.openai.com/api/reference/resources/models/methods/list) and [Claude Models](https://platform.claude.com/docs/en/api/models/list). Executed evidence and remaining live-account qualification are in the [session transfer](../../SESSION_TRANSFER.md). No claim of all-model consumer-subscription access is made.

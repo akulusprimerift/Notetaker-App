@@ -27,6 +27,7 @@
     "test:desktop": "node --test tests/desktop/*.test.cjs"
   },
   "devDependencies": {
+    "@openai/codex": "0.154.0",
     "ajv": "8.20.0",
     "electron": "44.3.0",
     "electron-builder": "26.15.3",

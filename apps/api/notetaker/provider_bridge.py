@@ -46,7 +46,7 @@ class ProviderBridge:
 
     def save(self, provider, model, api_key='', executable=''):
         return self.request('POST', '/connections', {'provider': provider, 'model': model,
-            'api_key': api_key, 'executable': executable}, timeout=10)
+            'api_key': api_key, 'executable': executable}, timeout=60)
 
     def remove(self, provider):
         return self.request('DELETE', '/connections/' + provider, timeout=10)

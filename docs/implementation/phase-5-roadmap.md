@@ -127,3 +127,7 @@ Enforce same-lecture foreign keys, unique run/sequence, logical jobs, consumer/e
 P1: Catch Me Up, Mark Important and optional course glossary, each reusing validated evidence and measured usefulness. P1 after G05 scope decision: document/slide ingestion and visual capture with distinct source types. Later learning work: practice, mastery and personalization after note quality is proven.
 
 Platform experiments follow an explicit workload/failure question: pgvector for demonstrated retrieval, Valkey for measured hot paths, Protobuf/Apicurio for schema evolution, full telemetry for diagnosed needs, then Kubernetes/Strimzi, KEDA/load tests, and optional GitOps/CDC. Outbox, retry, ownership and deletion safety are already core; they are never postponed to a portfolio milestone.
+
+## Sequencing clarification — 2026-09-15
+
+M08 remains active for theme and account usability repairs. These are implemented with synthetic evidence, while authenticated provider use and existing release gates remain unqualified. Proceed next to scoped Phase 7 work, then standalone Windows packaging, then macOS. Claude subscription login remains dependent on provider approval. See the [session transfer](../../SESSION_TRANSFER.md).

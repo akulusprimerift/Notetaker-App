@@ -218,7 +218,7 @@ class ModelChoice(BaseModel):
 class ProviderConnectionInput(BaseModel):
     model_config = ConfigDict(extra='forbid', strict=True)
     provider: Literal['openai', 'anthropic', 'chatgpt', 'claude-subscription']
-    model: str = Field(min_length=1, max_length=120)
+    model: str = Field(default='', max_length=120)
     api_key: str = Field(default='', max_length=8192)
     executable: str = Field(default='', max_length=520)
 

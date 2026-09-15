@@ -17,7 +17,7 @@ The workspace is organized around a course sidebar and lecture sections: Study n
 1. Download the latest unsigned x64 Electron installer from the [GitHub releases page](https://github.com/akulusprimerift/Notetaker-App/releases/latest).
 2. Open Notetaker from the Start menu. On first launch, choose **Create new desktop library** or **Use existing workspace folder** to reuse the existing development library and its service configuration.
 3. Start the local services from setup, then choose a local note model in the lecture’s note settings. Models are selected from the computer; they are not downloaded by Notetaker.
-4. Create a course and lecture. In **Note preferences**, keep the local model or connect an API provider/official subscription client if desired. Cloud choices require an explicit confirmation for each lecture.
+4. Create a course and lecture. In **Note preferences**, keep the local model or open **Accounts & API keys** to link ChatGPT or paste an OpenAI/Claude API key if desired. Cloud choices require an explicit confirmation for each lecture.
 5. In **Capture**, choose the recording input and press **Start recording**. Capture and confirmed-save progress are shown separately.
 6. Stop recording when the lecture ends. Transcription and detailed note sections continue through the local workers; earlier saved notes remain available if a later attempt needs attention.
 7. Review the transcript, notes, visual schematics and source evidence. Make protected edits or compare a regenerated suggestion, then export the selected revision or final snapshot.
@@ -30,7 +30,7 @@ If setup reports “PowerShell 7 was not found”, install PowerShell 7 from Mic
 
 The active implementation phase is **6.8 / M08 — Electron Windows application**. See the [feature and architecture phase plan](docs/project-phases.md), [M08 evidence](docs/implementation/phase-6-m08.md), and [desktop direction](docs/architecture/windows-desktop-direction.md).
 
-The product priority is reliable lecture capture → timestamped transcription → high-quality, source-linked notes. Course materials, source-linked visual schematics, saved prompt profiles, protected editing, finalization, deletion reconciliation and the local Electron service lifecycle are included. OpenAI/Claude API and subscription connections are available through the Electron host bridge, remain explicitly chosen per lecture and are still subject to provider/account qualification. The bridge uses Windows protected storage and official provider clients; it does not collect passwords or import another app’s tokens.
+The product priority is reliable lecture capture → timestamped transcription → high-quality, source-linked notes. Course materials, source-linked visual schematics, saved prompt profiles, protected editing, finalization, deletion reconciliation and the local Electron service lifecycle are included. The Accounts & API keys panel supports OpenAI/Claude API keys and browser-based ChatGPT linking through a bundled official Codex helper. API keys load supported text models; ChatGPT exposes the Codex model catalog for an eligible paid account, not every model on the ChatGPT website. Claude subscription linking requires Anthropic approval and is unavailable for new connections. All cloud models remain explicitly chosen per lecture; live account/inference qualification is still open. The bridge uses Windows protected storage and a separate client profile; it does not collect passwords or import another app’s tokens.
 
 Run the development profile with Docker Desktop's Linux engine:
 

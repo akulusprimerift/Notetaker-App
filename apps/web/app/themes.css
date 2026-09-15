@@ -39,3 +39,19 @@ input[type=file]::file-selector-button{padding:7px 10px;margin-right:10px;border
 .course-card:hover,.lecture-row:hover{border-color:var(--accent);box-shadow:0 6px 22px #00000012}
 :root[data-theme=dark] .note-paper{box-shadow:0 8px 32px #00000024}
 @media(prefers-reduced-motion:no-preference){.course-card,.lecture-row,.lecture-tabs button{transition:background .15s,border-color .15s,box-shadow .15s}}
+
+.accounts-dialog{width:min(780px,calc(100% - 32px));max-height:90vh;padding:28px;border:1px solid var(--line);border-radius:20px;background:var(--bg);color:var(--ink);box-shadow:0 24px 90px #0006}
+.accounts-dialog::backdrop{background:#080d19b8}
+.accounts-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px}
+.accounts-heading h2{font-size:1.5rem;margin-bottom:0}.accounts-heading .eyebrow{margin-bottom:6px}
+.account-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:14px 0 24px}
+.account-card,.account-api{padding:20px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.account-card{display:flex;flex-direction:column;align-items:flex-start}.account-card p{font-size:.85rem}.account-card .primary,.account-status{margin-top:auto}
+.account-mark{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--soft);color:var(--accent);font-size:1.1rem;font-weight:750;margin-bottom:14px}
+.account-status{font-size:.76rem;padding:10px 0;color:var(--muted)}
+.account-api select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:7px;margin-bottom:16px;font:inherit}
+.account-api input{margin-bottom:16px}.account-privacy{margin:24px 0 0}.account-shortcut{margin:18px 0}
+.sidebar-bottom>.secondary{white-space:normal;margin:0 0 18px;padding:10px;font-size:.75rem}
+@media(max-width:600px){.account-grid{grid-template-columns:1fr}.accounts-dialog{padding:18px}.accounts-heading h2{font-size:1.2rem}}
+.accounts-mobile{display:none}.account-settings>.inline-notice,.account-settings>.error{margin-top:18px;padding:12px;border-radius:8px}
+@media(max-width:700px){.accounts-mobile{display:inline-flex}.topbar>span:first-child{display:none}.topbar{height:auto;min-height:55px;padding:10px 20px}.topbar-actions{flex-wrap:wrap;gap:8px;width:100%}.topbar-actions>.privacy-badge{display:none}}

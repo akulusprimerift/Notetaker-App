@@ -1,7 +1,6 @@
 'use client';
 import PromptProfiles from './prompt-profiles';
 import ReviewNotice from './review-notice';
-import ProviderConnections from './provider-connections';
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 import NoteEditor,{type Editing} from './note-editor';
@@ -68,9 +67,11 @@ export default function Notes({lecture,csrf,onSessionExpired}:{lecture:string;cs
     const report=(err:unknown)=>{if(alive.current)setConnectionError(err instanceof Error?err.message:'Could not load notes.')};
     const live=(event:Event)=>{const detail=(event as CustomEvent).detail;if(detail.lecture===lecture){sequence.current++;applyState(detail.snapshot.notes);}};
     window.addEventListener('lecture-snapshot',live);
+    const connectionsChanged=()=>void refreshModels().catch(()=>{});
+    window.addEventListener('provider-connections-changed',connectionsChanged);
     void refresh().catch(report);void refreshModels().catch(()=>{});
     const timer=setInterval(()=>void refresh().catch(report),4000);
-    return()=>{alive.current=false;sourceRequest.current++;sequence.current++;clearInterval(timer);window.removeEventListener('lecture-snapshot',live)};
+    return()=>{alive.current=false;sourceRequest.current++;sequence.current++;clearInterval(timer);window.removeEventListener('lecture-snapshot',live);window.removeEventListener('provider-connections-changed',connectionsChanged)};
   },[refresh,refreshModels,lecture,applyState]);
   async function choose(enabled=true){
     if(!state)return;
@@ -136,7 +137,7 @@ export default function Notes({lecture,csrf,onSessionExpired}:{lecture:string;cs
     <label htmlFor="note-model">Note model</label><select id="note-model" value={activeModel} disabled={busy} onChange={event=>{setSelected(event.target.value);setCloudConsent(false);setError('')}}><option value="">Choose a model</option>{localModels.length>0&&<optgroup label="On this computer">{localModels.map(model=><option key={model.name} value={model.name}>{model.name}{model.family?` · ${model.family}`:''}</option>)}</optgroup>}{cloudModels.length>0&&<optgroup label="Connected providers">{cloudModels.map(model=><option key={model.name} value={model.name}>{model.name}</option>)}</optgroup>}{state?.preference&&!models.some(m=>m.name===state.preference?.model)&&<option value={state.preference.model}>{state.preference.model} · unavailable</option>}</select>
     {!available&&<p className="small error">Ollama is not reachable. Start Ollama, then refresh the list. Connected providers remain available when configured.</p>}
     {activeIsCloud&&<label className="cloud-consent"><input type="checkbox" checked={cloudConsent} disabled={busy} onChange={event=>setCloudConsent(event.target.checked)}/><span>I understand this sends the lecture transcript, selected material text and note prompts to {activeModel.split('/')[0]}.</span></label>}
-    <ProviderConnections csrf={csrf} onChanged={()=>void refreshModels().catch(()=>{})} onSessionExpired={onSessionExpired}/>
+    <button type="button" className="secondary full account-shortcut" onClick={()=>window.dispatchEvent(new Event('open-accounts'))}>Accounts &amp; API keys</button>
     <PromptProfiles csrf={csrf} prompts={profile} onLoad={value=>setCustom({...profile,...value})}/>
     <label htmlFor="note-detail-prompt">Describe your detail level (optional)</label><textarea id="note-detail-prompt" value={profile.detail_prompt} maxLength={2000} rows={4} disabled={busy} onChange={e=>setCustom({...profile,detail_prompt:e.target.value})} placeholder="e.g. Assume I am new to the subject. Explain each concept fully, keep every worked example, and include a short recap."/>
     <label htmlFor="note-layout-prompt">Describe your layout (optional)</label><textarea id="note-layout-prompt" value={profile.layout_prompt} maxLength={2000} rows={4} disabled={busy} onChange={e=>setCustom({...profile,layout_prompt:e.target.value})} placeholder="e.g. Group by concept, with a definition, explanation, example and self-check question under each heading."/><p className="small muted">Tell your model how much detail you want and how to organize it. Leave these blank for detailed notes grouped by topic. Source links are retained.</p>
