@@ -69,3 +69,9 @@ Next work after this commit: restart the Docker profile from Electron so existin
 ## Current priority — 2026-09-15
 
 Active phase: M08 usability repairs. Midnight nested surfaces now use theme colors, with clearer selected lecture sections. Synthetic Chromium checks passed eight affected text/background pairs at 4.5:1 in both themes; Midnight image inspected; lint/typecheck passed. Next: finish dedicated account linking and API-key setup. User sequencing: these fixes → Phase 7 → standalone Windows app → macOS. Prior release qualification gaps remain open.
+
+## Subscription catalog and disconnect follow-up — 2026-09-15
+
+Before Phase 7.1, subscription discovery now requests hidden as well as default-visible models on every provider catalog page. Connected accounts expose their model IDs and an explicit Refresh models action. Refresh keeps the credential digest stable but prevents choosing removed models. Both ChatGPT and legacy Claude subscription connections disconnect locally even when the client cannot confirm logout; the UI reports that distinction. This does not cancel the provider subscription or delete lecture notes.
+
+Executed: 12 desktop tests (including hidden/paginated catalog, refresh and missing-client disconnect), 10 backend cloud/connection tests including authenticated refresh and disconnect notice, frontend typecheck/lint and Python lint. Full consumer-website catalogs and live model entitlement cannot be guaranteed by these APIs; the documented Claude approval limitation remains. Next active implementation: Phase 7.1.

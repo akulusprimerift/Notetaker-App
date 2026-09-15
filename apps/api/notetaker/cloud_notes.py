@@ -157,6 +157,14 @@ class NoteProviders:
         self.connections.remove(provider)
         return {'provider': provider}
 
+    def refresh_connection(self, provider):
+        if not self.bridge:
+            raise ValueError('Model refresh requires the running Electron desktop app.')
+        try:
+            return self.bridge.refresh(provider)
+        except ProviderBridgeError as exc:
+            raise ValueError(exc.message) from None
+
     def sign_in_connection(self, provider):
         if self.bridge:
             try:

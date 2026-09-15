@@ -100,3 +100,30 @@ test('concurrent disconnect cannot race an unfinished key validation',async()=>{
     assert.equal((await fetch(local+'/connections/openai',{method:'DELETE',headers})).status,200);
   }finally{release?.();await bridge.close();await rm(directory,{recursive:true,force:true});}
 });
+
+test('subscription catalog includes hidden models across every page',async()=>{
+  const {AccountClient}=require('../../apps/desktop/account-client.cjs');
+  const seen=[];
+  const models=await AccountClient.prototype.models.call({request:async(method,params)=>{
+    seen.push(params);return params.cursor?{data:[{model:'gpt-hidden',hidden:true}],nextCursor:null}:{data:[{model:'gpt-first'}],nextCursor:'page-two'};
+  }});
+  assert.deepEqual(models,['gpt-first','gpt-hidden']);assert.ok(seen.every(p=>p.includeHidden===true));
+});
+
+test('refresh preserves credentials and disconnect revokes both subscriptions even with missing clients',async()=>{
+  const directory=await mkdtemp(path.join(os.tmpdir(),'notetaker-disconnect-test-'));
+  const bridge=new ProviderBridge(directory,storage,{processResult:async()=>{throw new Error('missing executable');},accountClient:()=>({initialize:async()=>{},request:async()=>({account:{type:'chatgpt',planType:'plus'}}),models:async()=>['gpt-new','gpt-hidden'],close:async()=>{}})});
+  try{
+    for(const provider of ['chatgpt','claude-subscription']){
+      await bridge.write(provider,{provider,model:'gpt-old',id:'original-digest',executable:'missing.exe'});
+      if(provider==='chatgpt'){
+        await bridge.refresh(provider);assert.equal((await bridge.read(provider)).id,'original-digest');
+        await bridge.verify({model:'chatgpt/gpt-hidden',digest:'original-digest'});
+        await assert.rejects(bridge.verify({model:'chatgpt/gpt-old'}),/changed/);
+      }
+      const result=await bridge.signOut(provider);assert.match(result.notice,/Disconnected/);
+      assert.equal(await bridge.read(provider),null);
+      assert.deepEqual(await bridge.signOut(provider),{provider});
+    }
+  }finally{await rm(directory,{recursive:true,force:true});}
+});

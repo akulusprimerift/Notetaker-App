@@ -23,6 +23,8 @@ def test_key_only_and_browser_link_routes_preserve_session_csrf_and_idempotency(
         inventory=lambda: [],
         save_connection=lambda *args: calls.append(('save', args)),
         sign_in_connection=lambda provider: calls.append(('link', provider)),
+        refresh_connection=lambda provider: calls.append(('refresh', provider)),
+        sign_out_connection=lambda provider: {'notice': 'Disconnected locally; sign-out unavailable.'},
     )
     body = {'provider': 'openai', 'api_key': 'synthetic-key'}
     assert client.post('/provider-connections', json=body).status_code == 401
@@ -36,6 +38,10 @@ def test_key_only_and_browser_link_routes_preserve_session_csrf_and_idempotency(
     for _ in range(2):
         assert client.post('/provider-connections/chatgpt/sign-in', json={}, headers=link_headers).status_code == 200
     assert calls[-1] == ('link', 'chatgpt') and len(calls) == 2
+    assert client.post('/provider-connections/chatgpt/refresh', json={}, headers={**headers, 'idempotency-key': str(uuid4())}).status_code == 200
+    assert calls[-1] == ('refresh', 'chatgpt')
+    response = client.post('/provider-connections/chatgpt/sign-out', json={}, headers={**headers, 'idempotency-key': str(uuid4())})
+    assert response.status_code == 200 and 'Disconnected locally' in response.json()['notice']
 
 EVIDENCE = {'source_snapshot_id':'sample', 'settings_version':1, 'allow_ai_explanations':False,
     'sources':[{'id':'water', 'text':'Cooling water vapor condenses into liquid water.'}]}

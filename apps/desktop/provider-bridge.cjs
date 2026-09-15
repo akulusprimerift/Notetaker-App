@@ -204,7 +204,40 @@ class ProviderBridge {
     }catch(error){try{await client.request('account/logout',{});}catch{/* The helper may already have exited. */}throw new BridgeError('provider_authentication',error.message||'Could not link your ChatGPT account.');}
     finally{clearTimeout(timer);await client.close();this.clients.delete(client);}
   }
-  async signOut(provider) {const row=await this.read(provider);if(!row||!SUBSCRIPTIONS.has(provider))throw new BridgeError('provider_connection_invalid','This subscription is not connected.');const args=provider==='chatgpt'?[row.executable,'logout','-c','cli_auth_credentials_store="keyring"']:[row.executable,'auth','logout'];await processResult(args[0],args.slice(1),{cwd:this.directory,env:safeEnvironment(provider,this.directory)},30_000);await this.remove(provider);return {provider};}
+  async refresh(provider) {
+    const row=await this.read(provider);
+    if(!row)throw new BridgeError('connection_unavailable','Connect this account first.');
+    let models;
+    if(provider==='chatgpt'){
+      const client=this.options.accountClient?this.options.accountClient():new AccountClient(this.options.codexExecutable||row.executable,codexArgs(),{cwd:this.directory,env:safeEnvironment(provider,this.directory)});
+      this.clients.add(client);
+      const timer=setTimeout(()=>client.close(new Error('Model refresh timed out. Try again.')),45_000);
+      try{
+        await client.initialize();
+        const result=await client.request('account/read',{refreshToken:true});
+        if(result?.account?.type!=='chatgpt'||['free','unknown',''].includes(String(result.account.planType||'').toLowerCase()))throw new Error('Reconnect an eligible paid ChatGPT account.');
+        models=await client.models();
+      }catch(error){throw new BridgeError('provider_authentication',error.message);}
+      finally{clearTimeout(timer);await client.close();this.clients.delete(client);}
+    }else if(provider==='claude-subscription')throw new BridgeError('provider_unavailable','Claude subscription discovery requires an approved provider integration.');
+    else models=await this.apiModels(provider,row.api_key);
+    models=[...new Set(models)].filter(model=>typeof model==='string'&&MODEL.test(model));
+    if(!models.length)throw new BridgeError('provider_unavailable','The provider returned no models. Your previous list is preserved.');
+    await this.write(provider,{...row,model:models.includes(row.model)?row.model:models[0],models});
+    return {provider};
+  }
+  async signOut(provider) {
+    providerName(provider);
+    const row=await this.read(provider);
+    // Revoke Notetaker access even if the old client or network is unavailable.
+    await this.remove(provider);
+    if(!row||!SUBSCRIPTIONS.has(provider))return {provider};
+    const executable=provider==='chatgpt'?(this.options.codexExecutable||row.executable):row.executable;
+    const args=provider==='chatgpt'?['logout','-c','cli_auth_credentials_store="keyring"']:['auth','logout'];
+    try{await (this.options.processResult||processResult)(executable,args,{cwd:this.directory,env:safeEnvironment(provider,this.directory)},30_000);}
+    catch{return {provider,notice:'Disconnected from Notetaker. The provider client could not confirm sign-out; review connected sessions in your provider account.'};}
+    return {provider};
+  }
   async generate(input) {
     const model=String(input.model||''),[provider,name]=model.split('/',2),row=await this.read(provider);
     if(!row||!(row.models||[row.model]).includes(name)||(input.digest&&row.id!==input.digest))throw new BridgeError('connection_unavailable','This provider connection changed. Reconnect it and apply the model again.',503);
@@ -241,6 +274,7 @@ class ProviderBridge {
       else if(request.method==='POST'&&url.pathname==='/connections/generate')result=await this.generate(input);
       else if(parts.length===2&&parts[0]==='connections'&&request.method==='DELETE')result=await this.remove(parts[1]);
       else if(parts.length===3&&parts[0]==='connections'&&parts[2]==='sign-in'&&request.method==='POST')result=await this.signIn(parts[1]);
+      else if(parts.length===3&&parts[0]==='connections'&&parts[2]==='refresh'&&request.method==='POST')result=await this.refresh(parts[1]);
       else if(parts.length===3&&parts[0]==='connections'&&parts[2]==='sign-out'&&request.method==='POST')result=await this.signOut(parts[1]);
       else throw new BridgeError('not_found','The provider bridge route was not found.',404);
       sendJson(response,200,result);

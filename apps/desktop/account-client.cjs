@@ -45,7 +45,7 @@ class AccountClient {
   async models(){
     const models=[];let cursor=null;const seen=new Set();
     do{
-      const result=await this.request('model/list',{limit:100,includeHidden:false,cursor});
+      const result=await this.request('model/list',{limit:100,includeHidden:true,cursor});
       if(!Array.isArray(result?.data))throw new Error('The provider returned an invalid model list.');
       models.push(...result.data.map(row=>row.model));cursor=result.nextCursor;
       if(cursor&&seen.has(cursor))throw new Error('The provider returned a repeated model page.');

@@ -333,19 +333,34 @@ def install_notes(app, current, db_session, owned_lecture, receipt):
             db.commit()
         return {'connections': app.state.note_provider.inventory()}
 
+    @app.post('/provider-connections/{provider}/refresh')
+    def refresh_provider(provider: str, request: Request, session=Depends(current), db=Depends(db_session)):
+        action = 'provider.connection.refresh:' + provider
+        existing, key, fingerprint = receipt(db, request, session, action, {})
+        if not existing:
+            try:
+                app.state.note_provider.refresh_connection(provider)
+            except (ValueError, NoteFailure) as exc:
+                db.rollback()
+                error(422, 'provider_refresh_failed', str(exc))
+            db.add(CommandReceipt(owner_id=session.owner_id, action=action, key=key, fingerprint=fingerprint, result_id=provider))
+            db.commit()
+        return {'connections': app.state.note_provider.inventory()}
+
     @app.post('/provider-connections/{provider}/sign-out')
     def sign_out_provider(provider: str, request: Request, session=Depends(current), db=Depends(db_session)):
+        result = {}
         action = 'provider.connection.sign-out:' + provider
         existing, key, fingerprint = receipt(db, request, session, action, {})
         if not existing:
             try:
-                app.state.note_provider.sign_out_connection(provider)
+                result = app.state.note_provider.sign_out_connection(provider) or {}
             except (ValueError, NoteFailure) as exc:
                 db.rollback()
                 error(422, 'provider_sign_out_failed', str(exc) if isinstance(exc, ValueError) else 'Provider sign-out failed. Try again with the official client.')
             db.add(CommandReceipt(owner_id=session.owner_id, action=action, key=key, fingerprint=fingerprint, result_id=provider))
             db.commit()
-        return {'connections': app.state.note_provider.inventory()}
+        return {'connections': app.state.note_provider.inventory(), 'notice': result.get('notice', '')}
 
     @app.get('/lectures/{lecture_id}/notes')
     def read(lecture_id: str, session=Depends(current), db=Depends(db_session)):

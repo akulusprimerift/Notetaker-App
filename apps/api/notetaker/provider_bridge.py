@@ -54,6 +54,9 @@ class ProviderBridge:
     def sign_in(self, provider):
         return self.request('POST', '/connections/' + provider + '/sign-in', timeout=210)
 
+    def refresh(self, provider):
+        return self.request('POST', '/connections/' + provider + '/refresh', timeout=60)
+
     def sign_out(self, provider):
         return self.request('POST', '/connections/' + provider + '/sign-out', timeout=45)
 

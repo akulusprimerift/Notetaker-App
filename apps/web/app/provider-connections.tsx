@@ -39,9 +39,14 @@ export default function ProviderConnections({csrf,onChanged,onSessionExpired}:Pr
     setBusy(ident);setError('');setNotice('');
     try{
       const subscription=ident==='chatgpt'||ident==='claude-subscription';
-      await request(`/provider-connections/${ident}${subscription?'/sign-out':''}`,{method:subscription?'POST':'DELETE',headers:headers(),...(subscription?{body:'{}'}:{})});
-      await load();changed();setNotice('Disconnected from Notetaker. Saved lecture notes are preserved.');
+      const result=await request<{notice?:string}>(`/provider-connections/${ident}${subscription?'/sign-out':''}`,{method:subscription?'POST':'DELETE',headers:headers(),...(subscription?{body:'{}'}:{})});
+      await load();changed();setNotice(result.notice||'Disconnected from Notetaker. Saved lecture notes are preserved.');
     }catch(err){setError(err instanceof Error?err.message:'Could not disconnect.');}finally{setBusy('');}
+  }
+  async function refresh(ident:string){
+    setBusy(ident);setError('');setNotice('');
+    try{const result=await request<{connections:Connection[]}>(`/provider-connections/${ident}/refresh`,{method:'POST',headers:headers(),body:'{}'});setRows(result.connections);changed();setNotice('Model list refreshed from your connected account.');}
+    catch(err){setError(err instanceof Error?err.message:'Could not refresh models.');}finally{setBusy('');}
   }
   const providers=[...new Set(rows.map(row=>row.provider??row.name.split('/')[0]))];
   return <section className="account-settings" aria-label="Provider connections">
@@ -53,7 +58,7 @@ export default function ProviderConnections({csrf,onChanged,onSessionExpired}:Pr
     </div>
     <form className="account-api" onSubmit={save}><h3>API keys</h3><p className="small muted">Paste your key to load available text models. API billing is separate from a ChatGPT or Claude subscription.</p><label htmlFor="provider-choice">API provider</label><select id="provider-choice" value={provider} disabled={Boolean(busy)} onChange={event=>{setProvider(event.target.value);setApiKey('');setError('');setNotice('');}}><option value="openai">OpenAI API</option><option value="anthropic">Claude API</option></select><label htmlFor="provider-api-key">API key</label><input id="provider-api-key" type="password" autoComplete="off" value={apiKey} disabled={Boolean(busy)} onChange={event=>setApiKey(event.target.value)} placeholder="Paste your API key"/><button className="primary" disabled={Boolean(busy)||!apiKey.trim()}>{busy==='api'?'Checking key and loading models…':'Connect API key'}</button></form>
     {error&&<p role="alert" className="error">{error}</p>}{notice&&<p role="status" className="inline-notice">{notice}</p>}
-    <div className="provider-connection-list"><h3>Connected accounts</h3>{providers.length===0?<p className="small muted">No accounts connected yet.</p>:providers.map(ident=><div className="provider-connection-row" key={ident}><div><strong>{labels[ident]??ident}</strong><span>{rows.filter(row=>(row.provider??row.name.split('/')[0])===ident).length} model choices</span></div><button type="button" className="text-button" disabled={Boolean(busy)} onClick={()=>void remove(ident)}>Disconnect {labels[ident]??ident}</button></div>)}</div>
+    <div className="provider-connection-list"><h3>Connected accounts</h3>{providers.length===0?<p className="small muted">No accounts connected yet.</p>:providers.map(ident=><div className="provider-connection-row" key={ident}><div><strong>{labels[ident]??ident}</strong><details><summary>{rows.filter(row=>(row.provider??row.name.split('/')[0])===ident).length} model choices</summary><ul>{rows.filter(row=>(row.provider??row.name.split('/')[0])===ident).map(row=><li key={row.name}>{row.name.split('/').slice(1).join('/')}</li>)}</ul></details></div><div className="provider-connection-actions">{ident!=='claude-subscription'&&<button type="button" className="text-button" disabled={Boolean(busy)} onClick={()=>void refresh(ident)}>Refresh models</button>}<button type="button" className="text-button" disabled={Boolean(busy)} onClick={()=>void remove(ident)}>Disconnect {labels[ident]??ident}</button></div></div>)}</div>
     <p className="small muted account-privacy">Keys use Windows protected storage. Cloud notes send selected transcript passages, material text and prompts to your chosen provider only after you enable cloud processing for that lecture. Audio transcription stays local.</p>
   </section>;
 }
