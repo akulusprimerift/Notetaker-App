@@ -2,6 +2,8 @@
 
 ## Phase 7.1 — 2026-09-15
 
+Implementation committed as `6c1a660`; provider follow-up `47c5b9f` and browser controls verification `6e62d35`. The unsigned x64 installer was rebuilt successfully at `.local/desktop-dist/Notetaker-0.1.0-Setup.exe` (202,452,730 bytes; SHA-256 `0A675FB8437759780B6B594EEE0AE42431FA0AFD7F779B5793FD81E5E6C8C7EB`). Packaged study/terminology modules, both migrations, UI components and provider controls match working-source hashes. This checks packaging contents, not clean installation, upgrade or a running installed workflow. The installer retains the existing Docker/local-model prerequisites. No push or installation was performed.
+
 Active phase: **7.1 — Note usefulness**. The user requested full subscription model access and disconnect before starting this phase. Commit `47c5b9f` includes all exposed Codex catalog pages/hidden models, model-list refresh, and reliable ChatGPT/legacy Claude disconnect. Provider limits remain explicit: the consumer ChatGPT menu is not available in full; new Claude subscription login requires Anthropic approval. No live account/inference qualification was performed.
 
 Phase 7.1 implements Mark Important, source-linked Catch Me Up, and course terminology hints. See [implementation and evidence](docs/implementation/phase-7-1.md). Additive migrations 0014/0015 are included; existing student data was not touched. Marks freeze into final snapshots; source corrections and selected student note edits are respected by catch-up. Term versions are pinned to future speech windows and passed as hints to the local speech adapter, never treated as independent source evidence. Draft conflict comparison, marker retry, removal and undo are visible.
