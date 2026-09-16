@@ -60,3 +60,5 @@ Next: qualify real browser sign-in and authenticated note generation with user-o
 ## Subscription catalog/disconnect follow-up — 2026-09-15
 
 Full exposed ChatGPT catalog pagination now includes hidden entries; users can inspect IDs and refresh the model list. Explicit ChatGPT/legacy Claude disconnect revokes Notetaker access even if provider-client logout fails, with a visible notice. Tests: 12 desktop and 10 backend cloud/connection checks, frontend typecheck/lint and Python lint passed. Provider API restrictions and live-account qualification remain open. User authorized Phase 7.1 next.
+
+Follow-up browser verification (2026-09-15): actual React account controls passed with synthetic API responses for full-catalog refresh, visible added model IDs, ChatGPT disconnect and legacy Claude disconnect including an unconfirmed official-client logout notice. This is UI contract evidence, not live account qualification.

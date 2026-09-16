@@ -6,14 +6,21 @@ const {mkdir}=require('node:fs/promises');
   const browser=await chromium.launch({headless:true});
   try{
     const page=await browser.newPage({viewport:{width:1200,height:1000}});
-    let rows=[],linked=false,saved=false;
+    let rows=[{provider:'claude-subscription',name:'claude-subscription/legacy-test',digest:'legacy'}],linked=false,saved=false,refreshed=false;
+    const disconnected=[];
     await page.route('**/api/**',async route=>{
       const request=route.request(),url=new URL(request.url());let body=[];
       if(url.pathname==='/api/session/open')body={owner_id:'synthetic-owner',csrf_token:'test-csrf',preview:true};
       else if(url.pathname==='/api/courses')body=[{id:'synthetic-course',name:'Biology',code:'BIO 101',created_at:'2026-09-15T12:00:00Z'}];
+      else if(url.pathname.endsWith('/terminology'))body={version:0,terms:[]};
       else if(url.pathname==='/api/provider-connections/chatgpt/sign-in'){
         assert.equal(request.headers()['x-csrf-token'],'test-csrf');assert.ok(request.headers()['idempotency-key']);
-        assert.deepEqual(request.postDataJSON(),{});linked=true;rows=[{provider:'chatgpt',name:'chatgpt/gpt-test',digest:'test'}];body={connections:rows};
+        assert.deepEqual(request.postDataJSON(),{});linked=true;rows.push({provider:'chatgpt',name:'chatgpt/gpt-test',digest:'test'});body={connections:rows};
+      }else if(url.pathname==='/api/provider-connections/chatgpt/refresh'){
+        refreshed=true;rows.push({provider:'chatgpt',name:'chatgpt/extra-model',digest:'test'});body={connections:rows};
+      }else if(url.pathname.endsWith('/sign-out')){
+        const provider=url.pathname.split('/').at(-2);disconnected.push(provider);rows=rows.filter(row=>row.provider!==provider);
+        body={notice:'Disconnected from Notetaker. Client sign-out could not be confirmed.'};
       }else if(url.pathname==='/api/provider-connections'){
         if(request.method()==='POST'){
           assert.deepEqual(request.postDataJSON(),{provider:'openai',api_key:'synthetic-key'});saved=true;
@@ -33,6 +40,11 @@ const {mkdir}=require('node:fs/promises');
     assert.equal(await dialog.getByText('Model ID',{exact:true}).count(),0);
     await dialog.getByRole('button',{name:'Link ChatGPT',exact:true}).click();
     await dialog.getByRole('button',{name:'ChatGPT linked',exact:true}).waitFor();assert.ok(linked);
+    await dialog.getByRole('button',{name:'Refresh models',exact:true}).click();
+    await dialog.getByText('2 model choices',{exact:true}).click();await dialog.getByText('extra-model',{exact:true}).waitFor();assert.ok(refreshed);
+    await dialog.getByRole('button',{name:'Disconnect ChatGPT',exact:true}).click();await dialog.getByRole('button',{name:'Link ChatGPT',exact:true}).waitFor();
+    await dialog.getByRole('button',{name:'Disconnect Claude subscription',exact:true}).click();await dialog.getByText('No accounts connected yet.',{exact:true}).waitFor();
+    assert.deepEqual(disconnected,['chatgpt','claude-subscription']);
     await dialog.getByLabel('API key',{exact:true}).fill('synthetic-key');
     await dialog.getByRole('button',{name:'Connect API key',exact:true}).click();
     await dialog.getByRole('button',{name:'Disconnect OpenAI API',exact:true}).waitFor();assert.ok(saved);
