@@ -293,6 +293,10 @@ def create_app(settings: Settings | None = None):
     install_notes(app, current, db_session, owned_lecture, receipt)
     from .materials import install_materials
     install_materials(app, current, db_session, owned_course, owned_lecture, receipt)
+    from .study import install_study
+    install_study(app, current, db_session, owned_lecture, receipt)
+    from .terminology import install_terminology
+    install_terminology(app, current, db_session, owned_course, receipt)
     from .course_deletion import install_course_deletion
     install_course_deletion(app,current,db_session,receipt)
     return app

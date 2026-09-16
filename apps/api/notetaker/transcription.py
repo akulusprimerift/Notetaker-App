@@ -49,6 +49,8 @@ def valid_window(window, run):
 def schedule(db, lecture, planned_cuts=None):
     """Lecture lock required. Live cores wait for a full right-hand context."""
     if lecture.tombstoned or lecture.audio_removed: return 0
+    from .terminology import latest_terms
+    terminology = latest_terms(db, lecture.course_id)
     made = 0
     for run in current_runs(db, lecture):
         revision = db.scalar(select(AudioManifestRevision).where(
@@ -88,7 +90,7 @@ def schedule(db, lecture, planned_cuts=None):
                     if not complete and end + CONTEXT_SECONDS*run.sample_rate > right: break
                     window = SpeechWindow(lecture_id=lecture.id, run_id=run.id, manifest_version=run.manifest_version,
                         core_start=cursor, core_end=end, context_start=max(left, cursor-CONTEXT_SECONDS*run.sample_rate),
-                        context_end=min(right, end+CONTEXT_SECONDS*run.sample_rate), live=not complete)
+                        context_end=min(right, end+CONTEXT_SECONDS*run.sample_rate), live=not complete, terminology=terminology)
                     db.add(window); db.flush()
                     job = Job(lecture_id=lecture.id, kind='speech.window', logical_key='speech:window:'+window.id,
                         lifecycle_epoch=lecture.lifecycle_epoch, audio_epoch=lecture.audio_epoch, input_revision=window.id)

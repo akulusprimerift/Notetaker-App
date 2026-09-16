@@ -1,5 +1,15 @@
 # Session transfer
 
+## Phase 7.1 — 2026-09-15
+
+Active phase: **7.1 — Note usefulness**. The user requested full subscription model access and disconnect before starting this phase. Commit `47c5b9f` includes all exposed Codex catalog pages/hidden models, model-list refresh, and reliable ChatGPT/legacy Claude disconnect. Provider limits remain explicit: the consumer ChatGPT menu is not available in full; new Claude subscription login requires Anthropic approval. No live account/inference qualification was performed.
+
+Phase 7.1 implements Mark Important, source-linked Catch Me Up, and course terminology hints. See [implementation and evidence](docs/implementation/phase-7-1.md). Additive migrations 0014/0015 are included; existing student data was not touched. Marks freeze into final snapshots; source corrections and selected student note edits are respected by catch-up. Term versions are pinned to future speech windows and passed as hints to the local speech adapter, never treated as independent source evidence. Draft conflict comparison, marker retry, removal and undo are visible.
+
+Executed so far: backend **185 passed, 1 skipped** on SQLite; **60** JavaScript contracts and **12** desktop tests; new Chromium study UI flow including Midnight and narrow layout, marker failure/retry, source inspection, removal/undo and terminology conflict preservation; typecheck, frontend lint and Python lint. Only synthetic audio/data were used. Final production web build, documentation and whitespace checks passed; the nine focused backend tests passed again after the final source-order/boundary adjustment. The skipped backend test requires real PostgreSQL/object services. Account browser refresh/disconnect checks are committed as `6e62d35`.
+
+Remaining: human usefulness and real-speech terminology evaluation, live provider entitlement/inference, and prior M08 microphone, accessibility, endurance, clean-install/upgrade and restore gates. Phase 7.2 has not started. Standalone Windows distribution follows selected Phase 7 work; macOS follows Windows.
+
 ## Account linking and theme repair — 2026-09-15
 
 Active phase: **6.8 / M08**. User sequencing is these usability repairs → Phase 7 → standalone Windows distribution → macOS. Existing Docker/PostgreSQL student data is unchanged; release gates remain open.

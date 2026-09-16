@@ -130,4 +130,4 @@ Platform experiments follow an explicit workload/failure question: pgvector for 
 
 ## Sequencing clarification — 2026-09-15
 
-M08 remains active for theme and account usability repairs. These are implemented with synthetic evidence, while authenticated provider use and existing release gates remain unqualified. Proceed next to scoped Phase 7 work, then standalone Windows packaging, then macOS. Claude subscription login remains dependent on provider approval. See the [session transfer](../../SESSION_TRANSFER.md).
+Phase 7.1 is now active following committed theme/account repairs and catalog/disconnect improvements. [Note usefulness](phase-7-1.md) adds student bookmarks, source-linked catch-up and immutable course terminology hints with synthetic engineering evidence. Human usefulness, authenticated provider use and earlier release gates remain unqualified. Continue selected Phase 7 work, then standalone Windows packaging, then macOS. Claude subscription login remains dependent on provider approval. See the [session transfer](../../SESSION_TRANSFER.md).

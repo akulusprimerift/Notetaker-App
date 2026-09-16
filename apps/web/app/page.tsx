@@ -13,18 +13,21 @@ import DataRemoval from './data-removal';
 import VisualNotes from './visual-notes';
 import DesktopTools from './desktop-tools';
 import AccountsDialog from './accounts-dialog';
+import StudyTools from './study-tools';
+import CourseTerminology from './course-terminology';
 
 type Course={id:string;name:string;code:string;created_at:string};
 type Lecture={id:string;course_id:string;title:string;status:string;audio_removed:boolean;created_at:string;update_cursor:number};
 type Snapshot={lecture:Lecture;course_name:string;settings:{depth:string;format:string};processing_location:string};
 type Session={csrf_token:string;preview:boolean;owner_id:string};
-type LectureTab='notes'|'transcript'|'materials'|'capture'|'visuals'|'finalize';
+type LectureTab='notes'|'transcript'|'materials'|'capture'|'visuals'|'finalize'|'study';
 const lectureTabs:ReadonlyArray<{id:LectureTab;label:string;description:string}>=[
   {id:'notes',label:'Study notes',description:'Read and edit your saved notes'},
   {id:'transcript',label:'Transcript',description:'Follow and correct the lecture'},
   {id:'materials',label:'Materials',description:'Review slides and course sources'},
   {id:'capture',label:'Capture',description:'Record and recover audio'},
   {id:'visuals',label:'Visual notes',description:'Review source-linked schematics'},
+  {id:'study',label:'Study tools',description:'Catch up and review important moments'},
   {id:'finalize',label:'Finish',description:'Export or manage this lecture'},
 ];
 const isLectureTab=(value:string):value is LectureTab=>lectureTabs.some(tab=>tab.id===value);
@@ -161,12 +164,14 @@ export default function Workspace(){
           {lectureTab==='transcript'&&<Transcript key={snapshot.lecture.id} owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setTranscriptBusy} onSessionExpired={sessionExpired}/>}
           {lectureTab==='materials'&&<Materials key={snapshot.lecture.id+'-materials'} course={snapshot.lecture.course_id} lecture={snapshot.lecture.id} csrf={session.csrf_token}/>}
           {lectureTab==='visuals'&&<VisualNotes key={snapshot.lecture.id+'-visuals'} lecture={snapshot.lecture.id} onSessionExpired={sessionExpired}/>}
+          {lectureTab==='study'&&<StudyTools key={snapshot.lecture.id+'-study'} lecture={snapshot.lecture.id} course={snapshot.lecture.course_id} csrf={session.csrf_token}/>}
           {lectureTab==='finalize'&&<Finalization key={snapshot.lecture.id+'-final'} lecture={snapshot.lecture.id} csrf={session.csrf_token} busy={captureBusy||transcriptBusy} onRemoved={dataRemoved}/>}
         </div>
       </>:route.startsWith('course/')&&selected?<>
         <a className="back-link" href="#">← Your library</a><div className="page-heading"><div><p className="eyebrow">{selected.code||'YOUR COURSE'}</p><h1>{selected.name}</h1><p className="muted">Your lectures, together in one place.</p></div><button className="primary" onClick={()=>openForm('lecture')}>+ New lecture</button></div>
         <CourseDelete course={selected.id} name={selected.name} csrf={session.csrf_token} onDeleted={()=>{setCourses(old=>old.filter(row=>row.id!==selected.id));location.hash='';}}/>
         <Materials key={selected.id} course={selected.id} csrf={session.csrf_token}/>
+        <CourseTerminology key={selected.id+'-terms'} course={selected.id} csrf={session.csrf_token}/>
         <div className="section-row"><h2>Lectures <span className="count">{lectures.length}</span></h2><span>Most recent first</span></div>
         {lectures.length===0?<section className="empty-state"><span className="empty-art" aria-hidden="true">≡</span><p className="eyebrow">START WITH A LECTURE</p><h2>Your next idea belongs here.</h2><p>Create a lecture to give your next class a home.<br/>You can reopen it any time.</p><button className="secondary" onClick={()=>openForm('lecture')}>Create your first lecture <span aria-hidden="true">↗</span></button></section>:<div className="lecture-list">{lectures.map(lecture=><a className="lecture-row" key={lecture.id} href={`#lecture/${lecture.id}`}><span className="lecture-icon" aria-hidden="true">≡</span><div><h3>{lecture.title}</h3><p>{date(lecture.created_at)} · {lecture.status==='prepared'?'No recording yet':'Open transcript and study notes'}</p></div><span className="prepared-badge">{lecture.status==='prepared'?'Prepared':lecture.status==='recording'?'Recording open':'Saved audio'}</span><span aria-hidden="true">↗</span></a>)}</div>}
       </>:!route?<>

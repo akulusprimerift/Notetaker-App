@@ -86,9 +86,11 @@ class WhisperProvider:
 
     def transcribe(self, audio, window, rate, on_preview=None):
         started=perf_counter(); self.load()
+        terminology = getattr(window, 'terminology', None) or {}
         try:
             segments,_=self.model.transcribe(io.BytesIO(audio),language='en',beam_size=5,
-                temperature=0,word_timestamps=True,vad_filter=True,condition_on_previous_text=False)
+                temperature=0,word_timestamps=True,vad_filter=True,condition_on_previous_text=False,
+                initial_prompt=', '.join(terminology.get('terms', [])) or None)
             selected=[]
             for segment in segments:
                 selected.extend(owned_words([segment],window,rate))
@@ -108,7 +110,7 @@ class WhisperProvider:
         outcome='speech' if selected else 'silence' if not any(pcm) else 'uncertain'
         if boundary_review or any(s['confidence']['value']<0.6 for s in selected): outcome='uncertain'
         return validate_result({'outcome':outcome,'segments':selected,
-            'metadata':{**self.metadata,'elapsed_seconds':round(perf_counter()-started,3),
+            'metadata':{**self.metadata,'terminology':terminology,'elapsed_seconds':round(perf_counter()-started,3),
                 'boundary_review':boundary_review,'window_policy':
                     'live-6s-core-2s-context-v2' if getattr(window, 'live', False) else 'pause-aware-24s-core-2s-context-v1',
                 'audio_seconds':(window.context_end-window.context_start)/rate}},window)

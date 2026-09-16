@@ -219,12 +219,23 @@ class SpeechWindow(Base):
     context_start: Mapped[int] = mapped_column(BigInteger)
     context_end: Mapped[int] = mapped_column(BigInteger)
     live: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    terminology: Mapped[dict] = mapped_column(JSON, default=dict, server_default='{}')
     outcome: Mapped[str | None] = mapped_column(String(20))
     preview: Mapped[str] = mapped_column(Text, default='', server_default='')
     preview_attempt: Mapped[str] = mapped_column(String(36), default='', server_default='')
     __table_args__ = (ForeignKeyConstraint(["run_id", "lecture_id"], ["capture_runs.id", "capture_runs.lecture_id"]),
         UniqueConstraint("id", "lecture_id"), UniqueConstraint("run_id", "manifest_version", "core_start"),
         CheckConstraint("context_start <= core_start AND core_start < core_end AND core_end <= context_end", name="speech_window_bounds"))
+
+
+class CourseTerminology(Base):
+    __tablename__ = 'course_terminology'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    course_id: Mapped[str] = mapped_column(ForeignKey('courses.id'), index=True)
+    version: Mapped[int] = mapped_column(Integer)
+    terms: Mapped[list] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    __table_args__ = (UniqueConstraint('course_id', 'version'), CheckConstraint('version > 0', name='terminology_version_positive'))
 
 
 class SpeechGeneration(Base):
@@ -405,3 +416,18 @@ class DeletionObject(Base):
     deletion_id: Mapped[str] = mapped_column(ForeignKey('deletions.id'), primary_key=True)
     object_key: Mapped[str] = mapped_column(String(240), primary_key=True)
     removed: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class ImportantMark(Base):
+    """Student bookmark; never a claim that the professor emphasized a topic."""
+    __tablename__ = 'important_marks'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(String(36), index=True)
+    run_id: Mapped[str] = mapped_column(String(36))
+    sample: Mapped[int] = mapped_column(BigInteger)
+    label: Mapped[str] = mapped_column(String(160), default='Important to me')
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    removed: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    __table_args__ = (ForeignKeyConstraint(['run_id', 'lecture_id'], ['capture_runs.id', 'capture_runs.lecture_id']),
+        CheckConstraint('sample >= 0 AND version > 0', name='important_mark_bounds'))

@@ -10,7 +10,7 @@ The Windows deliverable is Electron-based. The React workspace runs inside a har
 
 The Electron app creates a normal Windows window and Start menu entry. Its setup screen starts or reconnects to the local services, discovers local models, and keeps service configuration outside the install directory. The first-use distribution requires Docker Desktop with Linux containers, PowerShell 7, Ollama for note generation, and a local faster-whisper model for speech. The app never downloads model weights or silently sends lecture audio to an external provider.
 
-The workspace is organized around a course sidebar and lecture sections: Study notes, Transcript, Materials, Capture, Visual notes, and Finish. Recording stays alive while moving between sections. Saved audio, transcript passages, source links, protected edits, regeneration proposals, final snapshots, recovery, deletion, exports, prompt profiles, and local/cloud model choices remain part of the same lecture workflow.
+The workspace is organized around a course sidebar and lecture sections: Study notes, Transcript, Materials, Capture, Visual notes, Study tools, and Finish. Recording stays alive while moving between sections. Saved audio, transcript passages, source links, protected edits, regeneration proposals, final snapshots, recovery, deletion, exports, prompt profiles, and local/cloud model choices remain part of the same lecture workflow.
 
 ### Install and start
 
@@ -28,7 +28,7 @@ If setup reports “PowerShell 7 was not found”, install PowerShell 7 from Mic
 
 ## Current phase
 
-The active implementation phase is **6.8 / M08 — Electron Windows application**. See the [feature and architecture phase plan](docs/project-phases.md), [M08 evidence](docs/implementation/phase-6-m08.md), and [desktop direction](docs/architecture/windows-desktop-direction.md).
+The active implementation phase is **7.1 — Note usefulness**: timestamped bookmarks, source-linked catch-up and course terminology hints. See the [Phase 7.1 evidence](docs/implementation/phase-7-1.md). Earlier M08 qualification gaps remain open. See the [feature and architecture phase plan](docs/project-phases.md), [M08 evidence](docs/implementation/phase-6-m08.md), and [desktop direction](docs/architecture/windows-desktop-direction.md).
 
 The product priority is reliable lecture capture → timestamped transcription → high-quality, source-linked notes. Course materials, source-linked visual schematics, saved prompt profiles, protected editing, finalization, deletion reconciliation and the local Electron service lifecycle are included. The Accounts & API keys panel supports OpenAI/Claude API keys and browser-based ChatGPT linking through a bundled official Codex helper. API keys load supported text models; ChatGPT exposes the Codex model catalog for an eligible paid account, not every model on the ChatGPT website. Claude subscription linking requires Anthropic approval and is unavailable for new connections. All cloud models remain explicitly chosen per lecture; live account/inference qualification is still open. The bridge uses Windows protected storage and a separate client profile; it does not collect passwords or import another app’s tokens.
 

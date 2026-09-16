@@ -37,6 +37,7 @@ def reconcile_courses(sessions):
         for course in db.scalars(select(m.Course).where(m.Course.tombstoned.is_(True))):
             if progress(db,course)['status']=='complete':
                 db.execute(delete(m.CourseMaterial).where(m.CourseMaterial.course_id==course.id))
+                db.execute(delete(m.CourseTerminology).where(m.CourseTerminology.course_id==course.id))
                 course.name='Deleted course';course.code=''
         db.commit()
 
@@ -60,6 +61,7 @@ def install_course_deletion(app,current,db_session,receipt):
         for lecture in lectures:tombstone_lecture(db,lock_lecture(db,lecture.id),session.owner_id)
         db.add(m.CommandReceipt(owner_id=session.owner_id,action='delete_course:'+course_id,key=key,fingerprint=fingerprint,result_id=course.id))
         if not lectures:
+            db.execute(delete(m.CourseTerminology).where(m.CourseTerminology.course_id==course.id))
             db.execute(delete(m.CourseMaterial).where(m.CourseMaterial.course_id==course.id,m.CourseMaterial.lecture_id.is_(None)))
             course.name='Deleted course';course.code=''
         db.commit();return progress(db,course)

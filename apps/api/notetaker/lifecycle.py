@@ -133,6 +133,14 @@ def settle_final(db, lecture, request, available=False):
     # Snapshot export carries transcript even when no model output is available.
     if not selected and speech['snapshot']:
         snapshot.markdown+='\n\n## Available transcript\n\n'+'\n\n'.join(escaped(s['text']) for s in speech['snapshot']['segments'])
+    from .study import mark_json
+    marks = [mark_json(db, row) for row in db.scalars(select(m.ImportantMark).where(
+        m.ImportantMark.lecture_id == lecture.id, m.ImportantMark.removed.is_(False)).order_by(m.ImportantMark.created_at, m.ImportantMark.id))]
+    snapshot.content = {**snapshot.content, 'important_marks': marks}
+    if marks:
+        snapshot.markdown += '\n\n## Student bookmarks\n\nMarked by the student; not evidence of professor emphasis.\n'
+        for mark in marks:
+            snapshot.markdown += f"\n- Recording {mark['recording_number']}, {mark['sample']/mark['sample_rate']:.2f}s: " + escaped(mark['label'])
     db.add(snapshot);db.flush()
     request.status='incomplete' if issues else 'complete';request.issues=sorted(set(issues));lecture.status='finalized'
     notify(db,lecture,'lecture.finalized',snapshot.id)

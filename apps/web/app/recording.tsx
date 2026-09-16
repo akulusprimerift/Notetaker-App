@@ -1,5 +1,6 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
+import MarkMoment from './mark-moment';
 // The same browser-native module is exercised directly by the capture verification page.
 // @ts-expect-error JavaScript module has no generated declaration file.
 import {Recorder} from '../public/capture/recorder.mjs';
@@ -47,6 +48,7 @@ export default function Recording({owner,lecture,csrf,onBusy,compact=false}:{own
       <label className="capture-device">Input<select aria-label="Recording input" value={deviceId} disabled={state.active||state.working} onChange={event=>chooseDevice(event.target.value)}><option value="">Default microphone</option>{devices.map(device=><option key={device.deviceId} value={device.deviceId}>{device.label||'Microphone '+device.deviceId.slice(0,6)}</option>)}</select></label>
       {state.active?<><strong className="capture-clock">{local?duration(local.samples,local.sample_rate):'0:00'}</strong><button className="primary" onClick={()=>void recorder.current?.stop()}>■ Stop recording</button></>:
         <button className="primary" disabled={state.working||state.emergency.length>0||!state.server.available||unresolved.length>0||!!activeRun} onClick={()=>void recorder.current?.start()}>● {state.server.runs.length?'Record another segment':'Start recording'}</button>}
+      <MarkMoment key={lecture} lecture={lecture} csrf={csrf} run={local?.id??state.server.runs.at(-1)?.id??''} sample={local?.samples??state.server.runs.at(-1)?.saved_through_samples??0} disabled={!local&&!state.server.runs.at(-1)?.saved_through_samples}/>
       {!state.active&&activeRun&&<button className="secondary" disabled={state.working} onClick={()=>setTakeover(true)}>Take over recording</button>}
       <span className="small muted">{pending?`${bytes(pending)} held in this browser, awaiting confirmation`:'No audio waiting in the browser'}</span>
     </div>
