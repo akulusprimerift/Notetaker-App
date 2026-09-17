@@ -1,0 +1,42 @@
+{
+  "version": "questions-v1",
+  "origin": "Assistant-authored synthetic development fixtures; not human-calibrated or held-out",
+  "cases": [
+    {
+      "id": "cs-precondition",
+      "topic": "Binary search prerequisites",
+      "text": "Binary search requires the array to be sorted. Each comparison discards half of the remaining candidates, so the number of comparisons grows logarithmically. On unsorted input the algorithm is not guaranteed to find an existing target. A fast implementation does not remove this precondition.",
+      "focus": "Test the prerequisite and its failure consequence, not just the runtime.",
+      "required_answer_patterns": ["sorted", "not guaranteed|may (fail|miss)|cannot guarantee|could (fail|miss)"],
+      "forbidden_answer_patterns": ["works (on|with) unsorted", "guaranteed on unsorted"],
+      "critical_review": "Check that sorted input is a requirement, and that logarithmic comparisons do not imply correctness on unsorted data."
+    },
+    {
+      "id": "biology-qualification",
+      "topic": "Enzymes and equilibrium",
+      "text": "An enzyme is a biological catalyst. It speeds a reaction by lowering activation energy. It does not change the reaction's equilibrium position or the free-energy difference between reactants and products. Both forward and reverse reactions can speed up. Therefore faster reaction does not mean a more favorable equilibrium.",
+      "focus": "Contrast reaction speed with equilibrium, preserving the qualification.",
+      "required_answer_patterns": ["activation energy", "(does not|do not|doesn't|unchanged|not change).{0,100}equilibrium|equilibrium.{0,80}(unchanged|not change)"],
+      "forbidden_answer_patterns": ["shifts the equilibrium toward", "makes equilibrium more favorable"],
+      "critical_review": "Reject any answer that treats lowering activation energy as changing equilibrium or reaction free energy."
+    },
+    {
+      "id": "physics-worked-example",
+      "topic": "Constant-speed distance",
+      "text": "In this worked example a cart moves in a straight line at a constant speed of 3 meters per second for 4 seconds. Distance equals speed times time: d = 3 x 4 = 12 meters. This calculation assumes constant speed throughout the interval; if the speed changes, multiplying one instantaneous speed by 4 seconds is not generally valid.",
+      "focus": "Ask for the stated example, its calculation and the constant-speed assumption. Do not invent new values.",
+      "required_answer_patterns": ["12", "constant", "3.{0,30}4|speed.{0,30}time"],
+      "forbidden_answer_patterns": ["12 meters per second", "valid regardless of speed"],
+      "critical_review": "Check the steps 3 times 4 equals 12, distance units in meters, and the constant-speed qualification."
+    },
+    {
+      "id": "history-causal-limits",
+      "topic": "Interpreting a petition",
+      "text": "The petition dated 1842 asks the council to reduce a market fee. It establishes that its signatories requested a fee reduction. It does not by itself establish that all residents agreed, that the council approved the request, or that the fee later changed. A separate council decision or later fee record would be needed to support those further claims.",
+      "focus": "Test what the document establishes and what additional evidence is needed; avoid unsupported causal conclusions.",
+      "required_answer_patterns": ["signator|signed", "council.{0,40}(decision|record)|later fee record"],
+      "forbidden_answer_patterns": ["all residents supported", "the council approved the reduction"],
+      "critical_review": "Distinguish a request by signatories from universal agreement, approval and an actual policy change."
+    }
+  ]
+}

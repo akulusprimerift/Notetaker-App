@@ -184,7 +184,11 @@ def main():
                 plan(sessions)
                 chosen = claim(sessions)
                 if chosen: execute(sessions, provider, chosen)
-                else: time.sleep(3)
+                else:
+                    from . import question_worker
+                    question = question_worker.claim(sessions)
+                    if question: question_worker.execute(sessions, provider, question)
+                    else: time.sleep(3)
             except Exception:
                 log.warning('Note worker is waiting for its local database')
                 time.sleep(5)

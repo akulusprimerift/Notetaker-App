@@ -37,6 +37,8 @@ const {mkdir}=require('node:fs/promises');
         if(failReview){failReview=false;status=503;body={error:{message:'Synthetic assessment failure'}};}
         else if(conflictReview){conflictReview=false;status=409;body={error:{message:'This assessment changed in another window. Refresh practice before trying again.'}};}
         else{assert.equal(data.expected_version,review.version);review={version:review.version+1,rating:data.rating,reviewed_at:'2026-09-16T12:00:00Z'};body=review;}
+      }else if(path.endsWith('/study/questions')){
+        body={revision_id:'saved-note',blocks:[],preference_id:null,model:null,enabled:false,cloud:false,sets:[]};
       }else if(path.endsWith('/terminology')){
         if(request.method()==='POST'){
           const data=request.postDataJSON();assert.equal(request.headers()['x-csrf-token'],'test-csrf');

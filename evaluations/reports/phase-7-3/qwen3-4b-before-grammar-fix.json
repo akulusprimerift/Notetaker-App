@@ -1,0 +1,40 @@
+{
+  "started_at": "2026-09-17T00:45:37.369706+00:00",
+  "model": "qwen3:4b",
+  "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+  "dataset_sha256": "4aba959dacbcdac2d24520f2051402a6859d0f393075ed1f0f57331214a16b40",
+  "fixture_origin": "Assistant-authored synthetic development fixtures; not human-calibrated or held-out",
+  "environment": {
+    "system": "Windows",
+    "python": "3.12.14"
+  },
+  "human_review": "pending",
+  "learning_outcomes": "not_measured",
+  "release_eligible": false,
+  "cases": [
+    {
+      "id": "cs-precondition",
+      "structural_citation_checks": "failed",
+      "error_code": "model_unavailable",
+      "seconds": 18.09
+    },
+    {
+      "id": "biology-qualification",
+      "structural_citation_checks": "failed",
+      "error_code": "model_unavailable",
+      "seconds": 0.42
+    },
+    {
+      "id": "physics-worked-example",
+      "structural_citation_checks": "failed",
+      "error_code": "model_unavailable",
+      "seconds": 0.34
+    },
+    {
+      "id": "history-causal-limits",
+      "structural_citation_checks": "failed",
+      "error_code": "model_unavailable",
+      "seconds": 0.42
+    }
+  ]
+}

@@ -27,7 +27,7 @@ def preview_text(raw):
         index = end
         tail = index
         while tail < len(raw) and raw[tail].isspace(): tail += 1
-        if key not in ('topic', 'text') or tail >= len(raw) or raw[tail] != ':':
+        if key not in ('topic', 'text', 'question', 'answer') or tail >= len(raw) or raw[tail] != ':':
             continue
         tail += 1
         while tail < len(raw) and raw[tail].isspace(): tail += 1

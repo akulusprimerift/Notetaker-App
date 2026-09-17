@@ -3,6 +3,7 @@
 Claims share the owner lock. PostgreSQL additionally holds a session advisory lock
 through provider execution: an expired lease cannot overlap the same workload.
 Speech and notes may run concurrently. SQLite uses in-process locks for preview.
+Generated learning questions share the notes slot and run after due note work.
 """
 from contextlib import contextmanager
 from threading import Lock
@@ -19,7 +20,8 @@ def available(db, kind='speech.window'):
         db.execute(update(Owner).values(singleton=1))
     else:
         db.scalar(select(Owner).with_for_update())
-    running = db.scalar(select(Job.id).where(Job.kind == kind,
+    kinds = ('notes.generate', 'learning.generate') if kind == 'notes.generate' else (kind,)
+    running = db.scalar(select(Job.id).where(Job.kind.in_(kinds),
         Job.status == 'running', Job.lease_expires_at > now()).limit(1))
     return not running
 

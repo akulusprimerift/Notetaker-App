@@ -418,6 +418,36 @@ class DeletionObject(Base):
     removed: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
+class QuestionSet(Base):
+    __tablename__ = 'question_sets'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(ForeignKey('lectures.id'), index=True)
+    preference_id: Mapped[str] = mapped_column(ForeignKey('note_preferences.id'))
+    settings_id: Mapped[str] = mapped_column(ForeignKey('settings_versions.id'))
+    evidence: Mapped[dict] = mapped_column(JSON)
+    content: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    preview: Mapped[str] = mapped_column(Text, default='')
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    __table_args__ = (UniqueConstraint('id', 'lecture_id'),)
+
+
+class QuestionEdit(Base):
+    __tablename__ = 'question_edits'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(String(36), index=True)
+    set_id: Mapped[str] = mapped_column(String(36))
+    question_id: Mapped[str] = mapped_column(String(16))
+    version: Mapped[int] = mapped_column(Integer)
+    question: Mapped[str] = mapped_column(Text)
+    answer: Mapped[str] = mapped_column(Text)
+    quality: Mapped[dict] = mapped_column(JSON)
+    feedback: Mapped[str] = mapped_column(String(1000))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    __table_args__ = (ForeignKeyConstraint(['set_id', 'lecture_id'], ['question_sets.id', 'question_sets.lecture_id']),
+        UniqueConstraint('set_id', 'question_id', 'version'), CheckConstraint('version > 0', name='question_edit_version'))
+
+
 class LearningReview(Base):
     """Append-only self-assessment, scoped to an immutable selected note revision."""
     __tablename__ = 'learning_reviews'

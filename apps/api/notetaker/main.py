@@ -297,6 +297,8 @@ def create_app(settings: Settings | None = None):
     install_study(app, current, db_session, owned_lecture, receipt)
     from .learning import install_learning
     install_learning(app, current, db_session, owned_lecture, receipt)
+    from .questions import install_questions
+    install_questions(app, current, db_session, owned_lecture, receipt)
     from .terminology import install_terminology
     install_terminology(app, current, db_session, owned_course, receipt)
     from .course_deletion import install_course_deletion

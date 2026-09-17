@@ -60,6 +60,10 @@ class NoteProviders:
     def generate_stream(self, evidence, preference, on_preview):
         return self.generate(evidence, preference, on_preview)
 
+    def generate_questions(self, evidence, preference, on_preview=None):
+        from .question_provider import generate_questions
+        return generate_questions(self, evidence, preference, on_preview)
+
     def generate(self, evidence, preference, on_preview=None):
         if not is_cloud(preference.model):
             return self.local.generate(evidence, preference, on_preview)

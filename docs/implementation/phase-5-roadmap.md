@@ -1,5 +1,7 @@
 # Phase 5: Implementation roadmap
 
+Phase 7.3 follow-up (2026-09-17): selected-model question/flashcard generation, versioned corrections/quality reviews and learning self-assessments are implemented. Migration 0017 adds pinned requests/results and immutable question edits. Local synthetic evaluation exposed and prompted fixes for unsupported grammar and invented numerical examples; worked-step completeness and human quality/outcome qualification remain open. See [evaluation](../ai/phase-7-3-learning-evaluation.md). Standalone Windows distribution follows, without treating these tests as closure of G01–G06.
+
 Sequencing update (2026-09-16): the user selects **7.3 — Learning tools**, then standalone Windows distribution. The [first learning increment](phase-7-3.md) implements cited recall cards, practice scratch answers and append-only self-assessments with topic/review filters. New migration 0016 is additive. Generated question quality, objective mastery and learning outcomes remain unqualified; G01–G06 remain open. Phase 7.3 is the only active implementation phase; 7.2/7.4 are not prerequisites for the requested standalone Windows follow-on.
 
 Date: 2026-09-06. Status: implementation started; milestone exits require the evidence below.
