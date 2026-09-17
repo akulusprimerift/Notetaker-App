@@ -1,0 +1,49 @@
+{
+  "experiment": "processing-diagnostics-history-growth-v1",
+  "environment": {
+    "os": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.14",
+    "sqlalchemy": "2.0.52",
+    "database": "isolated temporary SQLite WAL"
+  },
+  "workload": "100 lectures, 10% due and 90% completed, three job kinds; no inference or audio",
+  "limits": "Serial warm queries; first query is not a cold-disk measurement. Python allocations exclude native database memory. No PostgreSQL, contention, inference, or end-to-end latency qualification.",
+  "results": [
+    {
+      "jobs": 1000,
+      "active_jobs": 100,
+      "lectures": 100,
+      "first_query_ms": 6.431,
+      "warm_samples": 20,
+      "warm_median_ms": 1.194,
+      "warm_p95_ms": 1.532,
+      "python_allocation_peak_bytes": 36315,
+      "response_bytes": 622,
+      "returned_groups": 3
+    },
+    {
+      "jobs": 10000,
+      "active_jobs": 1000,
+      "lectures": 100,
+      "first_query_ms": 5.236,
+      "warm_samples": 20,
+      "warm_median_ms": 2.806,
+      "warm_p95_ms": 2.967,
+      "python_allocation_peak_bytes": 36211,
+      "response_bytes": 628,
+      "returned_groups": 3
+    },
+    {
+      "jobs": 100000,
+      "active_jobs": 10000,
+      "lectures": 100,
+      "first_query_ms": 58.132,
+      "warm_samples": 20,
+      "warm_median_ms": 72.962,
+      "warm_p95_ms": 98.234,
+      "python_allocation_peak_bytes": 36211,
+      "response_bytes": 634,
+      "returned_groups": 3
+    }
+  ]
+}

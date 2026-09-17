@@ -137,6 +137,11 @@ def create_app(settings: Settings | None = None):
     def current(request: Request, db=Depends(db_session)):
         return authenticate(db, request.cookies.get("nt_session"))
 
+    @app.get("/diagnostics/processing")
+    def processing_diagnostics(session=Depends(current), db=Depends(db_session)):
+        from .diagnostics import processing_snapshot
+        return processing_snapshot(db, session.owner_id)
+
     @app.get("/health")
     def health():
         try:

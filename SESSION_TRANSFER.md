@@ -1,5 +1,15 @@
 # Session transfer
 
+## Phase 7.4 — Processing diagnostics and scale baseline — 2026-09-17
+
+Active phase: **7.4 — Measured infrastructure**, explicitly selected by the user after reading the 7.3 handoff. Earlier dated active-phase statements are historical. First increment: authenticated, content-free `GET /diagnostics/processing` with aggregate current-epoch job counts, retry eligibility, expired leases and oldest currently due time. It excludes hidden/deleted lectures and obsolete epochs. No migration, student-library writes, model/provider calls, microphone access, new infrastructure or UI polling. See [implementation, semantics and next work](docs/implementation/phase-7-4.md).
+
+Executed isolated Windows SQLite experiment: 1k/10k/100k synthetic jobs, 10% active, 100 lectures and 20 warm samples per size. Median queries 1.194/2.806/72.962 ms; p95 1.532/2.967/98.234 ms. Responses remain 622–634 bytes; traced Python allocation peaks approximately 36 KB. [Raw report](docs/implementation/phase-7-4-benchmark.json) records environment and limits. This is monitoring overhead, not model throughput or end-to-end performance; no competing optimization or PostgreSQL result is claimed.
+
+Executed checks: full backend **218 passed, 1 service-only skip**; **60 JavaScript contracts**, **12 desktop tests**; typecheck, frontend/Python lint, production web build, documentation and whitespace checks passed. Two new diagnostics tests cover authorization/privacy, tombstones/epochs, timing/retry/lease boundaries and single-query read-only behavior. Initial pytest temp/cache permissions required fresh `.local` paths; a connection-specific query counter fixed interference from the existing background coordinator. No UI changes or browser-flow qualification in this increment.
+
+Next: isolated PostgreSQL workload with concurrent synthetic job transitions/audio saves, query plans, and monitoring-disabled/enabled save-latency comparison at a declared sampling interval. Decide on index/cache changes from that evidence. A student-facing panel and inference timing history remain deferred. Earlier note/question quality, live-provider and M08 release gates remain open; standalone Windows distribution remains follow-on work. No push or installer rebuild.
+
 ## Generated questions and learning evaluation — 2026-09-17
 
 Active phase: **7.3 — Learning tools**. Generated question/flashcard sets and separate question-quality evaluation are now implemented. The next user-selected delivery priority is standalone Windows distribution, with human note/question quality and earlier M08 release qualification explicitly retained as open work.
