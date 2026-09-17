@@ -1,6 +1,7 @@
 'use client';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import CourseTerminology from './course-terminology';
+import LearningTools from './learning-tools';
 
 type Mark={id:string;run_id:string;sample:number;sample_rate:number;recording_number:number;label:string;version:number;removed:boolean;awaiting_audio:boolean};
 type Source={id:string;text:string;segment_number?:number;start_sample?:number;end_sample?:number;sample_rate?:number;audio_url?:string;label?:string;source_kind?:string};
@@ -33,6 +34,7 @@ export default function StudyTools({lecture,course,csrf}:{lecture:string;course:
       {result.items.map((item,index)=><article className="catchup-item" key={item.passage_id}><p className="eyebrow">{index===result.items.length-1?'LATEST SAVED IDEA':'EARLIER IN THIS INTERVAL'}</p><h3>{item.topic}</h3><p className="small muted">{item.kind==='transcript'?'Transcript excerpt':item.student_edited?'Your edited note · not AI-verified':'Saved note excerpt'}</p><p className="study-text">{item.text}</p><div className="study-sources">{item.source_ids.map(id=>{const source=result.sources.find(s=>s.id===id);return source?<details key={id}><summary>{source.source_kind?source.label:`Source · recording ${source.segment_number}, ${time((source.start_sample??0)/(source.sample_rate??1))}`}</summary><p className="study-text">{source.text}</p>{source.audio_url&&!result.audio_removed&&<audio controls preload="none" src={source.audio_url}/>}</details>:null;})}</div></article>)}
       {result.more_available&&<p className="small muted">More content is available in Study notes and Transcript.</p>}<p className="small muted">This view stays still while you read. Press Catch Me Up again for newer saved content.</p></section>}
     <section className="important-moments"><div className="section-row"><h3>Important to you</h3><button className="text-button" disabled={busy} onClick={()=>void load().catch(e=>setError(e.message))}>Refresh markers</button></div><p className="small muted">These are your bookmarks, not claims of professor emphasis. Use Mark Important while recording.</p>{marks.filter(m=>!m.removed).length===0&&<p>No important moments marked yet.</p>}{marks.filter(m=>!m.removed).map(mark=><article className="important-moment" key={mark.id}><div><strong>★ {mark.label}</strong><p className="small muted">Recording {mark.recording_number} · {time(mark.sample/mark.sample_rate)}{mark.awaiting_audio?' · audio not yet confirmed here':''}</p></div><div className="editor-actions"><button className="secondary" disabled={busy} onClick={()=>void catchUp(mark)}>Review this moment</button><button className="text-button" disabled={busy} onClick={()=>void toggle(mark,true)}>Remove marker</button></div></article>)}{undo&&<button className="secondary" disabled={busy} onClick={()=>void toggle(undo,false)}>Undo marker removal</button>}</section>
+    <LearningTools key={lecture} lecture={lecture} csrf={csrf}/>
     <CourseTerminology key={course} course={course} csrf={csrf}/>
   </section>;
 }

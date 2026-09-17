@@ -1,6 +1,6 @@
 # Phase 7.1 — Note usefulness
 
-Active implementation phase, 2026-09-15. Mark Important, Catch Me Up and course terminology are implemented. Engineering checks below do not establish educational usefulness or release readiness. Earlier M08 hardware, install/upgrade, accessibility, endurance and restore gates remain open while this independent work proceeds.
+Implemented increment, 2026-09-15; active work moved to Phase 7.3 on 2026-09-16. Mark Important, Catch Me Up and course terminology are implemented. Engineering checks below do not establish educational usefulness or release readiness. Earlier M08 hardware, install/upgrade, accessibility, endurance and restore gates remain open while this independent work proceeds.
 
 ## Student workflow
 

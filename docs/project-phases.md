@@ -1,5 +1,7 @@
 # Project phases
 
+Current priority (2026-09-16): **7.3 — Learning tools** is the only active implementation phase, explicitly selected by the user. The first increment adds extractive recall cards, practice scratch answers, revision-scoped self-assessments and review/topic filters. See [implementation and qualification boundaries](implementation/phase-7-3.md). Phase 7.2 remains unstarted beyond materials/visuals already brought forward; 7.4 is not a prerequisite. Finish selected 7.3 work, then prioritize standalone Windows distribution, followed by macOS. Earlier note-quality and M08 release gates remain open. Dated priorities below are historical.
+
 Current priority (2026-09-15): M08 theme and account usability repairs are implemented with synthetic evidence. ChatGPT links through a bundled helper and exposes Codex models; API setup accepts a key; Claude subscription login requires provider approval. Live account qualification remains open. Next sequence: Phase 7, standalone Windows distribution, then macOS. See [current handoff](../SESSION_TRANSFER.md).
 
 Current priority (2026-09-11): M08 remains the single active phase. The user selected Electron as the Windows host and requests a cleaner, NotebookLM-inspired workspace. Visual notes and both API-key/subscription connections remain in the shared service scope; account/provider and scientific-quality qualification remain open. See [evidence and limitations](implementation/visual-notes-providers.md). Earlier release gaps remain open.

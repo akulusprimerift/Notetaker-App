@@ -1,5 +1,17 @@
 # Session transfer
 
+## Phase 7.3 — 2026-09-16
+
+Active phase: **7.3 — Learning tools**, explicitly selected by the user, followed by standalone Windows distribution. Phase 7.2/7.4 are not prerequisites. Earlier phase entries below are historical; earlier quality/release gaps remain open.
+
+First learning increment implemented: Study tools → Recall practice offers topic recall cards from complete saved note sections, optional temporary practice answers, reveal/source inspection, persistent self-assessments/reset and topic/review filters. It respects selected student edits, excludes complete blocks with changed/unsupported/visual evidence, reports source warnings, and starts fresh ratings for new note revisions. No generated question-quality or objective mastery claim. See [behavior, evidence and next work](docs/implementation/phase-7-3.md).
+
+Migration 0016 adds append-only learning reviews. Writes retain ownership, CSRF, idempotency, expected-version and lecture/tombstone fences. Deletion removes review history. Existing student data was not migrated or changed, no model/provider was invoked, and no microphone or installed app was used.
+
+Executed: full backend **189 passed, 1 service-only skip**; subsequent focused **5 learning tests passed**, including the newly added upgrade-from-0015 preservation case and unauthenticated access check. **60** JavaScript contracts, **12** desktop tests; Chromium learning/previous study flows with synthetic responses, retry identity, source reveal, persisted ratings, filters, conflicts/reset, Midnight and narrow layout; typecheck, frontend/Python lint, production web build, documentation and whitespace checks passed. The first mixed-evidence fixture needed a deep copy before SQLAlchemy would persist its synthetic data; fixed and rerun successfully.
+
+Next: distinct source-validated questions/individual flashcards through the selected model, protected generated learning content, and human question-quality/learning-state evaluation. Then standalone Windows runtime/service distribution and explicit existing-library preservation. Keep the current Docker library intact and models user-selected. The prior unsigned installer has not been rebuilt for this increment and still needs Docker/PowerShell/Ollama/local speech files. No push or installation performed. Human note/learning quality, live provider inference and M08 hardware, accessibility, endurance, clean-install/upgrade and restore qualification remain open. macOS follows Windows.
+
 ## Phase 7.1 — 2026-09-15
 
 Implementation committed as `6c1a660`; provider follow-up `47c5b9f` and browser controls verification `6e62d35`. The unsigned x64 installer was rebuilt successfully at `.local/desktop-dist/Notetaker-0.1.0-Setup.exe` (202,452,730 bytes; SHA-256 `0A675FB8437759780B6B594EEE0AE42431FA0AFD7F779B5793FD81E5E6C8C7EB`). Packaged study/terminology modules, both migrations, UI components and provider controls match working-source hashes. This checks packaging contents, not clean installation, upgrade or a running installed workflow. The installer retains the existing Docker/local-model prerequisites. No push or installation was performed.

@@ -1,5 +1,7 @@
 # Phase 5: Implementation roadmap
 
+Sequencing update (2026-09-16): the user selects **7.3 — Learning tools**, then standalone Windows distribution. The [first learning increment](phase-7-3.md) implements cited recall cards, practice scratch answers and append-only self-assessments with topic/review filters. New migration 0016 is additive. Generated question quality, objective mastery and learning outcomes remain unqualified; G01–G06 remain open. Phase 7.3 is the only active implementation phase; 7.2/7.4 are not prerequisites for the requested standalone Windows follow-on.
+
 Date: 2026-09-06. Status: implementation started; milestone exits require the evidence below.
 
 Implementation checkpoint: [Phase 6 / M01](phase-6-m01.md) is complete for the private course/lecture foundation. [M02 recording and recovery](phase-6-m02.md) is implemented with synthetic browser and real-service evidence; actual microphone/device-failure qualification remains open under the user's synthetic-only testing preference. [M03 saved-audio transcription](phase-6-m03.md) is implemented with synthetic verification; [M04 automatic notes](phase-6-m04.md) is implemented for bounded saved transcripts, with topic processing and qualification still open; [M05 live assistance](phase-6-m05.md) is implemented with synthetic macOS verification and live qualification still open; M06–M08 remain planned; the full note-taking product is not qualified. The exit criteria below remain the baseline.

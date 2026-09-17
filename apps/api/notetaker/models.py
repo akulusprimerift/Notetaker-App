@@ -418,6 +418,20 @@ class DeletionObject(Base):
     removed: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
+class LearningReview(Base):
+    """Append-only self-assessment, scoped to an immutable selected note revision."""
+    __tablename__ = 'learning_reviews'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    lecture_id: Mapped[str] = mapped_column(ForeignKey('lectures.id'), index=True)
+    revision_id: Mapped[str] = mapped_column(String(36))
+    block_id: Mapped[str] = mapped_column(String(160))
+    version: Mapped[int] = mapped_column(Integer)
+    rating: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    __table_args__ = (UniqueConstraint('lecture_id', 'revision_id', 'block_id', 'version'),
+        CheckConstraint("version > 0 AND rating IN ('again', 'developing', 'confident', 'unreviewed')", name='learning_review_bounds'))
+
+
 class ImportantMark(Base):
     """Student bookmark; never a claim that the professor emphasized a topic."""
     __tablename__ = 'important_marks'
