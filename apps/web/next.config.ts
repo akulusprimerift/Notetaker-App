@@ -3,6 +3,7 @@ const config: NextConfig = {
   agentRules: false,
   devIndicators: false,
   poweredByHeader: false,
+  output: process.env.NOTETAKER_WEB_BUNDLE === '1' ? 'standalone' : undefined,
   // This loopback app forwards live text. Gzip buffered small SSE writes until
   // completion, hiding provider tokens even though the API had flushed them.
   compress: false,

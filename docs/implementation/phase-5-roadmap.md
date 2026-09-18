@@ -1,5 +1,7 @@
 # Phase 5: Implementation roadmap
 
+Latest transition (2026-09-17): move to **M08 standalone Windows distribution**, the recorded follow-on to selected Phase 7 work. [Web component packaging](windows-standalone.md) is the first increment. Phase 7.4 PostgreSQL contention testing is deferred without a completion claim. Retain PostgreSQL authority, the existing Docker library, explicit local models and G01–G06. macOS follows Windows.
+
 Latest selection (2026-09-17): **7.4 — Measured infrastructure** is active. [Processing diagnostics and the isolated SQLite history-growth experiment](phase-7-4.md) establish the first measurement increment. Next: isolated PostgreSQL contention and capture-save overhead comparisons before deciding on indexes, caches or service changes. Earlier quality and G01–G06 release gaps remain open; standalone Windows distribution follows selected 7.4 work. Earlier sequencing entries below are historical.
 
 Phase 7.3 follow-up (2026-09-17): selected-model question/flashcard generation, versioned corrections/quality reviews and learning self-assessments are implemented. Migration 0017 adds pinned requests/results and immutable question edits. Local synthetic evaluation exposed and prompted fixes for unsupported grammar and invented numerical examples; worked-step completeness and human quality/outcome qualification remain open. See [evaluation](../ai/phase-7-3-learning-evaluation.md). Standalone Windows distribution follows, without treating these tests as closure of G01–G06.

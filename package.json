@@ -20,6 +20,7 @@
     "eval:notes": "node scripts/evaluate-notes.mjs",
     "dev:web": "cd apps/web && next dev --hostname 127.0.0.1",
     "build:web": "cd apps/web && next build",
+    "prepare:desktop-web": "node scripts/prepare-desktop-web.cjs",
     "typecheck": "cd apps/web && next typegen && tsc --noEmit",
     "lint": "eslint apps/web/app apps/web/public",
     "dev:desktop": "electron .",

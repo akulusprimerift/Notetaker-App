@@ -1,5 +1,15 @@
 # Session transfer
 
+## Standalone Windows distribution — prebuilt web component — 2026-09-17
+
+Active phase: **6.8 / M08 — Standalone Windows distribution**, following the user's request to move to the next phase and the recorded Windows-before-macOS sequence. Phase 7.4's PostgreSQL contention experiment remains deferred, not complete. Earlier entries below are historical. See [scope and exact next work](docs/implementation/windows-standalone.md).
+
+`bun run prepare:desktop-web` now builds an isolated Next standalone component with loopback API rewrites, static/capture assets and a SHA-256 file manifest. It rejects copied private configuration and writes to a new `.local/desktop-web/<uuid>` directory. Normal web/Docker builds are unchanged. This component does not yet bundle a runtime or alter the current Electron installer/service startup. PostgreSQL authority and the explicit existing-Docker-library choice remain required; do not activate leftover SQLite standalone mode as a production shortcut.
+
+Executed on Windows: web component build (1,240 files, 27,783,751 bytes excluding manifest), hash verification and isolated Chromium smoke using Node 22.13.1. The smoke copied the component outside the repository, loaded the actual React UI with synthetic API responses, opened the course form and served five capture assets. Its initial 10-second startup allowance expired; a 60-second allowance passed. No startup-latency qualification is claimed. **60 JavaScript contracts**, **13 desktop tests**, typecheck, frontend lint and normal production web build passed. No backend changes or backend test rerun, microphone access, student-library writes, model downloads, installer rebuild or push.
+
+Next: supervise the staged server through Electron's runtime with loopback port collision handling, owned-child shutdown and writable cache paths outside installation; then bundle pinned Windows Python/API/speech and PostgreSQL/audio/broker runtimes, license/integrity checks and explicit library selection. Qualify packaged synthetic capture/recovery/upgrade before clean-machine release. Earlier quality, provider, hardware, accessibility, endurance and restore gates remain open.
+
 ## Phase 7.4 — Processing diagnostics and scale baseline — 2026-09-17
 
 Active phase: **7.4 — Measured infrastructure**, explicitly selected by the user after reading the 7.3 handoff. Earlier dated active-phase statements are historical. First increment: authenticated, content-free `GET /diagnostics/processing` with aggregate current-epoch job counts, retry eligibility, expired leases and oldest currently due time. It excludes hidden/deleted lectures and obsolete epochs. No migration, student-library writes, model/provider calls, microphone access, new infrastructure or UI polling. See [implementation, semantics and next work](docs/implementation/phase-7-4.md).
