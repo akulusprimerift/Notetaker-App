@@ -1,5 +1,7 @@
 # Phase 6.8 / M08 — Electron Windows application
 
+Latest increment (2026-09-18): [standalone Windows distribution](windows-standalone.md) bundles the Electron web server, Python workers, PostgreSQL, SeaweedFS and CPU Ollama. Users choose a separate native library or their existing Docker workspace. Native services use database reconciliation; Docker retains Kafka. Release gates remain open. Earlier delivery descriptions below are historical.
+
 Updated 2026-09-11. M08 is the active implementation phase. The user superseded the earlier Qt direction and selected Electron as the only Windows desktop host. The Qt/native app, standalone native storage profile, native packaging workflow and native-only tests have been removed from the repository.
 
 ## Current Electron delivery

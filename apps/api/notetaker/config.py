@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     speech_model_path: str = ".local/models/faster-whisper-small.en"
     speech_threads: int = 4
     kafka_bootstrap: str = "127.0.0.1:9092"
+    broker_enabled: bool = True
     ollama_url: str = "http://127.0.0.1:11434"
     provider_directory: str = ''
     provider_bridge_url: str = ''

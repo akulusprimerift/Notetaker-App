@@ -7,8 +7,12 @@ async function run(action) {
 async function status() {
   const value = await window.desktopSetup.status();
   element('status').textContent = value.message;
-  element('location').textContent = 'Windows app data: ' + value.dataPath + '\n' + (value.serviceRoot?'Existing workspace: '+value.serviceRoot:'Select your existing workspace folder to reuse its library when starting services.');
+  element('location').textContent = 'Windows app data: ' + value.dataPath + '\n' + (value.serviceMode==='native'?'Standalone library: '+value.dataPath+'\\standalone-library':value.serviceRoot?'Existing workspace: '+value.serviceRoot:'Select your existing workspace folder to reuse its library when starting services.');
   element('start').disabled = value.starting;
+  element('native').hidden = !value.nativeAvailable;
+  element('native').disabled = value.starting;
+  element('native').textContent = value.serviceMode==='native'?'Open standalone library':'Create or open standalone library';
+  element('pause').hidden=value.serviceMode!=='native';element('pause').disabled=value.starting;
 }
 async function models() {
   const value = await window.desktopSetup.models();
@@ -19,6 +23,8 @@ async function models() {
     ...value.otherFiles.map(m => 'Detected: ' + m.path + '\n' + m.status)].join('\n');
 }
 element('start').onclick = () => run(async () => {element('start').disabled=true;await window.desktopSetup.start();await status();});
+element('native').onclick = () => run(async () => {await window.desktopSetup.native();await status();await models();});
+element('pause').onclick = () => run(async () => {await window.desktopSetup.stopNative();await status();});
 element('open').onclick = () => run(() => window.desktopSetup.open());
 element('refresh').onclick = () => run(models);
 element('speech').onclick = () => run(async () => {await window.desktopSetup.speechFolder();await models();});

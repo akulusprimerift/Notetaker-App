@@ -3,10 +3,10 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
 
-async function discoverModels({home = os.homedir(), speechPath = '', fetcher = fetch} = {}) {
+async function discoverModels({home = os.homedir(), speechPath = '', fetcher = fetch, ollamaURL = 'http://127.0.0.1:11434'} = {}) {
   const result = {ollama: [], ollamaAvailable: false, otherFiles: [], speech: null, ollamaManifests: []};
   try {
-    const response = await fetcher('http://127.0.0.1:11434/api/tags', {signal: AbortSignal.timeout(3000), redirect: 'error'});
+    const response = await fetcher(ollamaURL+'/api/tags', {signal: AbortSignal.timeout(3000), redirect: 'error'});
     if (response.ok) {
       const body = await response.json();
       result.ollama = (body.models || []).filter(m => typeof m.name === 'string' && !m.remote_host && !m.remote_model && !m.name.toLowerCase().includes('cloud')).map(m => ({name:m.name, size:m.size, digest:m.digest}));

@@ -1,5 +1,7 @@
 # Phase 5: Implementation roadmap
 
+Update (2026-09-18): **M08 standalone Windows distribution** remains active. [Native service/runtime packaging](windows-standalone.md) now bundles the Electron web server, Python workers, PostgreSQL, SeaweedFS and CPU Ollama. The separate native library uses database reconciliation; Docker retains Kafka. Release qualification and G01–G06 remain open; Phase 7.4 contention work remains deferred. Earlier entries below are historical.
+
 Latest transition (2026-09-17): move to **M08 standalone Windows distribution**, the recorded follow-on to selected Phase 7 work. [Web component packaging](windows-standalone.md) is the first increment. Phase 7.4 PostgreSQL contention testing is deferred without a completion claim. Retain PostgreSQL authority, the existing Docker library, explicit local models and G01–G06. macOS follows Windows.
 
 Latest selection (2026-09-17): **7.4 — Measured infrastructure** is active. [Processing diagnostics and the isolated SQLite history-growth experiment](phase-7-4.md) establish the first measurement increment. Next: isolated PostgreSQL contention and capture-save overhead comparisons before deciding on indexes, caches or service changes. Earlier quality and G01–G06 release gaps remain open; standalone Windows distribution follows selected 7.4 work. Earlier sequencing entries below are historical.

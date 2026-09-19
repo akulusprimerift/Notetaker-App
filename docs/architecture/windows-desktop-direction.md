@@ -1,5 +1,7 @@
 # Windows desktop direction
 
+Update (2026-09-18): [standalone runtime packaging](../implementation/windows-standalone.md) now bundles the Electron web server, Python workers, PostgreSQL, SeaweedFS and CPU Ollama. Native services use database reconciliation without Kafka; the existing Docker profile remains available. New native libraries require explicit selection and never migrate the Docker library. Clean-install and release qualification remain open. Earlier entries below are historical.
+
 Current increment (2026-09-17): standalone Windows distribution resumes as the active M08 delivery work. [Prebuilt web component packaging](../implementation/windows-standalone.md) is implemented separately from the current installer. Runtime supervision, Windows service packaging and clean-install qualification remain next work. PostgreSQL remains authoritative; existing Docker libraries are not silently converted to SQLite or deleted.
 
 Date: 2026-09-11. The user selected Electron as the only Windows host. The hardened Electron shell reuses the Next.js/React workspace, authenticated FastAPI contracts, Docker service lifecycle and Chromium audio-capture implementation. Models remain user-selected local files; no model weights are downloaded by the app. The previous Qt/native standalone profile has been removed from the repository. See [M08](../implementation/phase-6-m08.md).

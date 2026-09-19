@@ -271,7 +271,7 @@ def main():
     if settings.preview:raise SystemExit('Speech workers require PostgreSQL application storage.')
     engine,sessions=database(settings.database_url);store=AudioStore(settings);provider=WhisperProvider(settings)
     producer=consumer=None
-    if not args.once:
+    if not args.once and settings.broker_enabled:
         from confluent_kafka import Producer,Consumer
         producer=Producer({'bootstrap.servers':settings.kafka_bootstrap,'message.timeout.ms':2000,'log_level':0})
         consumer=Consumer({'bootstrap.servers':settings.kafka_bootstrap,'group.id':'notetaker-speech-v1',
