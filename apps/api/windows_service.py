@@ -5,6 +5,11 @@ import sys
 
 
 def main():
+    if len(sys.argv) == 3 and sys.argv[1] == 'material-parser':
+        from notetaker.material_parser import main as parse_material
+        sys.argv = [sys.argv[0], sys.argv[2]]
+        parse_material()
+        return 0
     role = sys.argv[1] if len(sys.argv) == 2 else ''
     if role == 'host':
         from notetaker.windows_host import entry
@@ -28,7 +33,7 @@ def main():
         sys.argv = [sys.argv[0]]
         worker()
     else:
-        raise SystemExit('Choose host, migrate, api, notes or speech.')
+        raise SystemExit('Choose host, migrate, api, notes, speech or material-parser <extension>.')
     return 0
 
 

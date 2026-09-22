@@ -1,5 +1,17 @@
 # Session transfer
 
+## Windows material upload repair — 2026-09-22
+
+Active phase remains **6.8 / M08 — Standalone Windows distribution**. Fixed valid slides/syllabus uploads being rejected in the installed profile: `materials.parse_upload` launched `NotetakerService.exe material-parser <extension>`, but the frozen entrypoint neither accepted its argument count nor dispatched that role. The entrypoint now forwards the extension to the existing isolated parser. No changes to file limits, extraction policy, schemas, student revisions or data. See [materials evidence](docs/implementation/course-materials.md#windows-upload-repair--2026-09-22).
+
+Executed on Windows: **230 backend passed, 1 service-only skip**, **60 JavaScript contracts**, **15 desktop tests**, Python lint, documentation and whitespace checks. The focused materials/service suite passed **16 tests**. The rebuilt frozen service passed the same **10 command regressions**, including successful PPTX/DOCX/PDF/TXT/Markdown extraction, the API's frozen subprocess-launch branch, and corrupt/empty/unsupported/invalid-encoding rejection. The initial targeted run encountered pytest temporary/cache permissions; rerunning under isolated `.local/material-upload-fix` paths passed. Frontend code is unchanged; its existing verified web bundle is reused, with no new frontend typecheck/lint/build claim.
+
+The corrected service is staged at `.local/material-upload-fix/service-dist/NotetakerService`; the refreshed runtime is `.local/material-upload-fix/runtime`. Unchanged web/vendor components were compared to the previous runtime SHA-256 inventory and service hashes regenerated. No running installed app, student library, microphone, provider or model was accessed or changed. Existing M08 clean-machine, upgrade, hardware, educational quality and release gates remain open.
+
+Repaired unsigned installer: `.local/material-upload-fix/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe`, **397,914,425 bytes**, SHA-256 `FF132D0D9E7FC5BA4063362227FD082085D7E081560D3BCB8F18452A2049DF97`. The unpacked app's bundled service executable matches the tested frozen executable SHA-256. This is a rebuilt artifact, not a claim of installed upgrade or clean-machine qualification. The earlier installer and running installed app were not replaced.
+
+Next: close the installed app normally and install the repaired build, then retry the original lecture slides and syllabus. Those user documents were not available for testing. Preserve existing library selection and data; qualify installed upgrade separately.
+
 ## Standalone Windows runtime — 2026-09-18
 
 Active phase: **6.8 / M08 — Standalone Windows distribution**. The bundled native profile is implemented: Electron-hosted Next server, frozen Python 3.12.14 API/speech/note workers, PostgreSQL 17.11, SeaweedFS 4.47 and Ollama 0.33.3 CPU. It needs no separate Docker, Python, Node or PowerShell 7 installation. Speech/note models remain separately selected local files; no model weights were downloaded. See [runtime, build instructions and limits](docs/implementation/windows-standalone.md). Earlier entries below are historical; Phase 7.4 contention work remains deferred.

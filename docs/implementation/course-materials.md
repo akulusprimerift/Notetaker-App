@@ -1,5 +1,13 @@
 # Course materials before Windows delivery
 
+## Windows upload repair — 2026-09-22
+
+Active phase remains **6.8 / M08**. Standalone uploads invoked `NotetakerService.exe material-parser <extension>`, but the service entrypoint accepted only two-argument host/worker commands and had no parser dispatch. Every packaged upload exited before extraction, producing the misleading generic file-format error. The service now dispatches that exact command and forwards the extension to the existing bounded, isolated reader. File limits, authorization, retained originals and immutable revisions are unchanged.
+
+Regression coverage exercises actual child processes with synthetic PPTX, DOCX, PDF, UTF-8 TXT and Markdown bytes, plus corrupt, empty, invalid-encoding and unsupported files. `NOTETAKER_TEST_SERVICE_EXECUTABLE` runs the same checks against a frozen service and also exercises the API's frozen subprocess-launch branch. No student documents or library data are test inputs. See the latest [session transfer](../../SESSION_TRANSFER.md) for executed build/check evidence and the replacement installer.
+
+## Original materials increment
+
 Date: 2026-09-08. User-requested scope brought forward from Phase 7.2 before M08.
 
 Implemented: course syllabus/curriculum uploads apply to existing and future lectures; lecture uploads add slides before or after recording. PPTX, DOCX, text-based PDF, UTF-8 TXT and Markdown are accepted. Originals and extracted excerpts are immutable database records. Migration 0010 pins material IDs in immutable settings. Changed settings cancel stale note attempts and schedule streamed reconstruction using transcript and material sources. Student revisions retain compare/keep/merge/replace/undo; saved final snapshots and old exports remain immutable. Source inspection and exports distinguish uploaded evidence from audio. Lecture deletion removes lecture-scoped materials; course materials remain shared course evidence.

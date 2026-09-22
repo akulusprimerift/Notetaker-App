@@ -1,5 +1,7 @@
 # Standalone Windows distribution
 
+Upload repair (2026-09-22): the frozen service now dispatches the document-reader command used by material uploads. See [cause and regression coverage](course-materials.md#windows-upload-repair--2026-09-22) and the latest [installer evidence](../../SESSION_TRANSFER.md). To exercise a future packaged reader, set `NOTETAKER_TEST_SERVICE_EXECUTABLE` to its absolute `NotetakerService.exe` path and run `uv run --no-project python -m pytest apps/api/tests/test_windows_material_parser.py -q` with `PYTHONPATH=apps/api`. This checks all supported formats and rejects unreadable inputs without opening a student library.
+
 ## Native services increment — 2026-09-18
 
 Active phase: **6.8 / M08**. The standalone x64 installer combines Electron/React with frozen Python/FastAPI, speech and note workers, PostgreSQL 17.11, SeaweedFS 4.47 and Ollama 0.33.3 CPU libraries. Electron runs the prebuilt Next server through its utility-process runtime. This profile needs no separate Node, Python, Docker or PowerShell 7 installation. Models remain user-selected local files; the app never downloads weights. Faster-whisper's upstream auxiliary VAD asset accompanies the speech runtime. Earlier entries below describe the preceding web-only increment.
