@@ -2,7 +2,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 
 type Passage={id:string;segment_id:string;revision:number;text:string;author:string;segment_number:number;sample_rate:number;start_sample:number;end_sample:number;confidence:{value:number|null};audio_url:string};
-type State={status:string;counts:Record<string,number>;errors:string[];waiting_for_audio:boolean;snapshot:{id:string;sequence:number;stability:string;segments:Passage[];issues:{reason:string}[]}|null};
+type State={status:string;counts:Record<string,number>;errors:string[];preview?:string;waiting_for_audio:boolean;snapshot:{id:string;sequence:number;stability:string;segments:Passage[];issues:{reason:string}[]}|null};
 type Snapshot=NonNullable<State['snapshot']>;
 const extendsReading=(previous:Snapshot,next:Snapshot)=>previous.segments.every((p,index)=>p.id===next.segments[index]?.id);
 type Draft={segment:string;base:string;text:string;key:string};
@@ -82,7 +82,7 @@ export default function Transcript({owner,lecture,csrf,onBusy,onSessionExpired}:
     <p className="muted">Follow the lecturer’s words, listen to their source, and correct recognition errors. Your note model uses these passages as evidence.</p>
     <div className="transcript-status"><p role="status">{data?statuses[data.status]??'Checking transcript':'Checking saved speech…'}{data&&data.counts.completed>0?' · '+data.counts.completed+' of '+Object.values(data.counts).reduce((a,b)=>a+b,0)+' audio sections processed':''}</p>
       <button className="secondary" disabled={saving||!!draft} onClick={()=>void retry()}>Retry transcription</button></div>
-    {data?.errors.includes('model_unavailable')&&<p className="error">The local speech model is unavailable. Your audio is saved and will wait until the model is ready.</p>}
+    {data?.errors.includes('model_unavailable')&&<p className="error">Choose a local speech model folder in App setup, then finish recording and restart local services. Saved audio will be transcribed automatically. Notes need transcript passages before writing can begin.</p>}
     {!!data?.errors.length&&!data.errors.includes('model_unavailable')&&<p className="error">Some speech could not be processed. Saved audio and earlier transcript passages remain available. You can retry.</p>}
     {data?.waiting_for_audio&&<p className="small muted">Live transcription starts after enough contiguous audio is saved for a speech window. Short remaining audio is processed when recording stops. Recover pending audio above.</p>}
     {data?.snapshot&&<p className="small muted">{data.snapshot.stability==='provisional'?'Live transcript · provisional coverage while more speech arrives. Completed passages retain their source identity.':'Stable transcript revision'}</p>}
@@ -91,6 +91,7 @@ export default function Transcript({owner,lecture,csrf,onBusy,onSessionExpired}:
     {error&&<p role="alert" className="error">{error}</p>}{message&&<p role="status" className="small">{message}</p>}
     {!data?.snapshot?.segments.length&&<p className="transcript-empty">{data?.status==='processed'?'No recognized words were returned. Non-silent audio without recognized words remains uncertain; listen to the saved recording.':'Timestamped passages will appear here after local transcription.'}</p>}
     {pending&&<div className="inline-notice"><p>Updated transcript passages are ready. Your reading copy stays in place.</p><button className="secondary" onClick={()=>setReading(pending)}>Show transcript revisions</button></div>}
+    {data?.preview&&<section className="streaming-notes" aria-label="Speech being transcribed"><h3>Transcribing now…</h3><p className="small muted">Live draft · these words may change before becoming saved transcript passages.</p><p className="passage-text">{data.preview}</p></section>}
     <ol className="transcript-passages">{shown?.segments.map(p=><li key={p.segment_id}>
       <div className="passage-heading"><button className="text-button" aria-label={'Play recording '+p.segment_number+' from '+stamp(p.start_sample,p.sample_rate)+' to '+stamp(p.end_sample,p.sample_rate)} onClick={()=>setAudio({url:p.audio_url,key:crypto.randomUUID()})}>▶ Segment {p.segment_number} · {stamp(p.start_sample,p.sample_rate)}–{stamp(p.end_sample,p.sample_rate)}</button><span className="small muted">{p.author==='student'?'Corrected by you':'Machine transcript'} · Revision {p.revision}</span></div>
       <p className="passage-text">{p.text}</p>

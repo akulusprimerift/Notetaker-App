@@ -21,7 +21,7 @@ const {_electron:electron}=require('../../.venv/Lib/site-packages/playwright/dri
     const page=await application.firstWindow();
     if(firstLaunch){
       await page.locator('#native').click();
-      await page.locator('#status').filter({hasText:'Your local workspace is ready.'}).waitFor({timeout:660000});
+      await page.locator('#status').filter({hasText:/Your local workspace is ready\.|Audio saving is ready\./}).waitFor({timeout:660000});
       await page.locator('#open').click();
       firstLaunch=false;
     }

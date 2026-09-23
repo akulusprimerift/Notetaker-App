@@ -140,7 +140,7 @@ else {
     // intentionally removed so the desktop shell does not compete with the
     // lecture navigation.
     require('electron').Menu.setApplicationMenu(null);
-    register('setup:status',async()=>({starting,message:starting?message:speechRestartRequired?'Speech model saved. Finish recording, then quit and reopen Notetaker to use it.':await healthy()?'Your local workspace is ready.':message.startsWith('Could not')?message:serviceMode==='native'?'Standalone workspace is stopped. Start it to continue.':'Choose a standalone library or start your existing Docker workspace.',dataPath:app.getPath('userData'),serviceRoot,serviceMode,nativeAvailable:await nativeAvailable()}));
+    register('setup:status',async()=>({starting,message:starting?message:speechRestartRequired?'Speech model saved. Finish recording, then quit and reopen Notetaker to use it.':await healthy()?(!speechPath?'Audio saving is ready. Choose a speech model folder and restart services to enable transcription and automatic notes.':'Your local workspace is ready.'):message.startsWith('Could not')?message:serviceMode==='native'?'Standalone workspace is stopped. Start it to continue.':'Choose a standalone library or start your existing Docker workspace.',dataPath:app.getPath('userData'),serviceRoot,serviceMode,nativeAvailable:await nativeAvailable()}));
     register('setup:start',startServices);
     register('setup:native',async()=>{
       if(starting)throw new Error('Wait for startup to finish.');
@@ -176,7 +176,7 @@ else {
       const chosen=await dialog.showOpenDialog(window,{properties:['openDirectory'],title:'Choose an existing faster-whisper model folder'});
       if(chosen.canceled)return;
       const found=await discoverModels({speechPath:chosen.filePaths[0]});
-      if(!found.speech)throw new Error('Choose a folder containing model.bin and config.json. No model was downloaded.');
+      if(!found.speech)throw new Error('Choose a folder containing model.bin, config.json and tokenizer.json. No model was downloaded.');
       speechPath=chosen.filePaths[0];await saveConfig();
       if(nativeRuntime?.host)speechRestartRequired=true;
     });

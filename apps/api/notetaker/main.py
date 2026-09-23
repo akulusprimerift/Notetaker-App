@@ -246,7 +246,7 @@ def create_app(settings: Settings | None = None):
         if lecture.tombstoned: error(404,"unavailable","This lecture is unavailable.")
         prefs=db.scalar(select(SettingsVersion).where(SettingsVersion.lecture_id==lecture_id).order_by(SettingsVersion.version.desc()).limit(1))
         return {"lecture":lecture_json(lecture),"course_name":course_name,"settings":{"depth":prefs.depth,"format":prefs.format,"detail_prompt":prefs.detail_prompt,"layout_prompt":prefs.layout_prompt,"ai_explanations":prefs.ai_explanations,"version":prefs.version},
-                "capture":{"status":"not_started" if lecture.status=='prepared' else lecture.status,"available":app.state.audio_store.available},"transcript":transcript_json(db,lecture),"notes":notes_json(db,lecture),"processing_location":"local","update_cursor":lecture.update_seq}
+                "capture":{"status":"not_started" if lecture.status=='prepared' else lecture.status,"available":app.state.audio_store.available},"transcript":transcript_json(db,lecture,settings),"notes":notes_json(db,lecture),"processing_location":"local","update_cursor":lecture.update_seq}
 
     @app.get("/lectures/{lecture_id}/audio/{version}")
     def unavailable_source(lecture_id: str,version: str,session=Depends(current),db=Depends(db_session)):

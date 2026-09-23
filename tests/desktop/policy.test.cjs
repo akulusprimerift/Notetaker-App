@@ -23,6 +23,8 @@ test('model discovery reads installed metadata and local files without downloads
     const folder=path.join(home,'.lmstudio','models','publisher','model');await fs.mkdir(folder,{recursive:true});
     await fs.writeFile(path.join(folder,'test.gguf'),'synthetic metadata fixture');
     const speech=path.join(home,'speech');await fs.mkdir(speech);await fs.writeFile(path.join(speech,'model.bin'),'fixture');await fs.writeFile(path.join(speech,'config.json'),'{}');
+    assert.equal((await discoverModels({home,speechPath:speech,fetcher:async()=>{throw new Error('offline');}})).speech,null);
+    await fs.writeFile(path.join(speech,'tokenizer.json'),'{}');
     const urls=[];
     const result=await discoverModels({home,speechPath:speech,fetcher:async(url)=>{urls.push(url);return{ok:true,json:async()=>({models:[{name:'installed:local',digest:'abc',size:10}]})};}});
     assert.deepEqual(urls,['http://127.0.0.1:11434/api/tags']);

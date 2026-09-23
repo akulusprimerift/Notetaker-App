@@ -1,5 +1,17 @@
 # Session transfer
 
+## Windows live transcription repair — 2026-09-23
+
+Active phase remains **6.8 / M08 — Standalone Windows distribution**. The installed settings had no speech model selected, so native startup silently omitted the speech worker. Native startup now always launches speech reconciliation; missing models are visible in lecture/transcript status and become retryable jobs. The Transcript UI now displays the existing fenced partial-recognition text. Model discovery checks all three required files. See [repair and verification](docs/implementation/live-transcription-repair.md).
+
+With explicit user approval, the installed app's speech path now points to `C:\ezNote\Notetaker App\.local\models\faster-whisper-small.en`; the app was closed and other settings preserved. Next startup applies it. Student lecture data was not accessed or modified, and no microphone, model download, cloud inference or push was used.
+
+The rebuilt packaged Electron application passed fresh-library startup, missing-model setup status, synthetic audio save, quit/reopen, persisted course and identical audio readback in `.local/standalone-smoke-b44c5eff-62e6-4208-a8fe-54cbcc2abe23`. Renderer isolation remained enabled. Installed upgrade and microphone/quality/release gates remain open.
+
+Updated unsigned installer: `.local/live-fix/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe`, **397,916,242 bytes**, SHA-256 `906C7C693F65A6D01D3DC8389359176F10A28085B3317FC4FE53607AE93AD1D9`. It includes the earlier material-upload fix. Packaging succeeded and its frozen service matches the tested executable. No automatic installed-binary replacement occurred. Next: install this build, reopen the existing library, and confirm each lecture has a selected note model; saved audio should resume transcription with the approved speech folder.
+
+Executed: **231 backend passed, 1 service-only skip**, **45 focused live/transcription tests**, **60 JavaScript contracts**, **15 desktop tests**, typecheck, frontend/Python lint, production desktop web build and isolated bundle smoke. Chromium verified missing-model guidance, partial transcript rendering, transition to saved passages and streamed notes. The frozen native host with real PostgreSQL/audio storage, local faster-whisper `small.en` and Ollama `qwen3:4b` produced **21 passages and a saved note revision before capture was sealed**, in `.local/host-smoke-0b288acf88314ac6b73751619adc693c`. The initial frozen live test hit SeaweedFS's 1% free-disk reserve before inference; the isolated rerun passed after space recovered. See the repair evidence for installer delivery.
+
 ## Windows material upload repair — 2026-09-22
 
 Active phase remains **6.8 / M08 — Standalone Windows distribution**. Fixed valid slides/syllabus uploads being rejected in the installed profile: `materials.parse_upload` launched `NotetakerService.exe material-parser <extension>`, but the frozen entrypoint neither accepted its argument count nor dispatched that role. The entrypoint now forwards the extension to the existing isolated parser. No changes to file limits, extraction policy, schemas, student revisions or data. See [materials evidence](docs/implementation/course-materials.md#windows-upload-repair--2026-09-22).

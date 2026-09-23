@@ -66,6 +66,36 @@ def test_missing_prefix_does_not_schedule_live_audio(capture):
     assert client.get(path+'/transcript').json()['snapshot']['segments']
 
 
+def test_missing_speech_model_is_visible_and_saved_audio_recovers(capture):
+    from notetaker.speech_provider import WhisperProvider
+    from notetaker.speech_worker import preview
+    app,client,headers,path,run=capture
+    app.state.settings.speech_model_path=''
+    enable(app,client,headers,path)
+    assert 'model_unavailable' in client.get(path+'/snapshot').json()['transcript']['errors']
+    assert upload(client,headers,path,run,0,count=1440000).status_code == 200
+    plan_pending(app.state.sessions)
+    chosen=speech_claim(app.state.sessions)
+    assert not speech_execute(app.state.sessions,app.state.audio_store,
+        WhisperProvider(app.state.settings),chosen,heartbeat=False)
+    state=client.get(path+'/transcript').json()
+    assert state['mode']=='live' and 'model_unavailable' in state['errors']
+    assert not state['snapshot']['segments']
+    assert client.get(path+'/notes').json()['status']=='waiting_for_transcript'
+    # A retry after configuring the model reuses the saved audio, still unsealed.
+    assert client.post(path+'/transcription',headers=headers).status_code==200
+    chosen=speech_claim(app.state.sessions)
+    assert preview(app.state.sessions,*chosen,'Recognizing the saved lecture')
+    assert client.get(path+'/snapshot').json()['transcript']['preview']=='Recognizing the saved lecture'
+    assert speech_execute(app.state.sessions,app.state.audio_store,FakeSpeech(),chosen,heartbeat=False)
+    finish_all(app)
+    plan(app.state.sessions)
+    assert execute(app.state.sessions,FakeNotes(),claim(app.state.sessions),heartbeat=False)
+    assert client.get(path+'/transcript').json()['snapshot']['segments']
+    assert client.get(path+'/notes').json()['revision']
+    assert client.get(path+'/transcript').json()['mode']=='live'
+
+
 def test_late_gap_replaces_crossing_live_window_and_fences_result(capture):
     app,client,headers,path,run=capture
     upload(client,headers,path,run,count=1440000)

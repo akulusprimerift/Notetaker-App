@@ -83,6 +83,8 @@ Routine implementation choices and reversible fixes can proceed within the reque
 
 ### Current position and next work
 
+M08 repair (2026-09-23): [live transcription and note recovery](implementation/live-transcription-repair.md) fixes silent speech-worker omission when no model was selected and restores the missing transcript preview. Active phase remains M08; existing release gates remain open.
+
 | Phase | Current state | Next action |
 | --- | --- | --- |
 | 6.1 / M01 | Complete for the private workspace foundation, with real-service evidence. | Preserve its behavior as later features are added. |

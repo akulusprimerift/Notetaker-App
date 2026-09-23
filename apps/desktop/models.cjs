@@ -43,6 +43,7 @@ async function discoverModels({home = os.homedir(), speechPath = '', fetcher = f
     try {
       const stat = await fs.stat(path.join(speechPath, 'model.bin'));
       await fs.access(path.join(speechPath, 'config.json'));
+      await fs.access(path.join(speechPath, 'tokenizer.json'));
       if (stat.isFile()) result.speech = {path:speechPath, status:'Local faster-whisper model files found; runtime compatibility still checked by the speech worker'};
     } catch { /* Missing models are shown explicitly. */ }
   }

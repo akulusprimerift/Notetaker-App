@@ -167,8 +167,9 @@ def main(config):
         progress('Starting local processing workers…')
         launch('ollama', [root / 'ollama/ollama.exe', 'serve'])
         launch('notes', [*executable, 'notes'])
-        if config.get('speechPath'):
-            launch('speech', [*executable, 'speech'])
+        # Keep reconciliation alive even without a model: saved audio must acquire
+        # visible retryable model_unavailable jobs rather than wait silently.
+        launch('speech', [*executable, 'speech'])
         print(json.dumps({'status': 'ready'}), flush=True)
         while not stop.wait(.5):
             if any(child.poll() is not None for child in children):

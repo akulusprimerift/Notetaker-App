@@ -59,6 +59,11 @@ def validate_result(result, window):
     return result
 
 
+def model_files_available(path):
+    return bool(path) and all((Path(path)/name).is_file()
+        for name in ('model.bin', 'config.json', 'tokenizer.json'))
+
+
 class WhisperProvider:
     def __init__(self, settings):
         self.settings=settings
@@ -66,7 +71,7 @@ class WhisperProvider:
 
     def load(self):
         path=Path(self.settings.speech_model_path)
-        if not all((path/name).is_file() for name in ('model.bin','config.json','tokenizer.json')):
+        if not model_files_available(self.settings.speech_model_path):
             raise SpeechFailure('model_unavailable')
         if self.model is None:
             from faster_whisper import WhisperModel

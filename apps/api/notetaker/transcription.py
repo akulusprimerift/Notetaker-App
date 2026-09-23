@@ -184,7 +184,7 @@ def snapshot_json(db, snapshot):
         'manifests':snapshot.manifests, 'segments':[version_json(db, v) for v in versions]}
 
 
-def transcript_json(db, lecture):
+def transcript_json(db, lecture, settings=None):
     snapshot = db.scalar(select(TranscriptSnapshot).where(TranscriptSnapshot.lecture_id == lecture.id)
         .order_by(TranscriptSnapshot.sequence.desc()).limit(1))
     windows = windows_for(db, lecture)
@@ -198,11 +198,16 @@ def transcript_json(db, lecture):
     elif windows: status = 'listening' if any(r.state == 'recording' for r in runs) else 'processed'
     else: status = 'not_started'
     backlog = sum(max(0, saved_through(db, r) - sum(w.core_end-w.core_start for w,j,_ in windows if w.run_id == r.id and j.status == 'completed')) / r.sample_rate for r in runs)
+    from .speech_provider import model_files_available
+    model_missing = settings is not None and not model_files_available(settings.speech_model_path)
+    errors = {job.error_code for _,job,_ in windows if job.error_code}
+    if model_missing:
+        errors.add('model_unavailable')
     return {'processing_delay_seconds':round(backlog, 1), 'status':status, 'counts':counts, 'waiting_for_audio':waiting,
         'preview':'\n'.join(w.preview for w,j,_ in windows if j.status=='running'
             and j.lease_expires_at>now() and w.preview_attempt==j.attempt_token
             and j.lifecycle_epoch==lecture.lifecycle_epoch and j.audio_epoch==lecture.audio_epoch),
-        'errors':sorted({job.error_code for _,job,_ in windows if job.error_code}),
+        'errors':sorted(errors),
         'snapshot':snapshot_json(db, snapshot) if snapshot else None,
         'mode':'live' if any(r.state == 'recording' for r in runs) else 'saved_audio', 'notes_available':db.scalar(select(NoteRevision.id).where(NoteRevision.lecture_id == lecture.id).limit(1)) is not None}
 
@@ -240,7 +245,7 @@ class Correction(BaseModel):
 def install_transcription(app, current, db_session, owned_lecture, receipt):
     @app.get('/lectures/{lecture_id}/transcript')
     def transcript(lecture_id: str, session=Depends(current), db=Depends(db_session)):
-        return transcript_json(db, owned_lecture(db, session.owner_id, lecture_id))
+        return transcript_json(db, owned_lecture(db, session.owner_id, lecture_id), app.state.settings)
 
     @app.get('/lectures/{lecture_id}/transcript/snapshots/{snapshot_id}')
     def snapshot(lecture_id: str, snapshot_id: str, session=Depends(current), db=Depends(db_session)):
@@ -260,7 +265,7 @@ def install_transcription(app, current, db_session, owned_lecture, receipt):
             if job.status == 'failed' or (job.status == 'due' and job.error_code):
                 job.status='due'; job.error_code=None; job.attempts=0; job.due_at=now()
         db.commit()
-        return transcript_json(db, lecture)
+        return transcript_json(db, lecture, app.state.settings)
 
     def source(db, owner, lecture_id, version_id):
         owned_lecture(db, owner, lecture_id)
