@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     audio_bucket: str = "notetaker-audio"
     speech_model_path: str = ".local/models/faster-whisper-small.en"
     speech_threads: int = 4
+    speech_status_path: str = ''
+    speech_status_session: str = ''
     kafka_bootstrap: str = "127.0.0.1:9092"
     broker_enabled: bool = True
     ollama_url: str = "http://127.0.0.1:11434"

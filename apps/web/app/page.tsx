@@ -160,7 +160,7 @@ export default function Workspace(){
         <nav className="lecture-tabs" aria-label="Lecture sections" role="tablist">{lectureTabs.map(tab=><button key={tab.id} role="tab" aria-selected={lectureTab===tab.id} className={lectureTab===tab.id?'active':''} onClick={()=>openLectureTab(tab.id)}><span>{tab.label}</span><small>{tab.description}</small></button>)}</nav>
         <LiveUpdates key={snapshot.lecture.id+'-live'} lecture={snapshot.lecture.id} onSessionExpired={sessionExpired}/>
         <div className="lecture-panel" role="tabpanel" aria-label={lectureTabs.find(tab=>tab.id===lectureTab)?.label}>
-          {lectureTab==='notes'&&<Notes key={snapshot.lecture.id+'-notes'} lecture={snapshot.lecture.id} csrf={session.csrf_token} onSessionExpired={sessionExpired}/>}
+          {lectureTab==='notes'&&<Notes key={snapshot.lecture.id+'-notes'} lecture={snapshot.lecture.id} csrf={session.csrf_token} onSessionExpired={sessionExpired} onOpenTranscript={()=>openLectureTab('transcript')}/>}
           {lectureTab==='transcript'&&<Transcript key={snapshot.lecture.id} owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setTranscriptBusy} onSessionExpired={sessionExpired}/>}
           {lectureTab==='materials'&&<Materials key={snapshot.lecture.id+'-materials'} course={snapshot.lecture.course_id} lecture={snapshot.lecture.id} csrf={session.csrf_token}/>}
           {lectureTab==='visuals'&&<VisualNotes key={snapshot.lecture.id+'-visuals'} lecture={snapshot.lecture.id} onSessionExpired={sessionExpired}/>}

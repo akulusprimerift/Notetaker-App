@@ -1,5 +1,12 @@
 # Session transfer
 
+## Speech workspace usability — 2026-09-23
+
+Active phase remains **6.8 / M08**. Removed the manual Mark Important control while retaining prior bookmarks; new note generation infers contextual emphasis and renders it bold in theme colors. A fixed-height, automatically scrolling transcript preview sits directly above the note content; the dedicated Transcript tab remains. The recorder stays mounted across tab changes and help. Speech setup now offers discovered local folders, a direct selector, Windows/macOS preparation help and native worker-confirmed readiness with stale-status rejection. Selection does not stop recording; restart after confirmed saves activates a changed model. No automatic model downloads, student-data changes, microphone access or push.
+
+Executed: **233 backend passed, 1 skip**, **60 JavaScript contracts**, **15 desktop tests**, browser synthetic flows, typecheck/lint, Python lint and production web build. See [implementation, evidence and remaining gates](docs/implementation/speech-workspace-ux.md). Frozen worker readiness passed before capture. Full packaged audio/inference validation is blocked by the drive being below SeaweedFS’s 1% free-space reserve (about 10 GB); the longer test returned 503. No files were deleted or safeguard lowered. The packaged Electron app passed model selection, persisted settings, quit/reopen and actual loaded-worker readiness in an isolated library; renderer isolation remained enabled. Unsigned installer: `.local/speech-ux/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe` (397,870,083 bytes; SHA-256 `3AEBB1A0A8CBF3EB71DCE6B942FF0660C07763B6878F44CA147274C515CB6303`). Close the app before installing; ensure more than 10 GB free on C: before recording. Installer delivery is recorded in the linked report. Next: installed upgrade and real-device qualification; human evaluation of automatic importance remains open.
+
+
 ## Windows live transcription repair — 2026-09-23
 
 Active phase remains **6.8 / M08 — Standalone Windows distribution**. The installed settings had no speech model selected, so native startup silently omitted the speech worker. Native startup now always launches speech reconciliation; missing models are visible in lecture/transcript status and become retryable jobs. The Transcript UI now displays the existing fenced partial-recognition text. Model discovery checks all three required files. See [repair and verification](docs/implementation/live-transcription-repair.md).

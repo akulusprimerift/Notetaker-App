@@ -1,5 +1,6 @@
 'use client';
 import {useEffect,useState} from 'react';
+import SpeechModel,{type SpeechModelState} from './speech-model';
 
 // Full snapshots and their cursor are applied together. A reconnect never clears
 // visible content, focus, source playback or an unsaved transcript correction.
@@ -7,6 +8,7 @@ export default function LiveUpdates({lecture,onSessionExpired}:{lecture:string;o
   const [status,setStatus]=useState('Connecting live updates…');
   const [delay,setDelay]=useState<number|null>(null);
   const [speechUnavailable,setSpeechUnavailable]=useState(false);
+  const [model,setModel]=useState<SpeechModelState|null>(null);
   useEffect(()=>{
     let stopped=false, socket:WebSocket|null=null, retry:ReturnType<typeof setTimeout>|undefined;
     let cursor:number|null=null, attempts=0, loading=false, again=false, resetRequested=false;
@@ -27,6 +29,7 @@ export default function LiveUpdates({lecture,onSessionExpired}:{lecture:string;o
             cursor=snapshot.update_cursor;
             setDelay(snapshot.transcript.processing_delay_seconds);
             setSpeechUnavailable(snapshot.transcript.errors?.includes('model_unavailable')??false);
+            setModel(snapshot.transcript.speech_model??(snapshot.transcript.errors?.includes('model_unavailable')?{state:'missing',name:null}:null));
           }
         } while(again&&!stopped);
       } finally {loading=false;}
@@ -65,5 +68,5 @@ export default function LiveUpdates({lecture,onSessionExpired}:{lecture:string;o
     void connect();
     return()=>{stopped=true;clearTimeout(retry);socket?.close();};
   },[lecture,onSessionExpired]);
-  return <div className="live-progress" role="status"><strong>{status}</strong><span>{delay===null?'Checking processing delay…':`${delay.toFixed(1)} seconds of saved audio awaiting transcription`}</span>{speechUnavailable?<span className="error">Transcription and automatic notes are waiting for a speech model. Choose its folder in App setup, then finish recording and restart local services. Saved audio is retained.</span>:<span className="small muted">Processing can fall behind while recording continues. Audio save progress is shown separately above.</span>}</div>;
+  return <><SpeechModel model={model}/><div className="live-progress" role="status"><strong>{status}</strong><span>{delay===null?'Checking processing delay…':`${delay.toFixed(1)} seconds of saved audio awaiting transcription`}</span>{speechUnavailable?<span className="error">Transcription and automatic notes are waiting for a speech model. Select one above, then finish recording and restart local services. Saved audio is retained.</span>:<span className="small muted">Processing can fall behind while recording continues. Audio save progress is shown separately above.</span>}</div></>;
 }

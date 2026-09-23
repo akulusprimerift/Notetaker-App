@@ -270,6 +270,8 @@ def main():
     settings=Settings()
     if settings.preview:raise SystemExit('Speech workers require PostgreSQL application storage.')
     engine,sessions=database(settings.database_url);store=AudioStore(settings);provider=WhisperProvider(settings)
+    from .speech_status import start_status
+    status_stopped = start_status(settings, provider)
     producer=consumer=None
     if not args.once and settings.broker_enabled:
         from confluent_kafka import Producer,Consumer
@@ -307,6 +309,7 @@ def main():
             if args.once:break
             if not claimed:time.sleep(2)
     finally:
+        status_stopped.set()
         if consumer:consumer.close()
         engine.dispose()
 

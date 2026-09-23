@@ -1,6 +1,7 @@
 'use client';
 import PromptProfiles from './prompt-profiles';
 import ReviewNotice from './review-notice';
+import TranscriptPreview from './transcript-preview';
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 import NoteEditor,{type Editing} from './note-editor';
@@ -17,7 +18,7 @@ type Source={source_kind?:string;label?:string;id:string;text:string;audio_url:s
 const labels:Record<string,string>={choose_model:'Choose who takes your notes.',waiting_for_transcript:'Waiting for transcript passages.',queued:'Your notes are queued.',generating:'Your model is writing study notes…',ready:'Your study notes are saved.',needs_attention:'Your notes need another attempt.',paused:'Automatic notes are paused.'};
 const errors:Record<string,string>={model_unavailable:'Open Ollama and check that your selected model is installed.',model_changed:'The installed model changed. Select it again to use its new version.',invalid_output:'The model returned notes that failed the source or format checks. Try again; any previously saved notes are preserved.',truncated_output:'The model stopped before finishing the notes. Your last saved notes are still here.',context_limit:'This transcript exceeds the current note-generation capacity. It has been kept in full. Support for longer lectures is still being built.',worker_error:'The local note service could not finish. Try again.',model_context_unsupported:'This model does not support the required input capacity.',provider_authentication:'The provider rejected this connection. Reconnect it or update the API key.',provider_limit:'The provider usage limit was reached. Check your plan or billing settings.',provider_limit_or_failure:'The provider stopped before completing the note request. Check model access and account limits.',provider_unavailable:'The connected provider is unavailable. Check the connection and try again.',connection_unavailable:'This provider connection changed. Reconnect it and apply the model again.',subscription_client_unavailable:'The official subscription client could not be started. Check that it is still installed.',provider_timeout:'The provider took too long to respond. Your saved notes are preserved.',unexpected_tool_request:'The provider requested an unsupported action. Your saved notes are preserved.'};
 
-export default function Notes({lecture,csrf,onSessionExpired}:{lecture:string;csrf:string;onSessionExpired:()=>void}){
+export default function Notes({lecture,csrf,onSessionExpired,onOpenTranscript}:{lecture:string;csrf:string;onSessionExpired:()=>void;onOpenTranscript:()=>void}){
   const [state,setState]=useState<State|null>(null),[models,setModels]=useState<Model[]>([]),[selected,setSelected]=useState('');
   const [connectionError,setConnectionError]=useState('');
   const [reading,setReading]=useState<Revision|null>(null);
@@ -105,6 +106,7 @@ export default function Notes({lecture,csrf,onSessionExpired}:{lecture:string;cs
   const activeIsCloud=Boolean(models.find(row=>row.name===activeModel)?.provider)||/^(openai|anthropic|chatgpt|claude-subscription)\//.test(activeModel);
   const localModels=models.filter(model=>!model.provider),cloudModels=models.filter(model=>model.provider);
   return <div className="note-layout generated-notes"><section className="note-paper" aria-labelledby="notes-title">
+    <TranscriptPreview lecture={lecture} onSessionExpired={onSessionExpired} onOpen={onOpenTranscript}/>
     <div className="paper-heading"><h2 id="notes-title">Your lecture notes</h2><span>{savedProfile?.detail_prompt?.trim()?'CUSTOM DETAIL':(savedProfile?.depth??'detailed').toUpperCase()} · {savedProfile?.layout_prompt?.trim()?'CUSTOM LAYOUT':(savedProfile?.format??'topic_outline').replaceAll('_',' ').toUpperCase()}</span></div>
     <div className="note-status"><p role="status">{state?labels[state.status]:'Opening your notes…'}</p>
       <p className="small muted">Your selected model turns the transcript into explanations, definitions and worked steps. You can check the evidence below.</p>
@@ -121,9 +123,9 @@ export default function Notes({lecture,csrf,onSessionExpired}:{lecture:string;cs
     {revision?<div className="generated-content"><div className="note-revision"><span>{revision.student?'Student revision':'Revision'} {revision.revision} · {revision.metadata.model}</span><a className="text-button" href={`/api${path}/${revision.student?'edits':'revisions'}/${revision.id}/export`}>Export Markdown</a></div>
       <p className="small muted">{revision.student?'Your selected student revision. Student changes retain original source links for review.':'AI-generated notes. Source links verify where the evidence came from; review important claims for accuracy.'}</p>
       {state&&<NoteEditor lecture={lecture} revision={revision} editing={state.editing} csrf={csrf} onExpired={onSessionExpired} onSaved={saved=>{setReading(saved);void refresh().catch(()=>{})}}/>}
-      {revision.content.blocks.map(block=><section className={`study-block ${revision.profile?.format==='cornell'&&!revision.profile.layout_prompt?'cornell-block':''}`} key={block.id}><div className="study-block-title"><p className="eyebrow">{block.kind}</p><h3>{block.topic}</h3></div>{block.passages.map(passage=><div className="study-passage" key={passage.id}>
+      {revision.content.blocks.map(block=><section className={`study-block ${block.kind==='emphasis'?'study-emphasis':''} ${revision.profile?.format==='cornell'&&!revision.profile.layout_prompt?'cornell-block':''}`} key={block.id}><div className="study-block-title"><p className="eyebrow">{block.kind==='emphasis'?'Important · AI identified':block.kind}</p><h3>{block.topic}</h3></div>{block.passages.map(passage=><div className="study-passage" key={passage.id}>
         <span className="evidence-label">{passage.student_edited?'Student revision · review against the original sources':passage.evidence_kind==='material_paraphrase'?'From uploaded material and cited evidence':passage.evidence_kind==='lecture_paraphrase'?'From the lecture':passage.evidence_kind==='exact_quote'?'Exact lecture quote':passage.evidence_kind==='ai_explanation'?'Additional AI explanation':'Uncertain'}</span>
-        {block.kind==='code'||block.kind==='equation'?<pre><code>{passage.text}</code></pre>:<p className="study-text">{passage.text}</p>}
+        {block.kind==='code'||block.kind==='equation'?<pre><code>{passage.text}</code></pre>:<p className="study-text">{block.kind==='emphasis'?<strong>{passage.text}</strong>:passage.text}</p>}
         <div className="citation-list">{passage.sources.map((citation,index)=><button key={index} className="text-button" onClick={()=>void openSource(citation)}>Source {index+1} ↗<span className="sr-only"> for {block.topic}, passage {passage.id}</span></button>)}</div>
       </div>)}</section>)}
       {(revision.content.issues.length>0||revision.source_issues.length>0||revision.content.coverage.some(c=>c.disposition!=='used'))&&<ReviewNotice key={revision.id} lecture={lecture} revision={revision.id}>

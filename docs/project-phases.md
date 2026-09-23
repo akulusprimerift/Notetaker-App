@@ -1,5 +1,8 @@
 # Project phases
 
+Update (2026-09-23): **6.8 / M08** remains active. [Speech workspace usability](implementation/speech-workspace-ux.md) removes manual marking, adds contextual model emphasis, a bounded live transcript above notes, and guided speech selection with native worker readiness. Earlier hardware, human-quality and release gates remain open.
+
+
 Update (2026-09-18): **6.8 / M08 — Standalone Windows distribution** remains the single active phase. The [runtime increment](implementation/windows-standalone.md) bundles Electron-hosted web, frozen Python workers, PostgreSQL, SeaweedFS and CPU Ollama, with explicit separate-library selection and preserved Docker support. Clean-machine release qualification remains open. Earlier dated entries below are historical.
 
 Latest transition (2026-09-17): **6.8 / M08 — Standalone Windows distribution** is now the active delivery phase, following the request to move to the next phase and the recorded Windows-before-macOS sequence. The [first packaging increment](implementation/windows-standalone.md) prepares a prebuilt web component. Phase 7.4's PostgreSQL contention experiment is deferred; it is not marked complete. Existing libraries and earlier quality/release qualification gaps remain protected. Earlier priorities below are historical.

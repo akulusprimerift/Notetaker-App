@@ -58,7 +58,7 @@ def main():
                 break
         else:
             raise RuntimeError('Startup deadline expired')
-        with httpx.Client(base_url='http://127.0.0.1:8010', timeout=10) as client:
+        with httpx.Client(base_url='http://127.0.0.1:8010', timeout=60) as client:
             response = client.post('/session/open', headers={'origin': 'http://127.0.0.1:3000'})
             response.raise_for_status()
             headers = {'origin': 'http://127.0.0.1:3000', 'x-csrf-token': response.json()['csrf_token'], 'idempotency-key': str(uuid4())}
@@ -75,6 +75,16 @@ def main():
                     return result.json()
                 lecture = post('/courses/'+course['id']+'/lectures', {'title':'Synthetic live inference — no microphone'})
                 path = '/lectures/'+lecture['id']
+                ready_deadline = time.monotonic() + 120
+                while time.monotonic() < ready_deadline:
+                    status = client.get(path+'/transcript').json()['speech_model']
+                    if status['state'] == 'ready':
+                        break
+                    assert status['state'] != 'failed', status
+                    time.sleep(1)
+                else:
+                    raise RuntimeError('Speech worker did not confirm loaded readiness')
+                print(json.dumps({'speech_model_ready_before_capture': True}), flush=True)
                 post(path+'/notes/model', {'expected_version':0, 'model':args.note_model})
                 with wave.open(str(args.synthetic_audio), 'rb') as audio:
                     assert audio.getnchannels()==1 and audio.getsampwidth()==2

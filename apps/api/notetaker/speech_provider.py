@@ -87,6 +87,8 @@ class WhisperProvider:
                     'language':'en','beam_size':5,'word_timestamps':True,'vad_filter':True,
                     'condition_on_previous_text':False}
             except Exception as exc:
+                self.model = None
+                self.load_failed = True
                 raise SpeechFailure('model_unavailable') from exc
 
     def transcribe(self, audio, window, rate, on_preview=None):

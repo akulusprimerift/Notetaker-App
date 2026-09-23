@@ -1,11 +1,11 @@
 'use strict';
-const {app, BrowserWindow, dialog, ipcMain, session} = require('electron');
+const {app, BrowserWindow, dialog, ipcMain, session, shell} = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const {spawn} = require('node:child_process');
 const {pathToFileURL} = require('node:url');
 const {ORIGIN, localPage, audioPermission} = require('./policy.cjs');
-const {discoverModels} = require('./models.cjs');
+const {discoverModels,discoverSpeechModels,validSpeechFolder} = require('./models.cjs');
 const {findPowerShell} = require('./powershell.cjs');
 const {ProviderBridge} = require('./provider-bridge.cjs');
 const {NativeRuntime} = require('./native-runtime.cjs');
@@ -172,14 +172,24 @@ else {
       if(!speechPath)speechPath=path.join(folder,'.local/models/faster-whisper-small.en');
       await saveConfig();
     });
-    register('setup:speech-folder',async()=>{
-      const chosen=await dialog.showOpenDialog(window,{properties:['openDirectory'],title:'Choose an existing faster-whisper model folder'});
+    const chooseSpeech=async()=>{
+      const candidates=await discoverSpeechModels({selected:speechPath,roots:[path.join(runtime(),'.local','models')]});
+      let folder='';
+      if(candidates.length){
+        const choice=await dialog.showMessageBox(setupWindow||window,{type:'question',message:'Local speech model found',detail:candidates[0],buttons:['Use this model','Browse for another','Cancel'],defaultId:0,cancelId:2});
+        if(choice.response===2)return null;
+        if(choice.response===0)folder=candidates[0];
+      }
+      const chosen=folder?{canceled:false,filePaths:[folder]}:await dialog.showOpenDialog(setupWindow||window,{properties:['openDirectory'],defaultPath:speechPath||app.getPath('downloads'),title:'Select the folder containing model.bin, config.json and tokenizer.json'});
       if(chosen.canceled)return;
-      const found=await discoverModels({speechPath:chosen.filePaths[0]});
-      if(!found.speech)throw new Error('Choose a folder containing model.bin, config.json and tokenizer.json. No model was downloaded.');
+      if(!await validSpeechFolder(chosen.filePaths[0]))throw new Error('Choose a folder containing model.bin, config.json and tokenizer.json. No model was downloaded.');
       speechPath=chosen.filePaths[0];await saveConfig();
-      if(nativeRuntime?.host)speechRestartRequired=true;
-    });
+      speechRestartRequired=await healthy();
+      return {name:path.basename(speechPath),restartRequired:speechRestartRequired};
+    };
+    register('setup:speech-folder',chooseSpeech);
+    register('app:choose-speech',chooseSpeech,true);
+    register('app:speech-guide',()=>shell.openExternal('https://huggingface.co/Systran/faster-whisper-small.en/tree/main'),true);
     register('app:open-setup',showSetup,true);
     // Show progress before starting bundled services or verifying their files.
     await setup();window.show();

@@ -1,7 +1,7 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const {ORIGIN,localPage,audioPermission} = require('../../apps/desktop/policy.cjs');
-const {discoverModels} = require('../../apps/desktop/models.cjs');
+const {discoverModels,discoverSpeechModels} = require('../../apps/desktop/models.cjs');
 const {findPowerShell,powerShellCandidates} = require('../../apps/desktop/powershell.cjs');
 const fs = require('node:fs/promises');
 const os = require('node:os');
@@ -31,6 +31,10 @@ test('model discovery reads installed metadata and local files without downloads
     assert.equal(result.ollama[0].name,'installed:local');assert.equal(result.otherFiles.length,1);assert.equal(result.speech.path,speech);
     const offline=await discoverModels({home,fetcher:async()=>{throw new Error('offline');}});
     assert.equal(offline.ollamaAvailable,false);assert.equal(offline.otherFiles.length,1);
+    const downloads=path.join(home,'Downloads','speech');await fs.mkdir(downloads,{recursive:true});
+    for(const name of ['model.bin','config.json','tokenizer.json'])await fs.writeFile(path.join(downloads,name),'fixture');
+    const incomplete=path.join(home,'Models','incomplete');await fs.mkdir(incomplete,{recursive:true});await fs.writeFile(path.join(incomplete,'model.bin'),'fixture');
+    assert.deepEqual(await discoverSpeechModels({home,selected:speech,roots:[speech]}),[speech,downloads]);
   }finally{assert.equal(path.dirname(path.resolve(home)),path.resolve(os.tmpdir()));assert.ok(path.basename(home).startsWith('notetaker-model-test-'));await fs.rm(home,{recursive:true,force:true});}
 });
 

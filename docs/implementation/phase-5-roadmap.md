@@ -1,5 +1,8 @@
 # Phase 5: Implementation roadmap
 
+Update (2026-09-23): **M08** remains active. [Speech workspace usability](speech-workspace-ux.md) replaces manual marking with model-inferred emphasis, places a bounded live transcript above notes, and adds guided local speech selection plus native readiness reporting. Existing saved bookmarks and revisions remain intact; hardware, human-quality and release gates remain open.
+
+
 Update (2026-09-22): **M08 standalone Windows distribution** remains active. The [materials upload repair](course-materials.md#windows-upload-repair--2026-09-22) adds the missing packaged document-reader command so valid slide and syllabus uploads reach extraction. Synthetic service-command regressions cover all five supported formats and unreadable inputs. Installed upgrade and other release qualification remain open; see [session transfer](../../SESSION_TRANSFER.md) for executed checks and delivery evidence.
 
 Update (2026-09-18): **M08 standalone Windows distribution** remains active. [Native service/runtime packaging](windows-standalone.md) now bundles the Electron web server, Python workers, PostgreSQL, SeaweedFS and CPU Ollama. The separate native library uses database reconciliation; Docker retains Kafka. Release qualification and G01–G06 remain open; Phase 7.4 contention work remains deferred. Earlier entries below are historical.

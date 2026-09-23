@@ -3,6 +3,12 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
 
+async function validSpeechFolder(folder){
+  if(!folder)return false;
+  try{return (await Promise.all(['model.bin','config.json','tokenizer.json'].map(async name=>(await fs.stat(path.join(folder,name))).isFile()))).every(Boolean);}
+  catch{return false;}
+}
+
 async function discoverModels({home = os.homedir(), speechPath = '', fetcher = fetch, ollamaURL = 'http://127.0.0.1:11434'} = {}) {
   const result = {ollama: [], ollamaAvailable: false, otherFiles: [], speech: null, ollamaManifests: []};
   try {
@@ -39,14 +45,19 @@ async function discoverModels({home = os.homedir(), speechPath = '', fetcher = f
     }
   }
   await manifests(path.join(home,'.ollama','models','manifests'));
-  if (speechPath) {
-    try {
-      const stat = await fs.stat(path.join(speechPath, 'model.bin'));
-      await fs.access(path.join(speechPath, 'config.json'));
-      await fs.access(path.join(speechPath, 'tokenizer.json'));
-      if (stat.isFile()) result.speech = {path:speechPath, status:'Local faster-whisper model files found; runtime compatibility still checked by the speech worker'};
-    } catch { /* Missing models are shown explicitly. */ }
-  }
+  if(await validSpeechFolder(speechPath))result.speech={path:speechPath,status:'Local faster-whisper model files found; runtime compatibility still checked by the speech worker'};
   return result;
 }
-module.exports = {discoverModels};
+async function discoverSpeechModels({home=os.homedir(), roots=[], selected=''}={}) {
+  const found=[];let visited=0;
+  async function scan(folder,depth=0){
+    if(depth>4||found.length>=20||visited++>=500)return;
+    if(await validSpeechFolder(folder)){found.push(folder);return;}
+    let entries;try{entries=await fs.readdir(folder,{withFileTypes:true});}catch{return;}
+    for(const entry of entries.slice(0,100))if(entry.isDirectory()&&!entry.isSymbolicLink())await scan(path.join(folder,entry.name),depth+1);
+  }
+  if(selected)await scan(selected,4);
+  for(const root of [...roots,path.join(home,'Downloads'),path.join(home,'Models'),path.join(home,'.cache','huggingface','hub')])await scan(root);
+  return [...new Set(found)];
+}
+module.exports = {discoverModels,discoverSpeechModels,validSpeechFolder};

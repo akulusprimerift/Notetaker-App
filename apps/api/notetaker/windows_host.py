@@ -77,6 +77,7 @@ def main(config):
         NOTETAKER_S3_ENDPOINT='http://127.0.0.1:18333', NOTETAKER_S3_ACCESS_KEY='notetaker',
         NOTETAKER_S3_SECRET_KEY=password, NOTETAKER_OLLAMA_URL='http://127.0.0.1:11435',
         NOTETAKER_WEB_ORIGIN='http://127.0.0.1:3000', NOTETAKER_SPEECH_MODEL_PATH=config.get('speechPath', ''),
+        NOTETAKER_SPEECH_STATUS_PATH=str(data / 'speech-status.json'), NOTETAKER_SPEECH_STATUS_SESSION=os.urandom(16).hex(),
         NOTETAKER_PROVIDER_BRIDGE_URL=config.get('bridgeURL', ''), NOTETAKER_PROVIDER_BRIDGE_TOKEN=config.get('bridgeToken', ''),
         OLLAMA_HOST='127.0.0.1:11435', OLLAMA_NO_CLOUD='1',
         OLLAMA_MODELS=str(Path.home() / '.ollama/models'))

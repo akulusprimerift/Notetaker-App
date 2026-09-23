@@ -203,7 +203,8 @@ def transcript_json(db, lecture, settings=None):
     errors = {job.error_code for _,job,_ in windows if job.error_code}
     if model_missing:
         errors.add('model_unavailable')
-    return {'processing_delay_seconds':round(backlog, 1), 'status':status, 'counts':counts, 'waiting_for_audio':waiting,
+    from .speech_status import speech_status
+    return {'speech_model': speech_status(settings), 'processing_delay_seconds':round(backlog, 1), 'status':status, 'counts':counts, 'waiting_for_audio':waiting,
         'preview':'\n'.join(w.preview for w,j,_ in windows if j.status=='running'
             and j.lease_expires_at>now() and w.preview_attempt==j.attempt_token
             and j.lifecycle_epoch==lecture.lifecycle_epoch and j.audio_epoch==lecture.audio_epoch),

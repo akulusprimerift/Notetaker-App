@@ -12,4 +12,6 @@ contextBridge.exposeInMainWorld('desktopSetup', Object.freeze({
 }));
 contextBridge.exposeInMainWorld('desktopApp', Object.freeze({
   openSetup: () => ipcRenderer.invoke('app:open-setup'),
+  chooseSpeech: () => ipcRenderer.invoke('app:choose-speech'),
+  openSpeechGuide: () => ipcRenderer.invoke('app:speech-guide'),
 }));
