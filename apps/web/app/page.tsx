@@ -2,6 +2,7 @@
 import LiveUpdates from './live';
 import Materials from './materials';
 import Theme from './theme';
+import LectureNavigation from './lecture-navigation';
 import CourseDelete from './course-delete';
 
 import {FormEvent, useCallback, useEffect, useRef, useState} from 'react';
@@ -95,6 +96,14 @@ export default function Workspace(){
     ],{duration:380,easing:'cubic-bezier(.22,1,.36,1)'});
     return()=>animation?.cancel();
   },[lectureTab]);
+  useEffect(()=>{
+    if(loading||viewLoading||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+    const animation=document.getElementById('main-content')?.animate([
+      {opacity:0,transform:'translateY(16px)'},
+      {opacity:1,transform:'translateY(0)'},
+    ],{duration:420,easing:'cubic-bezier(.22,1,.36,1)'});
+    return()=>animation?.cancel();
+  },[routeKind,routeId,loading,viewLoading]);
 
   const report=useCallback((err:unknown)=>{
     if(err instanceof ApiError&&err.status===401)setSession(null);
@@ -172,7 +181,7 @@ export default function Workspace(){
           <button className="secondary toolbar-action" onClick={()=>openLectureTab('capture')}>{captureBusy?'Open recording':'Record a segment'}</button>
         </div>
         {snapshot.lecture.audio_removed||removedAudio.includes(snapshot.lecture.id)?<p className="inline-notice">Audio has been removed. Transcript, notes and saved revisions remain available.</p>:<Recording owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setCaptureBusy} compact={lectureTab!=='capture'}/>}
-        <nav className="lecture-tabs" aria-label="Lecture sections" role="tablist">{lectureTabs.map(tab=><button key={tab.id} role="tab" aria-selected={lectureTab===tab.id} className={lectureTab===tab.id?'active':''} onClick={()=>openLectureTab(tab.id)}><span>{tab.label}</span><small>{tab.description}</small></button>)}</nav>
+        <LectureNavigation tabs={lectureTabs} selected={lectureTab} onSelect={openLectureTab}/>
         <LiveUpdates key={snapshot.lecture.id+'-live'} lecture={snapshot.lecture.id} onSessionExpired={sessionExpired}/>
         <div ref={lecturePanel} className="lecture-panel" role="tabpanel" aria-label={lectureTabs.find(tab=>tab.id===lectureTab)?.label}>
           {lectureTab==='notes'&&<Notes key={snapshot.lecture.id+'-notes'} lecture={snapshot.lecture.id} csrf={session.csrf_token} onSessionExpired={sessionExpired} onOpenTranscript={()=>openLectureTab('transcript')}/>}

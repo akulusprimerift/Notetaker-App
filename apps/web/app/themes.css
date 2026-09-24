@@ -37,7 +37,7 @@ input[type=file]::file-selector-button{padding:7px 10px;margin-right:10px;border
 .lecture-tabs button.active{box-shadow:inset 0 -3px var(--accent);background:var(--soft)}
 .lecture-tabs button{min-height:58px}
 .page-heading{margin-bottom:30px}.preview-notice{margin-bottom:26px}
-.course-card{border-top:3px solid var(--accent)}
+.course-card{padding:28px;min-height:240px}
 .course-card:hover,.lecture-row:hover{border-color:var(--accent);box-shadow:0 6px 22px #00000012}
 :root[data-theme=dark] .note-paper{box-shadow:0 8px 32px #00000024}
 @media(prefers-reduced-motion:no-preference){.course-card,.lecture-row,.lecture-tabs button{transition:background .15s,border-color .15s,box-shadow .15s}}
@@ -75,16 +75,14 @@ input[type=file]::file-selector-button{padding:7px 10px;margin-right:10px;border
 .study-block.study-emphasis{border-left:4px solid var(--accent);background:var(--soft);padding:16px;border-radius:8px}.speech-help{max-width:660px}.speech-help li{margin:12px 0;overflow-wrap:anywhere}.speech-model .section-row{flex-wrap:wrap;gap:12px}
 
 /* Local installed fonts only: no font downloads or redistributed font files. */
-@font-face{font-family:Workspace Wayfinder;src:local("FSP DEMO - Wayfinder CF Regular"),local("Wayfinder CF Regular"),local("Wayfinder CF");font-weight:400;font-display:swap}
-@font-face{font-family:Workspace Wayfinder;src:local("FSP DEMO - Wayfinder CF Bold Regular"),local("Wayfinder CF Bold");font-weight:600 900;font-display:swap}
 @font-face{font-family:Workspace Lemon;src:local("LEMON MILK Regular"),local("LEMONMILK-Regular");font-weight:400 900;font-display:swap}
 @font-face{font-family:Workspace Sans;src:local("TikTok Sans Regular");font-weight:400;font-display:swap}
 @font-face{font-family:Workspace Sans;src:local("TikTok Sans SemiBold");font-weight:600 900;font-display:swap}
-:root{--reading-font:system-ui,-apple-system,"Segoe UI",sans-serif;--ui-font:"Workspace Sans","Century Gothic",sans-serif;--display-font:"Workspace Wayfinder","Moret",Georgia,serif;--label-font:"Workspace Lemon","LEMON MILK",sans-serif;--glow:#8e9aaf;--glow-secondary:#778da9}
+:root{--reading-font:system-ui,-apple-system,"Segoe UI",sans-serif;--ui-font:"Workspace Sans","Century Gothic",sans-serif;--display-font:var(--ui-font);--label-font:"Workspace Lemon","LEMON MILK",sans-serif;--glow:#8e9aaf;--glow-secondary:#778da9}
 :root[data-theme=dark]{--glow:#7350bc;--glow-secondary:#30679c}
 body{font-family:var(--ui-font)}
 button,input,textarea,select{font-family:inherit}
-h1,.brand{font-family:var(--display-font);letter-spacing:-.025em}
+h1,.brand{font-family:var(--display-font);font-weight:600;letter-spacing:-.045em}h1{font-size:clamp(2rem,3.3vw,2.75rem);line-height:1.2}
 .brand-icon,.card-icon{font-family:var(--display-font)}
 .eyebrow,.nav-title,.topbar>span:first-child,.lecture-tabs button>span{font-family:var(--label-font);font-weight:400;letter-spacing:.055em}
 .lecture-tabs button>span{font-size:.7rem;line-height:1.6}
@@ -100,12 +98,12 @@ h1,.brand{font-family:var(--display-font);letter-spacing:-.025em}
 .topbar{background:color-mix(in srgb,var(--surface) 50%,transparent);gap:16px}
 .sidebar,.topbar{backdrop-filter:blur(24px) saturate(125%)}
 .course-card,.lecture-row,.empty-state,.lecture-tabs,.study-tools,.course-terminology,.account-card{
-  background:color-mix(in srgb,var(--surface) 76%,transparent);
+  background:linear-gradient(135deg,#ffffff38,transparent 55%),color-mix(in srgb,var(--surface) 55%,transparent);
   backdrop-filter:blur(18px) saturate(120%);
-  border:1px solid color-mix(in srgb,var(--line) 65%,var(--surface));
-  border-radius:22px;box-shadow:inset 0 1px 0 #ffffff60,0 10px 30px #00000008
+  border:1px solid color-mix(in srgb,var(--surface) 70%,var(--line));
+  border-radius:24px;box-shadow:inset 0 1px 0 #ffffff90,inset 0 -1px 0 #ffffff20,0 12px 36px #0000000a
 }
-.course-card{border-top:3px solid var(--accent)}
+.course-card{padding:28px;min-height:240px}
 .course-card:hover,.lecture-row:hover{box-shadow:inset 0 1px 0 #ffffff60,0 14px 34px #00000012}
 .add-card,.materials-panel,.capture-panel,.note-paper,.transcript-panel,.materials-uploader,.material-card{border-radius:22px}
 .primary,.secondary,.theme-choice select,.nav-library,.course-link,.lecture-link{border-radius:12px}
@@ -118,3 +116,25 @@ h1,.brand{font-family:var(--display-font);letter-spacing:-.025em}
 .tone-1 .card-icon,.tone-2 .card-icon{background:var(--soft);color:var(--ink)}
 @media(prefers-reduced-motion:no-preference){.capture-panel:not(.capture-panel-compact){animation:capture-reveal .38s cubic-bezier(.22,1,.36,1)}@keyframes capture-reveal{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}}
 @media(max-width:700px){.sidebar{border-radius:0 0 22px 22px}.topbar-actions{justify-content:flex-start}.lecture-tabs button>span{font-size:.65rem}}
+
+/* Spacious glass navigation: one clear label per destination. */
+.workspace{background-image:radial-gradient(ellipse 480px 460px at 28% 40%,color-mix(in srgb,var(--glow) 38%,transparent),transparent 75%),radial-gradient(ellipse 460px 360px at 80% 12%,color-mix(in srgb,var(--glow-secondary) 26%,transparent),transparent 75%),linear-gradient(135deg,color-mix(in srgb,var(--surface) 35%,var(--bg)),var(--bg))}
+.sidebar{background:linear-gradient(150deg,#ffffff24,transparent 65%),color-mix(in srgb,var(--sidebar) 65%,transparent);border-color:color-mix(in srgb,var(--line) 35%,transparent)}
+.topbar{border-color:color-mix(in srgb,var(--line) 30%,transparent)}
+#main-content{padding-top:38px}
+.page-heading{margin-bottom:40px}.page-heading .muted{max-width:58ch;line-height:1.7}
+.course-grid{gap:24px}.card-footer{padding-top:20px;margin-top:24px;border-color:color-mix(in srgb,var(--line) 30%,transparent)}
+.add-card{border-color:color-mix(in srgb,var(--line) 55%,transparent);background:color-mix(in srgb,var(--surface) 18%,transparent)}
+.lecture-toolbar{margin-top:0;margin-bottom:24px;padding:16px 20px;background:color-mix(in srgb,var(--surface) 55%,transparent);backdrop-filter:blur(18px);border-color:color-mix(in srgb,var(--line) 35%,transparent);border-radius:18px}
+.lecture-tabs{position:relative;isolation:isolate;display:flex;flex-wrap:wrap;gap:6px;padding:8px;margin:28px 0 24px}
+.lecture-tabs button{position:relative;z-index:1;flex:1 1 112px;min-height:48px;padding:12px 14px;text-align:center}
+.lecture-tabs button>span{font-family:var(--ui-font);font-size:.85rem;font-weight:600;letter-spacing:0;white-space:normal;overflow:visible}
+.lecture-tabs button.active{background:transparent;box-shadow:none}
+.lecture-tabs .tab-highlight{position:absolute;z-index:0;top:0;left:0;display:block;opacity:0;pointer-events:none;border-radius:16px;background:linear-gradient(135deg,#ffffff40,transparent),var(--soft);border:1px solid color-mix(in srgb,var(--line) 45%,transparent);box-shadow:inset 0 1px 0 #ffffff80,0 3px 10px #00000009}
+.brand{font-size:1.5rem}.brand-icon{font-style:normal;border-radius:12px;padding:0;font-size:1.45rem}
+@media(prefers-reduced-motion:no-preference){
+  .lecture-tabs .tab-highlight{transition:transform .38s cubic-bezier(.22,1,.36,1),width .38s cubic-bezier(.22,1,.36,1),height .38s cubic-bezier(.22,1,.36,1)}
+  .nav-library,.course-link,.lecture-link,.primary,.secondary{transition:background .2s,box-shadow .2s,transform .2s}
+  .primary:hover,.secondary:hover{transform:translateY(-1px)}
+}
+@media(max-width:700px){#main-content{padding:24px 20px}.page-heading{margin-bottom:28px}.course-card{padding:24px}.lecture-tabs button{flex-basis:125px}.lecture-toolbar{padding:16px;gap:16px}.brand{font-size:1.4rem}}

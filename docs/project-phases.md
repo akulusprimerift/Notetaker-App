@@ -1,5 +1,7 @@
 # Project phases
 
+Refinement (2026-09-24): **6.8 / M08** stays active. User review replaces the display heading font with geometric TikTok Sans, strengthens glass surfaces, adds spacing and simplifies animated navigation. [Appearance evidence](implementation/workspace-appearance.md) records the rerun checks; installer delivery remains pending.
+
 Update (2026-09-24): **6.8 / M08** remains active. The [workspace appearance increment](implementation/workspace-appearance.md) adds Pink/Blue themes, local display fonts, rounded glass surfaces and reduced-motion-aware tab slides. Synthetic browser checks preserve existing note/transcript flows; installer packaging and earlier release gates remain open.
 
 Update (2026-09-23): **6.8 / M08** remains active. [Live notes usability](implementation/live-notes-usability.md) adds automatic saved-note updates, incremental desktop provider output, lecture-wide review dismissal and direct lecture deletion access. Student edits remain protected; live-provider and installed-upgrade qualification remain open.

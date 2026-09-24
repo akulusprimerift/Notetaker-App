@@ -1,5 +1,11 @@
 # Session transfer
 
+## Appearance refinement after review — 2026-09-24
+
+Active phase remains **6.8 / M08**. Replaced the rejected Wayfinder heading with local TikTok Sans; increased glass transparency, highlight edges and spacing; simplified lecture tab labels and added a responsive sliding selection highlight plus library/course/lecture entrance animation. Reduced-motion behavior and recorder ownership are preserved. No inference, transcript, note-editing or data changes. See [current appearance evidence](docs/implementation/workspace-appearance.md).
+
+Executed: Chromium appearance/font/persistence/400px/animation/recorder checks, 32 focused contrast pairs, existing live transcript/note flows, frontend lint/typecheck/build and documentation/whitespace. Installer remains unchanged; next delivery step is packaging the renderer with the existing standalone runtime and qualifying the installed upgrade. No microphone, student-library access or push.
+
 ## Workspace appearance — 2026-09-24
 
 Active phase remains **6.8 / M08**. Added persisted Pink/Blue palettes, locally installed Wayfinder/Lemon Milk typography with a geometric supporting face, rounded translucent surfaces and directional tab slides with reduced-motion support. Note/transcript content fonts, inference, recording and student revision behavior are preserved. See [scope and verification](docs/implementation/workspace-appearance.md).

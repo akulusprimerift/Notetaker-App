@@ -40,8 +40,9 @@ const assert=require('node:assert/strict');
       await page.locator(`html[data-theme=${theme}]`).waitFor();
       await page.locator('.streaming-text').waitFor();
       await page.evaluate(()=>document.fonts.ready);
+      await page.evaluate(()=>Promise.all(document.getAnimations().map(animation=>animation.finished.catch(()=>{}))));
       assert.match(await page.locator('.streaming-text').evaluate(el=>getComputedStyle(el).fontFamily),/^system-ui/);
-      assert.match(await page.locator('h1').evaluate(el=>getComputedStyle(el).fontFamily),/Workspace Wayfinder/);
+      assert.match(await page.locator('h1').evaluate(el=>getComputedStyle(el).fontFamily),/Workspace Sans/);
       await page.screenshot({path:`.local/appearance-review/${theme}.png`,fullPage:true});
       await page.setViewportSize({width:400,height:850});
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`${theme} fits narrow screen`);
@@ -54,12 +55,17 @@ const assert=require('node:assert/strict');
     const {root}=await cdp.send('DOM.getDocument');
     const {nodeId}=await cdp.send('DOM.querySelector',{nodeId:root.nodeId,selector:'h1'});
     const {fonts}=await cdp.send('CSS.getPlatformFontsForNode',{nodeId});
-    assert.ok(fonts.some(font=>/Wayfinder/i.test(font.familyName)),JSON.stringify(fonts));
+    assert.ok(fonts.some(font=>/TikTok/i.test(font.familyName)),JSON.stringify(fonts));
     await page.locator('.capture-panel').evaluate(el=>el.dataset.retained='yes');
     await page.evaluate(()=>{window.slides=[];const animate=Element.prototype.animate;Element.prototype.animate=function(frames,options){if(this.classList.contains('lecture-panel'))window.slides.push({frames,options});return animate.call(this,frames,options);};});
     await page.getByRole('tab',{name:/Transcript/}).click();
     await page.locator('.transcript-panel').waitFor();
     assert.equal(await page.evaluate(()=>window.slides.at(-1).frames[0].transform),'translateX(36px)');
+    await page.waitForFunction(()=>{
+      const tab=document.querySelector('.lecture-tabs [aria-selected="true"]').getBoundingClientRect();
+      const marker=document.querySelector('.tab-highlight').getBoundingClientRect();
+      return Math.abs(tab.x-marker.x)<1&&Math.abs(tab.width-marker.width)<1;
+    });
     await page.getByRole('tab',{name:/Study notes/}).click();
     await page.locator('.streaming-text').waitFor();
     assert.equal(await page.evaluate(()=>window.slides.at(-1).frames[0].transform),'translateX(-36px)');
@@ -71,11 +77,13 @@ const assert=require('node:assert/strict');
     assert.equal(await page.locator('.capture-panel').getAttribute('data-retained'),'yes');
     await page.evaluate(()=>{location.hash='';});
     await page.locator('.course-card').waitFor();
+    assert.equal(await page.locator('.course-card').evaluate(el=>getComputedStyle(el).backdropFilter.includes('blur')),true);
     for(const theme of ['pink','blue','dark']){
       await page.getByLabel('App theme').selectOption(theme);
+      await page.evaluate(()=>Promise.all(document.getAnimations().map(animation=>animation.finished.catch(()=>{}))));
       await page.screenshot({path:`.local/appearance-review/${theme}-dashboard.png`,fullPage:true});
     }
     assert.deepEqual(errors,[]);
-    console.log('Four persisted themes, local Wayfinder rendering, preserved reading font, 400px layouts, directional slide, reduced motion and retained recorder passed.');
+    console.log('Four persisted themes, local geometric font rendering, preserved reading font, 400px layouts, directional slide, reduced motion and retained recorder passed.');
   }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
