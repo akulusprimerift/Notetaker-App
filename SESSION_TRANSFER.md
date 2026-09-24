@@ -1,5 +1,11 @@
 # Session transfer
 
+## Live notes and lecture deletion — 2026-09-23
+
+Active phase remains **6.8 / M08**. Notes now automatically display new saved generated revisions; the desktop provider bridge forwards incremental text instead of buffering complete cloud responses. Existing student revisions and unsaved drafts remain protected. Worth reviewing stays dismissed per lecture across revisions/reloads until reopened. The lecture header opens the existing deletion confirmation, with sidebar cleanup and navigation from all lecture tabs fixed. See [behavior, executed checks and delivery](docs/implementation/live-notes-usability.md).
+
+Executed: existing backend suite **233 passed, 1 skip**, plus **4 new bridge tests**; **60 JavaScript contracts**, **18 desktop tests**, synthetic Chromium flows, typecheck, frontend/Python lint and production standalone web build. No microphone, model downloads, live cloud inference, installed-library modifications or push. Next: install the rebuilt artifact when available and qualify actual connected-provider streaming and existing-library upgrade; retain earlier human-quality/hardware/release gaps.
+
 ## Speech workspace usability — 2026-09-23
 
 Active phase remains **6.8 / M08**. Removed the manual Mark Important control while retaining prior bookmarks; new note generation infers contextual emphasis and renders it bold in theme colors. A fixed-height, automatically scrolling transcript preview sits directly above the note content; the dedicated Transcript tab remains. The recorder stays mounted across tab changes and help. Speech setup now offers discovered local folders, a direct selector, Windows/macOS preparation help and native worker-confirmed readiness with stale-status rejection. Selection does not stop recording; restart after confirmed saves activates a changed model. No automatic model downloads, student-data changes, microphone access or push.

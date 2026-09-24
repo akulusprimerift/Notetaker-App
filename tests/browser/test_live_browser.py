@@ -24,7 +24,7 @@ from notetaker.note_worker import plan, claim, execute
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_custom_preferences_and_reconnect_preserve_reading(capture, tmp_path):
+def test_custom_preferences_and_reconnect_follow_saved_notes(capture, tmp_path):
     app,client,headers,path,run = capture
     layer=app.middleware_stack
     while layer is not None:
@@ -85,26 +85,21 @@ def test_custom_preferences_and_reconnect_preserve_reading(capture, tmp_path):
                 assert profile['layout_prompt'].startswith('Use a concept heading')
                 plan(app.state.sessions)
                 assert execute(app.state.sessions,FakeNotes(),claim(app.state.sessions),heartbeat=False)
-                expect(page.get_by_role('button',name='Show updated notes (revision 2)')).to_be_visible(timeout=10000)
-                page.get_by_role('button',name='Show updated notes (revision 2)').click()
-                # Keep a focused unsaved preference and a selected piece of lecture text.
+                expect(page.locator('.note-revision')).to_contain_text('Revision 2',timeout=10000)
+                # Keep unsaved preferences through reconnect while saved notes advance.
                 detail.fill('Keep this unsaved preference through reconnect.')
                 source=page.locator('.study-text').first
                 source.scroll_into_view_if_needed()
                 source.evaluate('el=>{const range=document.createRange();range.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(range)}')
-                selected=page.evaluate('getSelection().toString()')
-                scroll=page.evaluate('scrollY')
                 context.set_offline(True)
                 page.evaluate("window.testSockets.filter(s=>s.url.includes('/updates')).forEach(s=>s.close())")
                 append(*capture,1);plan(app.state.sessions)
                 assert execute(app.state.sessions,FakeNotes(),claim(app.state.sessions),heartbeat=False)
                 context.set_offline(False)
-                expect(page.get_by_role('button',name='Show updated notes (revision 3)')).to_be_visible(timeout=20000)
+                expect(page.locator('.note-revision')).to_contain_text('Revision 3',timeout=20000)
                 expect(page.get_by_text('Live updates connected',exact=True)).to_be_visible(timeout=20000)
-                assert page.evaluate('getSelection().toString()')==selected
-                assert abs(page.evaluate('scrollY')-scroll)<120
                 assert detail.input_value()=='Keep this unsaved preference through reconnect.'
-                assert page.locator('.note-revision').inner_text().startswith('Revision 2')
+                assert page.locator('.note-revision').inner_text().startswith('Revision 3')
                 assert not errors,errors
                 # A snapshot reset may move the cursor backwards after restored history.
                 restored=client.get(path+'/snapshot').json()
@@ -126,7 +121,6 @@ def test_custom_preferences_and_reconnect_preserve_reading(capture, tmp_path):
                 page.get_by_role('button',name='Show transcript revisions').click()
                 expect(page.locator('.passage-text').first).to_have_text('Binary search requires sorted input; this is a corrected revision.')
                 assert page.locator('#note-depth').count()==0 and page.locator('#note-format').count()==0
-                page.get_by_role('button',name='Show updated notes (revision 3)').click()
                 page.get_by_role('button',name='Edit notes',exact=True).click()
                 expect(page.locator('.note-draft')).to_be_visible()
                 assert not errors,errors

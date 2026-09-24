@@ -62,12 +62,27 @@ class ProviderBridge:
 
     def generate(self, model, digest, messages, on_preview=None):
         try:
-            result = self.request('POST', '/connections/generate', {'model': model, 'digest': digest, 'messages': messages}, timeout=610)
-            raw = result['raw']
-            if on_preview:
-                on_preview(preview_text(raw))
-            return raw, result.get('metrics', {})
+            if not on_preview:
+                result = self.request('POST', '/connections/generate', {'model': model, 'digest': digest, 'messages': messages}, timeout=610)
+                return result['raw'], result.get('metrics', {})
+            import json
+            with httpx.Client(base_url=self.url, timeout=610, trust_env=False, follow_redirects=False) as client:
+                with client.stream('POST', '/connections/generate',
+                        json={'model': model, 'digest': digest, 'messages': messages, 'stream': True},
+                        headers={'X-Notetaker-Bridge-Token': self.token}) as response:
+                    if response.status_code != 200:
+                        raise NoteFailure('provider_unavailable')
+                    for line in response.iter_lines():
+                        if not line: continue
+                        event = json.loads(line)
+                        if event.get('type') == 'error':
+                            raise NoteFailure(event.get('code', 'provider_unavailable'))
+                        if event.get('type') == 'preview':
+                            on_preview(preview_text(event['raw']))
+                        if event.get('type') == 'result':
+                            return event['raw'], event.get('metrics', {})
+            raise NoteFailure('provider_unavailable')
         except ProviderBridgeError as exc:
             raise NoteFailure(exc.code) from None
-        except (KeyError, TypeError):
+        except (KeyError, TypeError, ValueError, httpx.HTTPError):
             raise NoteFailure('provider_unavailable') from None

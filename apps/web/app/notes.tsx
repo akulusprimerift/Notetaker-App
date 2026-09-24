@@ -21,9 +21,7 @@ const errors:Record<string,string>={model_unavailable:'Open Ollama and check tha
 export default function Notes({lecture,csrf,onSessionExpired,onOpenTranscript}:{lecture:string;csrf:string;onSessionExpired:()=>void;onOpenTranscript:()=>void}){
   const [state,setState]=useState<State|null>(null),[models,setModels]=useState<Model[]>([]),[selected,setSelected]=useState('');
   const [connectionError,setConnectionError]=useState('');
-  const [reading,setReading]=useState<Revision|null>(null);
   const applyState=useCallback((data:State)=>{setState(data);setConnectionError('');},[]);
-  useEffect(()=>{if(!reading&&(state?.editing.selected||state?.revision))setReading(state.editing.selected??state.revision);},[reading,state]);
   const [preview,setPreview]=useState<{text:string;active:boolean}>({text:'',active:false});
   const previewPanel=useRef<HTMLDivElement|null>(null),followPreview=useRef(true);
   useEffect(()=>{if(previewPanel.current&&followPreview.current)previewPanel.current.scrollTop=previewPanel.current.scrollHeight},[preview.text]);
@@ -99,8 +97,7 @@ export default function Notes({lecture,csrf,onSessionExpired,onOpenTranscript}:{
     catch(err){if(alive.current&&ticket===sourceRequest.current)setError(err instanceof Error?err.message:'Source unavailable.')}
   }
   const selectedRevision=state?.editing.selected??state?.revision;
-  const revision=reading??selectedRevision;
-  const pending=reading&&selectedRevision&&reading.id!==selectedRevision.id?selectedRevision:null;
+  const revision=selectedRevision;
   const savedProfile=revision?.profile??state?.profile;
   const activeModel=selected||state?.preference?.model||'';
   const activeIsCloud=Boolean(models.find(row=>row.name===activeModel)?.provider)||/^(openai|anthropic|chatgpt|claude-subscription)\//.test(activeModel);
@@ -108,10 +105,10 @@ export default function Notes({lecture,csrf,onSessionExpired,onOpenTranscript}:{
   return <div className="note-layout generated-notes"><section className="note-paper" aria-labelledby="notes-title">
     <TranscriptPreview lecture={lecture} onSessionExpired={onSessionExpired} onOpen={onOpenTranscript}/>
     <div className="paper-heading"><h2 id="notes-title">Your lecture notes</h2><span>{savedProfile?.detail_prompt?.trim()?'CUSTOM DETAIL':(savedProfile?.depth??'detailed').toUpperCase()} · {savedProfile?.layout_prompt?.trim()?'CUSTOM LAYOUT':(savedProfile?.format??'topic_outline').replaceAll('_',' ').toUpperCase()}</span></div>
-    <div className="note-status"><p role="status">{state?labels[state.status]:'Opening your notes…'}</p>
+    <div className="note-status">{!preview.text&&<p role="status">{state?labels[state.status]:'Opening your notes…'}</p>}
       <p className="small muted">Your selected model turns the transcript into explanations, definitions and worked steps. You can check the evidence below.</p>
       {state?.processing?.newer_transcript_pending&&<p className="small muted">New transcript passages are waiting for the next note update.</p>}
-      {state?.status==='generating'&&<p className="small muted">Your model is writing from accumulated transcript passages. New speech continues to be transcribed.</p>}
+      {state?.status==='generating'&&!preview.text&&<p className="small muted">Your model is writing from accumulated transcript passages. New speech continues to be transcribed.</p>}
       {connectionError&&<p role="status" className="error">{connectionError}</p>}
       {error&&<p role="alert" className="error">{error}</p>}
       {state?.error_code&&<p className="error">{errors[state.error_code]??'The local note service needs attention.'}</p>}
@@ -119,16 +116,15 @@ export default function Notes({lecture,csrf,onSessionExpired,onOpenTranscript}:{
       {state&&(state.status==='needs_attention'||state.error_code)&&<button className="secondary" disabled={busy} onClick={()=>void retry()}>Retry notes</button>}
     </div>
     {(preview.active||preview.text)&&<section className="streaming-notes" aria-label="Notes being written"><h3>{preview.active?'Writing now…':'Reconnecting to the writing preview…'}</h3><p className="small muted">Live draft · source checks run before these notes are saved. Scroll up to pause following the newest text.</p><div ref={previewPanel} tabIndex={0} className="streaming-text" onScroll={event=>{const panel=event.currentTarget;followPreview.current=panel.scrollHeight-panel.scrollTop-panel.clientHeight<30}}>{preview.text||'Preparing the next note passages…'}</div></section>}
-    {pending&&<div className="inline-notice"><p>New notes are ready. Your current reading copy stays in place until you open them.</p><button className="secondary" onClick={()=>{setReading(pending);}}>Show updated notes (revision {pending.revision})</button></div>}
     {revision?<div className="generated-content"><div className="note-revision"><span>{revision.student?'Student revision':'Revision'} {revision.revision} · {revision.metadata.model}</span><a className="text-button" href={`/api${path}/${revision.student?'edits':'revisions'}/${revision.id}/export`}>Export Markdown</a></div>
       <p className="small muted">{revision.student?'Your selected student revision. Student changes retain original source links for review.':'AI-generated notes. Source links verify where the evidence came from; review important claims for accuracy.'}</p>
-      {state&&<NoteEditor lecture={lecture} revision={revision} editing={state.editing} csrf={csrf} onExpired={onSessionExpired} onSaved={saved=>{setReading(saved);void refresh().catch(()=>{})}}/>}
+      {state&&<NoteEditor lecture={lecture} revision={revision} editing={state.editing} csrf={csrf} onExpired={onSessionExpired} onSaved={saved=>{setState(current=>current?{...current,editing:{...current.editing,selected:saved}}:current);void refresh().catch(()=>{})}}/>}
       {revision.content.blocks.map(block=><section className={`study-block ${block.kind==='emphasis'?'study-emphasis':''} ${revision.profile?.format==='cornell'&&!revision.profile.layout_prompt?'cornell-block':''}`} key={block.id}><div className="study-block-title"><p className="eyebrow">{block.kind==='emphasis'?'Important · AI identified':block.kind}</p><h3>{block.topic}</h3></div>{block.passages.map(passage=><div className="study-passage" key={passage.id}>
         <span className="evidence-label">{passage.student_edited?'Student revision · review against the original sources':passage.evidence_kind==='material_paraphrase'?'From uploaded material and cited evidence':passage.evidence_kind==='lecture_paraphrase'?'From the lecture':passage.evidence_kind==='exact_quote'?'Exact lecture quote':passage.evidence_kind==='ai_explanation'?'Additional AI explanation':'Uncertain'}</span>
         {block.kind==='code'||block.kind==='equation'?<pre><code>{passage.text}</code></pre>:<p className="study-text">{block.kind==='emphasis'?<strong>{passage.text}</strong>:passage.text}</p>}
         <div className="citation-list">{passage.sources.map((citation,index)=><button key={index} className="text-button" onClick={()=>void openSource(citation)}>Source {index+1} ↗<span className="sr-only"> for {block.topic}, passage {passage.id}</span></button>)}</div>
       </div>)}</section>)}
-      {(revision.content.issues.length>0||revision.source_issues.length>0||revision.content.coverage.some(c=>c.disposition!=='used'))&&<ReviewNotice key={revision.id} lecture={lecture} revision={revision.id}>
+      {(revision.content.issues.length>0||revision.source_issues.length>0||revision.content.coverage.some(c=>c.disposition!=='used'))&&<ReviewNotice key={lecture} lecture={lecture}>
         {revision.source_issues.length>0&&<p>The transcript includes recording gaps or uncertain recognition. Check the warnings in the transcript below.</p>}
         {revision.content.issues.map((issue,index)=><p key={index}>{issue.detail}</p>)}
         {revision.content.coverage.filter(c=>c.disposition!=='used').map(item=><p key={item.source_id}>{item.disposition==='unclear'?'Unclear passage':'Omitted passage'}: {item.reason} <button className="text-button" onClick={()=>void openSource({source_id:item.source_id,quote:'',occurrence:0})}>Review source</button></p>)}

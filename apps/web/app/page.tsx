@@ -49,6 +49,7 @@ export default function Workspace(){
   const [busy,setBusy]=useState(false);
   const [captureBusy,setCaptureBusy]=useState(false);
   const [transcriptBusy,setTranscriptBusy]=useState(false);
+  const [deleteLecture,setDeleteLecture]=useState(false);
   const sessionExpired=useCallback(()=>setSession(null),[]);
   const [removedAudio,setRemovedAudio]=useState<string[]>([]);
   const dataRemoved=useCallback((lecture:string,kind:string)=>{
@@ -56,7 +57,8 @@ export default function Workspace(){
     if(kind==='lecture'){
       setSnapshot(old=>old?.lecture.id===lecture?null:old);
       setLectures(old=>old.filter(row=>row.id!==lecture));
-      if(location.hash==='#lecture/'+lecture)location.hash='';
+      setCourseLectures(old=>Object.fromEntries(Object.entries(old).map(([id,rows])=>[id,rows.filter(row=>row.id!==lecture)])));
+      if(location.hash.split('/')[1]===lecture)location.hash='';
     }
   },[]);
   const [courses,setCourses]=useState<Course[]>([]);
@@ -100,7 +102,7 @@ export default function Workspace(){
   useEffect(()=>{void load();const changed=()=>{setRoute(location.hash.slice(1));setError('');setNotice('')};changed();window.addEventListener('hashchange',changed);return()=>window.removeEventListener('hashchange',changed)},[load]);
   useEffect(()=>{
     if(!session)return;
-    let active=true;setSnapshot(null);setLectures([]);
+    let active=true;setSnapshot(null);setLectures([]);setDeleteLecture(false);
     if(!routeKind||!routeId){setViewLoading(false);return;}
     setViewLoading(true);
     const work=async()=>{
@@ -151,7 +153,7 @@ export default function Workspace(){
       {error&&!form&&<div className="error" role="alert">{error} <a href="#">Return to library</a></div>}
       {viewLoading?<p role="status" className="page-loading">Opening lecture library…</p>:snapshot?<>
         <a className="back-link" href={`#course/${snapshot.lecture.course_id}`}>← {snapshot.course_name}</a>
-        <div className="page-heading"><div><p className="eyebrow">LECTURE WORKSPACE</p><h1>{snapshot.lecture.title}</h1><p className="muted">Created {date(snapshot.lecture.created_at)} <span className="separator">/</span> Saved to your course</p></div><span className="prepared-badge">Saved workspace</span></div>
+        <div className="page-heading"><div><p className="eyebrow">LECTURE WORKSPACE</p><h1>{snapshot.lecture.title}</h1><p className="muted">Created {date(snapshot.lecture.created_at)} <span className="separator">/</span> Saved to your course</p></div><button className="text-button" disabled={captureBusy||transcriptBusy} onClick={()=>{setDeleteLecture(true);openLectureTab('finalize')}}>Delete lecture</button></div>
         <div className="lecture-toolbar" aria-label="Lecture workspace navigation">
           <div className="lecture-toolbar-copy"><span className="status-dot"/><span>{captureBusy?'Recording or saving audio':snapshot.lecture.audio_removed?'Audio removed':'Ready when you are'}</span></div>
           <button className="secondary toolbar-action" onClick={()=>openLectureTab('capture')}>{captureBusy?'Open recording':'Record a segment'}</button>
@@ -165,7 +167,7 @@ export default function Workspace(){
           {lectureTab==='materials'&&<Materials key={snapshot.lecture.id+'-materials'} course={snapshot.lecture.course_id} lecture={snapshot.lecture.id} csrf={session.csrf_token}/>}
           {lectureTab==='visuals'&&<VisualNotes key={snapshot.lecture.id+'-visuals'} lecture={snapshot.lecture.id} onSessionExpired={sessionExpired}/>}
           {lectureTab==='study'&&<StudyTools key={snapshot.lecture.id+'-study'} lecture={snapshot.lecture.id} course={snapshot.lecture.course_id} csrf={session.csrf_token}/>}
-          {lectureTab==='finalize'&&<Finalization key={snapshot.lecture.id+'-final'} lecture={snapshot.lecture.id} csrf={session.csrf_token} busy={captureBusy||transcriptBusy} onRemoved={dataRemoved}/>}
+          {lectureTab==='finalize'&&<Finalization key={snapshot.lecture.id+'-final'} lecture={snapshot.lecture.id} csrf={session.csrf_token} busy={captureBusy||transcriptBusy} onRemoved={dataRemoved} deleteRequested={deleteLecture} onDeleteHandled={()=>setDeleteLecture(false)}/>}
         </div>
       </>:route.startsWith('course/')&&selected?<>
         <a className="back-link" href="#">← Your library</a><div className="page-heading"><div><p className="eyebrow">{selected.code||'YOUR COURSE'}</p><h1>{selected.name}</h1><p className="muted">Your lectures, together in one place.</p></div><button className="primary" onClick={()=>openForm('lecture')}>+ New lecture</button></div>

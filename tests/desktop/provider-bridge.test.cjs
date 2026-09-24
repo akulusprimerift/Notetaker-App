@@ -127,3 +127,26 @@ test('refresh preserves credentials and disconnect revokes both subscriptions ev
     }
   }finally{await rm(directory,{recursive:true,force:true});}
 });
+
+
+test('authenticated bridge delivers a preview while provider completion is held',async()=>{
+  const directory=await mkdtemp(path.join(os.tmpdir(),'notetaker-stream-test-'));
+  let finish;
+  const bridge=new ProviderBridge(directory,storage,{fetch:async()=>new Response(new ReadableStream({start(controller){
+    const send=value=>controller.enqueue(new TextEncoder().encode('data: '+JSON.stringify(value)+'\n\n'));
+    send({choices:[{delta:{content:'{"text":"Growing'}}]});
+    finish=()=>{send({choices:[{delta:{content:' notes"}'},finish_reason:'stop'}]});controller.close();};
+  }}))});
+  const config=await bridge.start();
+  try{
+    await bridge.write('openai',{provider:'openai',model:'test',models:['test'],id:'digest',api_key:'fake'});
+    const response=await fetch(`http://127.0.0.1:${bridge.port}/connections/generate`,{method:'POST',headers:{'Content-Type':'application/json','X-Notetaker-Bridge-Token':config.token},body:JSON.stringify({model:'openai/test',digest:'digest',messages:[{role:'user',content:'synthetic'}],stream:true})});
+    const reader=response.body.getReader();
+    const first=new TextDecoder().decode((await reader.read()).value);
+    assert.equal(JSON.parse(first.trim()).raw,'{"text":"Growing');
+    finish();finish=null;
+    let rest='';while(true){const part=await reader.read();if(part.done)break;rest+=new TextDecoder().decode(part.value);}
+    const result=rest.trim().split('\n').map(JSON.parse).at(-1);
+    assert.equal(result.type,'result');assert.equal(result.raw,'{"text":"Growing notes"}');
+  }finally{finish?.();await bridge.close();await rm(directory,{recursive:true,force:true});}
+});

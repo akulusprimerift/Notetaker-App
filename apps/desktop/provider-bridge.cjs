@@ -1,4 +1,5 @@
 'use strict';
+const {readProviderStream}=require('./provider-stream.cjs');
 
 const {createServer} = require('node:http');
 const {timingSafeEqual} = require('node:crypto');
@@ -75,7 +76,7 @@ function codexArgs(executable) {
   return args;
 }
 
-function codexGenerate(row, messages, directory) {
+function codexGenerate(row, messages, directory, onPreview) {
   return new Promise(async (resolve, reject) => {
     let cwd;
     try {cwd=await mkdtemp(path.join(os.tmpdir(), 'notetaker-context-'));} catch {reject(new BridgeError('provider_unavailable', 'The temporary provider workspace could not be created.'));return;}
@@ -92,7 +93,7 @@ function codexGenerate(row, messages, directory) {
       if(event.id===1){send({method:'initialized'});send({id:2,method:'account/read',params:{}});}
       else if(event.id===2){if(event.result?.account?.type!=='chatgpt'){finish(new BridgeError('provider_authentication','Sign in to the ChatGPT subscription client first.'));return;}send({id:3,method:'thread/start',params:{model:row.model,cwd,ephemeral:true,approvalPolicy:'never',sandbox:'read-only'}});}
       else if(event.id===3){const thread=event.result?.thread?.id;if(!thread){finish(new BridgeError('provider_unavailable','The ChatGPT subscription did not open a note session.'));return;}send({id:4,method:'turn/start',params:{threadId:thread,input:[{type:'text',text:messages.map(message=>message.content).join('\n\n')}]}});}
-      else if(event.method==='item/agentMessage/delta')text+=event.params?.delta||'';
+      else if(event.method==='item/agentMessage/delta'){text+=event.params?.delta||'';onPreview?.(text);}
       else if(event.method==='item/completed'&&event.params?.item?.type==='agentMessage')final=event.params.item.text||'';
       else if(event.method==='turn/completed'){if(event.params?.turn?.status!=='completed')finish(new BridgeError('provider_limit_or_failure','The ChatGPT subscription stopped before completing the note request.'));else finish(null,{raw:final||text,metrics:{client:'codex-app-server',billing:'subscription'}});}
     });
@@ -102,7 +103,7 @@ function codexGenerate(row, messages, directory) {
   });
 }
 
-async function claudeGenerate(row, messages, directory) {
+async function claudeGenerate(row, messages, directory, onPreview) {
   const cwd=await mkdtemp(path.join(os.tmpdir(), 'notetaker-context-'));
   const env=safeEnvironment('claude-subscription', directory);
   try {
@@ -114,7 +115,7 @@ async function claudeGenerate(row, messages, directory) {
       const child=spawn(args[0],args.slice(1),{cwd,env,windowsHide:true,stdio:['pipe','pipe','ignore']});
       const reader=readline.createInterface({input:child.stdout});let text='',timer=setTimeout(()=>{child.kill();reject(new BridgeError('provider_timeout','The Claude subscription took too long to respond.'));},600_000),done=false;
       const finish=(error,value)=>{if(done)return;done=true;clearTimeout(timer);reader.close();if(child.exitCode===null)child.kill();if(error)reject(error);else resolve(value);};
-      reader.on('line',line=>{let event;try{event=JSON.parse(line);}catch{finish(new BridgeError('subscription_client_unavailable','The Claude client returned invalid output.'));return;}if(event.type==='stream_event'){const part=event.event||{};if(part.type==='content_block_start'&&part.content_block?.type==='tool_use')finish(new BridgeError('unexpected_tool_request','The subscription provider requested an unsupported action.'));text+=part.delta?.text||'';}if(event.type==='result'){if(event.is_error||event.subtype!=='success')finish(new BridgeError('provider_limit_or_failure','The Claude subscription stopped before completing the note request.'));else finish(null,{raw:event.result||text,metrics:{client:'claude-code',billing:'subscription',usage:event.usage||{}}});}});
+      reader.on('line',line=>{let event;try{event=JSON.parse(line);}catch{finish(new BridgeError('subscription_client_unavailable','The Claude client returned invalid output.'));return;}if(event.type==='stream_event'){const part=event.event||{};if(part.type==='content_block_start'&&part.content_block?.type==='tool_use')finish(new BridgeError('unexpected_tool_request','The subscription provider requested an unsupported action.'));text+=part.delta?.text||'';onPreview?.(text);}if(event.type==='result'){if(event.is_error||event.subtype!=='success')finish(new BridgeError('provider_limit_or_failure','The Claude subscription stopped before completing the note request.'));else finish(null,{raw:event.result||text,metrics:{client:'claude-code',billing:'subscription',usage:event.usage||{}}});}});
       child.once('error',error=>finish(new BridgeError('subscription_client_unavailable',error.code==='ENOENT'?'The selected Claude client could not be started.':'The Claude client could not be started.')));
       child.once('exit',code=>{if(!done&&code!==0)finish(new BridgeError('provider_authentication','The Claude subscription client did not complete the request.'));});
       child.stdin.end(messages.map(message=>message.content).join('\n\n'));
@@ -238,22 +239,20 @@ class ProviderBridge {
     catch{return {provider,notice:'Disconnected from Notetaker. The provider client could not confirm sign-out; review connected sessions in your provider account.'};}
     return {provider};
   }
-  async generate(input) {
+  async generate(input, onPreview) {
     const model=String(input.model||''),[provider,name]=model.split('/',2),row=await this.read(provider);
     if(!row||!(row.models||[row.model]).includes(name)||(input.digest&&row.id!==input.digest))throw new BridgeError('connection_unavailable','This provider connection changed. Reconnect it and apply the model again.',503);
     const messages=input.messages;if(!Array.isArray(messages)||messages.length<1||JSON.stringify(messages).length>150_000)throw new BridgeError('invalid_request','The note request was invalid.');
-    if(SUBSCRIPTIONS.has(provider))return provider==='chatgpt'?codexGenerate({...row,model:name},messages,this.directory):claudeGenerate({...row,model:name},messages,this.directory);
+    if(SUBSCRIPTIONS.has(provider))return provider==='chatgpt'?codexGenerate({...row,model:name},messages,this.directory,onPreview):claudeGenerate({...row,model:name},messages,this.directory,onPreview);
     const headers={'Content-Type':'application/json'};let url,request;
-    if(provider==='openai'){url='https://api.openai.com/v1/chat/completions';headers.Authorization='Bearer '+row.api_key;request={model:name,messages,stream:false,store:false,max_completion_tokens:6000,response_format:{type:'json_object'}};}
-    else {url='https://api.anthropic.com/v1/messages';headers['x-api-key']=row.api_key;headers['anthropic-version']='2023-06-01';request={model:name,system:messages[0]?.content||'',messages:messages.slice(1),max_tokens:6000,stream:false};}
-    let response;try {response=await fetch(url,{method:'POST',headers,body:JSON.stringify(request),signal:AbortSignal.timeout(600_000),redirect:'error'});} catch {throw new BridgeError('provider_unavailable','The provider could not be reached.',503);}
+    if(provider==='openai'){url='https://api.openai.com/v1/chat/completions';headers.Authorization='Bearer '+row.api_key;request={model:name,messages,stream:true,store:false,max_completion_tokens:6000,response_format:{type:'json_object'}};}
+    else {url='https://api.anthropic.com/v1/messages';headers['x-api-key']=row.api_key;headers['anthropic-version']='2023-06-01';request={model:name,system:messages[0]?.content||'',messages:messages.slice(1),max_tokens:6000,stream:true};}
+    let response;try {response=await (this.options.fetch||fetch)(url,{method:'POST',headers,body:JSON.stringify(request),signal:AbortSignal.timeout(600_000),redirect:'error'});} catch {throw new BridgeError('provider_unavailable','The provider could not be reached.',503);}
     if(response.status===401||response.status===403)throw new BridgeError('provider_authentication','The provider rejected this connection. Check the API key.');
     if(response.status===429)throw new BridgeError('provider_limit','The provider usage limit was reached.');
     if(!response.ok)throw new BridgeError('provider_unavailable','The provider could not complete the note request.',503);
-    let result;try{const text=await response.text();if(text.length>2_000_000)throw new Error();result=JSON.parse(text);}catch{throw new BridgeError('invalid_output','The provider returned invalid note output.');}
-    const raw=provider==='openai'?result.choices?.[0]?.message?.content:result.content?.[0]?.text;
-    if(typeof raw!=='string'||!raw)throw new BridgeError('invalid_output','The provider returned no note content.');
-    return {raw,metrics:result.usage||{}};
+    try{return await readProviderStream(response,provider,onPreview);}
+    catch{throw new BridgeError('invalid_output','The provider stream did not finish with valid note output.');}
   }
   async handle(request,response) {
     const supplied=String(request.headers['x-notetaker-bridge-token']||'');
@@ -271,7 +270,17 @@ class ProviderBridge {
       if(request.method==='GET'&&url.pathname==='/connections')result={connections:await this.inventory()};
       else if(request.method==='POST'&&url.pathname==='/connections')result=await this.save(input);
       else if(request.method==='POST'&&url.pathname==='/connections/verify')result=await this.verify(input);
-      else if(request.method==='POST'&&url.pathname==='/connections/generate')result=await this.generate(input);
+      else if(request.method==='POST'&&url.pathname==='/connections/generate'){
+        if(input.stream){
+          response.writeHead(200,{'Content-Type':'application/x-ndjson','Cache-Control':'no-store'});
+          response.flushHeaders();
+          const emit=value=>{if(!response.destroyed)response.write(JSON.stringify(value)+'\n');};
+          try{const result=await this.generate(input,raw=>emit({type:'preview',raw}));emit({type:'result',...result});}
+          catch(error){emit({type:'error',code:error instanceof BridgeError?error.code:'provider_unavailable'});}
+          response.end();return;
+        }
+        result=await this.generate(input);
+      }
       else if(parts.length===2&&parts[0]==='connections'&&request.method==='DELETE')result=await this.remove(parts[1]);
       else if(parts.length===3&&parts[0]==='connections'&&parts[2]==='sign-in'&&request.method==='POST')result=await this.signIn(parts[1]);
       else if(parts.length===3&&parts[0]==='connections'&&parts[2]==='refresh'&&request.method==='POST')result=await this.refresh(parts[1]);

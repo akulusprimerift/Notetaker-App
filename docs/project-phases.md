@@ -1,5 +1,7 @@
 # Project phases
 
+Update (2026-09-23): **6.8 / M08** remains active. [Live notes usability](implementation/live-notes-usability.md) adds automatic saved-note updates, incremental desktop provider output, lecture-wide review dismissal and direct lecture deletion access. Student edits remain protected; live-provider and installed-upgrade qualification remain open.
+
 Update (2026-09-23): **6.8 / M08** remains active. [Speech workspace usability](implementation/speech-workspace-ux.md) removes manual marking, adds contextual model emphasis, a bounded live transcript above notes, and guided speech selection with native worker readiness. Earlier hardware, human-quality and release gates remain open.
 
 
