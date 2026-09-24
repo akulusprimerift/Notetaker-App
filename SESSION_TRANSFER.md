@@ -1,5 +1,9 @@
 # Session transfer
 
+## Blue theme checked before packaging — 2026-09-24
+
+Active phase remains **6.8 / M08**. Blue uses the latest geometric typography, glass surfaces, spacing and animations. Fixed primary-button hover contrast and matched native choice-control accents. Expanded synthetic browser checks pass all seven lecture sections at 1440px/400px plus course/account dialogs, Blue hover contrast and existing appearance checks. Four-theme contrast, lint/typecheck, production build and documentation/whitespace pass. [Evidence and fixture corrections](docs/implementation/workspace-appearance.md). No note/transcript behavior, student data or installed app was changed. Next: package the updated renderer with the existing standalone runtime and qualify installed upgrade; installer has not yet been rebuilt.
+
 ## Appearance refinement after review — 2026-09-24
 
 Active phase remains **6.8 / M08**. Replaced the rejected Wayfinder heading with local TikTok Sans; increased glass transparency, highlight edges and spacing; simplified lecture tab labels and added a responsive sliding selection highlight plus library/course/lecture entrance animation. Reduced-motion behavior and recorder ownership are preserved. No inference, transcript, note-editing or data changes. See [current appearance evidence](docs/implementation/workspace-appearance.md).

@@ -8,6 +8,9 @@ body,.workspace,.modal{background:var(--bg);color:var(--ink)}
 .active,.preview-notice,.prepared-badge,.count,.card-icon,.lecture-icon,.empty-art,.add-card:hover,.streaming-notes,.prompt-profiles{background:var(--soft);color:var(--ink);border-color:var(--line)}
 .primary,.brand-icon{background:var(--accent);border-color:var(--accent);color:#fff}:root[data-theme=dark] .primary,:root[data-theme=dark] .brand-icon{color:#111626}
 .primary:hover{filter:brightness(1.12);background:var(--accent)}.secondary:hover{background:var(--soft)}
+/* Keep white button labels readable in Blue, including the hover state. */
+:root[data-theme=blue] .primary:hover{filter:none;background:#00689f;border-color:#00689f}
+:root[data-theme=blue] input[type=checkbox],:root[data-theme=blue] input[type=radio]{accent-color:var(--accent)}
 .muted,.eyebrow,.text-button,.back-link,.sidebar-empty,.sidebar-bottom p,.topbar>span:first-child,.section-row>span,.card-footer,.library-footer,.lecture-row p,.lecture-details dt,.source-empty,.paper-heading span,.note-placeholder p,.empty-state p:not(.eyebrow),.nav-title,.nav-title button,.privacy-badge,.capture-message,.recording-segments p,.evidence-label{color:var(--muted)}
 .note-review,.recovery-box{background:var(--warning-bg);color:var(--warning-ink);border-color:var(--line)}.recovery-box p{color:var(--warning-ink)}
 pre,.study-block pre{background:var(--sidebar);color:var(--ink)}.status-dot{background:#778da9}.status-dot.neutral{background:#8e9aaf}

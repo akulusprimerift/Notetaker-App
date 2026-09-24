@@ -23,6 +23,10 @@ const assert=require('node:assert/strict');
       else if(path.endsWith('/transcript'))body=transcript;
       else if(path.endsWith('/capture'))body={available:true,capture_epoch:1,runs:[]};
       else if(path.endsWith('/notes'))body=notes;
+      else if(path.endsWith('/study/learning'))body={revision_id:null,cards:[],omitted:0,issues:[]};
+      else if(path.endsWith('/study/questions'))body={revision_id:null,blocks:[],preference_id:null,model:null,enabled:false,cloud:false,sets:[]};
+      else if(path.endsWith('/provider-connections'))body={connections:[]};
+      else if(path.endsWith('/terminology'))body={version:0,terms:[]};
       else if(path.endsWith('/note-models'))body={models:[],available:true};
       else if(path.endsWith('/notes/stream'))return route.fulfill({contentType:'text/event-stream',body:'data: '+JSON.stringify({active:true,text:'A streamed study explanation.'})+'\n\n'});
       await route.fulfill({json:body});
@@ -82,6 +86,38 @@ const assert=require('node:assert/strict');
       await page.getByLabel('App theme').selectOption(theme);
       await page.evaluate(()=>Promise.all(document.getAnimations().map(animation=>animation.finished.catch(()=>{}))));
       await page.screenshot({path:`.local/appearance-review/${theme}-dashboard.png`,fullPage:true});
+    }
+    // Blue qualification covers the full navigation and dialogs before packaging.
+    await page.getByLabel('App theme').selectOption('blue');
+    const newCourse=page.getByRole('button',{name:'+ New course',exact:true});
+    await newCourse.hover();
+    const hoverContrast=await newCourse.evaluate(element=>{
+      const style=getComputedStyle(element);
+      const luminance=color=>{const rgb=color.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;});return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;};
+      const a=luminance(style.color),b=luminance(style.backgroundColor);
+      return {ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05),filter:style.filter};
+    });
+    assert.equal(hoverContrast.filter,'none');assert.ok(hoverContrast.ratio>=4.5);
+    await page.getByRole('button',{name:'+ New course',exact:true}).click();
+    await page.getByRole('dialog').waitFor();
+    await page.screenshot({path:'.local/appearance-review/blue-course-form.png',fullPage:true});
+    await page.getByRole('button',{name:'Close form'}).click();
+    await page.getByRole('button',{name:'Accounts & API keys',exact:true}).filter({visible:true}).click();
+    await page.getByRole('dialog',{name:'Accounts & API keys'}).waitFor();
+    await page.screenshot({path:'.local/appearance-review/blue-accounts.png',fullPage:true});
+    await page.getByRole('button',{name:'Close',exact:true}).click();
+    await page.evaluate(()=>{location.hash='lecture/lecture/notes';});
+    await page.getByRole('tab',{name:'Study notes',exact:true}).waitFor();
+    for(const width of [1440,400]){
+      await page.setViewportSize({width,height:900});
+      for(const label of ['Study notes','Transcript','Materials','Capture','Visual notes','Study tools','Finish']){
+        await page.getByRole('tab',{name:label,exact:true}).click();
+        if(label==='Capture')await page.locator('.capture-panel:not(.capture-panel-compact)').waitFor();
+        else await page.getByRole('tabpanel',{name:label,exact:true}).waitFor();
+        await page.screenshot({path:`.local/appearance-review/blue-${width}-${label.replaceAll(' ','-')}.png`,fullPage:true});
+        assert.deepEqual(errors,[]);
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`Blue ${label} at ${width}px`);
+      }
     }
     assert.deepEqual(errors,[]);
     console.log('Four persisted themes, local geometric font rendering, preserved reading font, 400px layouts, directional slide, reduced motion and retained recorder passed.');
