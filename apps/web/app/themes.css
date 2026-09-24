@@ -1,5 +1,7 @@
 :root{--ink:#1b263b;--muted:#415a77;--green:#415a77;--bg:#e0e1dd;--line:#8e9aaf;--white:#f2f3f1;--soft:#cdd5df;--surface:#f2f3f1;--sidebar:#d0d6df;--accent:#415a77;--focus:#415a77;--warning-bg:#ede3d2;--warning-ink:#654013;color-scheme:light}
 :root[data-theme=dark]{--ink:#f2f2f5;--muted:#b9c3da;--green:#bd9df4;--bg:#090d17;--line:#3e4b67;--white:#121b2d;--soft:#232643;--surface:#121b2d;--sidebar:#101421;--accent:#c3a5fb;--focus:#ffa45c;--warning-bg:#322336;--warning-ink:#ffc58f;color-scheme:dark}
+:root[data-theme=pink]{--ink:#4b1830;--muted:#79334e;--green:#92294e;--bg:#ffe5ec;--line:#cb7892;--white:#fff5f8;--soft:#ffc2d1;--surface:#fff5f8;--sidebar:#ffb3c6;--accent:#92294e;--focus:#92294e;--warning-bg:#ffe5ec;--warning-ink:#79334e;--glow:#fb6f92;--glow-secondary:#ff8fab;color-scheme:light}
+:root[data-theme=blue]{--ink:#03045e;--muted:#17516f;--green:#0077b6;--bg:#caf0f8;--line:#559bb7;--white:#f1fcff;--soft:#90e0ef;--surface:#f1fcff;--sidebar:#90e0ef;--accent:#0077b6;--focus:#03045e;--warning-bg:#caf0f8;--warning-ink:#03045e;--glow:#00b4d8;--glow-secondary:#0077b6;color-scheme:light}
 body,.workspace,.modal{background:var(--bg);color:var(--ink)}
 .sidebar{background:var(--sidebar)}
 .empty-state,.course-card,.lecture-row,.note-paper,.capture-panel,.notes-panel,.note-source,.note-draft,.note-placeholder,.secondary,input,textarea,select{background:var(--surface);color:var(--ink);border-color:var(--line)}
@@ -71,3 +73,48 @@ input[type=file]::file-selector-button{padding:7px 10px;margin-right:10px;border
 .transcript-preview,.speech-model{border:1px solid var(--line);border-radius:12px;padding:16px;background:var(--surface);color:var(--ink);margin-bottom:18px;min-width:0}
 .transcript-preview h2{font-size:18px;margin:0}.transcript-preview-scroll{height:144px;min-height:144px;max-height:144px;overflow-y:auto;overscroll-behavior:contain;overflow-wrap:anywhere;white-space:pre-wrap}.transcript-preview-scroll p{margin:8px 0}.speech-draft{color:var(--muted)}
 .study-block.study-emphasis{border-left:4px solid var(--accent);background:var(--soft);padding:16px;border-radius:8px}.speech-help{max-width:660px}.speech-help li{margin:12px 0;overflow-wrap:anywhere}.speech-model .section-row{flex-wrap:wrap;gap:12px}
+
+/* Local installed fonts only: no font downloads or redistributed font files. */
+@font-face{font-family:Workspace Wayfinder;src:local("FSP DEMO - Wayfinder CF Regular"),local("Wayfinder CF Regular"),local("Wayfinder CF");font-weight:400;font-display:swap}
+@font-face{font-family:Workspace Wayfinder;src:local("FSP DEMO - Wayfinder CF Bold Regular"),local("Wayfinder CF Bold");font-weight:600 900;font-display:swap}
+@font-face{font-family:Workspace Lemon;src:local("LEMON MILK Regular"),local("LEMONMILK-Regular");font-weight:400 900;font-display:swap}
+@font-face{font-family:Workspace Sans;src:local("TikTok Sans Regular");font-weight:400;font-display:swap}
+@font-face{font-family:Workspace Sans;src:local("TikTok Sans SemiBold");font-weight:600 900;font-display:swap}
+:root{--reading-font:system-ui,-apple-system,"Segoe UI",sans-serif;--ui-font:"Workspace Sans","Century Gothic",sans-serif;--display-font:"Workspace Wayfinder","Moret",Georgia,serif;--label-font:"Workspace Lemon","LEMON MILK",sans-serif;--glow:#8e9aaf;--glow-secondary:#778da9}
+:root[data-theme=dark]{--glow:#7350bc;--glow-secondary:#30679c}
+body{font-family:var(--ui-font)}
+button,input,textarea,select{font-family:inherit}
+h1,.brand{font-family:var(--display-font);letter-spacing:-.025em}
+.brand-icon,.card-icon{font-family:var(--display-font)}
+.eyebrow,.nav-title,.topbar>span:first-child,.lecture-tabs button>span{font-family:var(--label-font);font-weight:400;letter-spacing:.055em}
+.lecture-tabs button>span{font-size:.7rem;line-height:1.6}
+.lecture-tabs button small{font-family:var(--ui-font);font-size:.75rem;line-height:1.45}
+/* Keep original reading/editing typography, including streamed text and evidence. */
+.study-block,.study-text,.passage-text,.transcript-preview-scroll,.speech-draft,
+.transcript-editor textarea,.transcript-editor .recovery-box p,.note-draft textarea,
+.comparison-text,.note-comparison h5,.streaming-text,.note-source blockquote{
+  font-family:var(--reading-font)
+}
+.workspace{background:radial-gradient(ellipse at 5% 35%,color-mix(in srgb,var(--glow) 28%,transparent),transparent 48%),radial-gradient(ellipse at 95% 5%,color-mix(in srgb,var(--glow-secondary) 20%,transparent),transparent 48%),var(--bg);background-attachment:fixed}
+.sidebar{background:linear-gradient(155deg,color-mix(in srgb,var(--sidebar) 88%,transparent),color-mix(in srgb,var(--glow) 15%,var(--sidebar)));border-radius:0 28px 28px 0;box-shadow:8px 0 32px #00000008}
+.topbar{background:color-mix(in srgb,var(--surface) 50%,transparent);gap:16px}
+.sidebar,.topbar{backdrop-filter:blur(24px) saturate(125%)}
+.course-card,.lecture-row,.empty-state,.lecture-tabs,.study-tools,.course-terminology,.account-card{
+  background:color-mix(in srgb,var(--surface) 76%,transparent);
+  backdrop-filter:blur(18px) saturate(120%);
+  border:1px solid color-mix(in srgb,var(--line) 65%,var(--surface));
+  border-radius:22px;box-shadow:inset 0 1px 0 #ffffff60,0 10px 30px #00000008
+}
+.course-card{border-top:3px solid var(--accent)}
+.course-card:hover,.lecture-row:hover{box-shadow:inset 0 1px 0 #ffffff60,0 14px 34px #00000012}
+.add-card,.materials-panel,.capture-panel,.note-paper,.transcript-panel,.materials-uploader,.material-card{border-radius:22px}
+.primary,.secondary,.theme-choice select,.nav-library,.course-link,.lecture-link{border-radius:12px}
+.primary{box-shadow:0 4px 14px color-mix(in srgb,var(--accent) 20%,transparent)}
+.lecture-tabs{padding:8px;gap:6px}
+.lecture-tabs button{border-radius:14px;padding:12px 10px;min-width:0}
+.lecture-tabs button.active{background:var(--soft);box-shadow:inset 0 0 0 1px var(--line),0 3px 12px #00000008}
+.card-footer,.paper-heading,.privacy-badge,.course-initial{border-color:var(--line)}
+.card-footer span:first-child,.card-arrow,.brand-dot,.add-card{color:var(--muted)}
+.tone-1 .card-icon,.tone-2 .card-icon{background:var(--soft);color:var(--ink)}
+@media(prefers-reduced-motion:no-preference){.capture-panel:not(.capture-panel-compact){animation:capture-reveal .38s cubic-bezier(.22,1,.36,1)}@keyframes capture-reveal{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}}
+@media(max-width:700px){.sidebar{border-radius:0 0 22px 22px}.topbar-actions{justify-content:flex-start}.lecture-tabs button>span{font-size:.65rem}}

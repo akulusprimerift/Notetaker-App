@@ -82,6 +82,19 @@ export default function Workspace(){
   const selectedId=routeKind==='course'?routeId:snapshot?.lecture.course_id;
   const selectedLectureId=routeKind==='lecture'?routeId:'';
   const selected=courses.find(c=>c.id===selectedId);
+  const lecturePanel=useRef<HTMLDivElement>(null);
+  const previousTab=useRef(lectureTab);
+  useEffect(()=>{
+    const previous=previousTab.current;
+    previousTab.current=lectureTab;
+    if(previous===lectureTab||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+    const direction=lectureTabs.findIndex(tab=>tab.id===lectureTab)>lectureTabs.findIndex(tab=>tab.id===previous)?1:-1;
+    const animation=lecturePanel.current?.animate([
+      {opacity:0,transform:`translateX(${direction*36}px)`},
+      {opacity:1,transform:'translateX(0)'},
+    ],{duration:380,easing:'cubic-bezier(.22,1,.36,1)'});
+    return()=>animation?.cancel();
+  },[lectureTab]);
 
   const report=useCallback((err:unknown)=>{
     if(err instanceof ApiError&&err.status===401)setSession(null);
@@ -161,7 +174,7 @@ export default function Workspace(){
         {snapshot.lecture.audio_removed||removedAudio.includes(snapshot.lecture.id)?<p className="inline-notice">Audio has been removed. Transcript, notes and saved revisions remain available.</p>:<Recording owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setCaptureBusy} compact={lectureTab!=='capture'}/>}
         <nav className="lecture-tabs" aria-label="Lecture sections" role="tablist">{lectureTabs.map(tab=><button key={tab.id} role="tab" aria-selected={lectureTab===tab.id} className={lectureTab===tab.id?'active':''} onClick={()=>openLectureTab(tab.id)}><span>{tab.label}</span><small>{tab.description}</small></button>)}</nav>
         <LiveUpdates key={snapshot.lecture.id+'-live'} lecture={snapshot.lecture.id} onSessionExpired={sessionExpired}/>
-        <div className="lecture-panel" role="tabpanel" aria-label={lectureTabs.find(tab=>tab.id===lectureTab)?.label}>
+        <div ref={lecturePanel} className="lecture-panel" role="tabpanel" aria-label={lectureTabs.find(tab=>tab.id===lectureTab)?.label}>
           {lectureTab==='notes'&&<Notes key={snapshot.lecture.id+'-notes'} lecture={snapshot.lecture.id} csrf={session.csrf_token} onSessionExpired={sessionExpired} onOpenTranscript={()=>openLectureTab('transcript')}/>}
           {lectureTab==='transcript'&&<Transcript key={snapshot.lecture.id} owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setTranscriptBusy} onSessionExpired={sessionExpired}/>}
           {lectureTab==='materials'&&<Materials key={snapshot.lecture.id+'-materials'} course={snapshot.lecture.course_id} lecture={snapshot.lecture.id} csrf={session.csrf_token}/>}

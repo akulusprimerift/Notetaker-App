@@ -12,6 +12,8 @@ The Electron app creates a normal Windows window and Start menu entry. The stand
 
 The workspace is organized around a course sidebar and lecture sections: Study notes, Transcript, Materials, Capture, Visual notes, Study tools, and Finish. Recording stays alive while moving between sections. Saved audio, transcript passages, source links, protected edits, regeneration proposals, final snapshots, recovery, deletion, exports, prompt profiles, and local/cloud model choices remain part of the same lecture workflow.
 
+The Theme selector offers Slate, Midnight, Pink and Blue, with rounded translucent surfaces and smooth tab transitions that respect reduced-motion preferences. Installed local display fonts style the interface while note and transcript content retain their reading font. See [appearance and delivery status](docs/implementation/workspace-appearance.md).
+
 ### Install and start
 
 1. Use the local unsigned x64 standalone installer described in the [Windows distribution guide](docs/implementation/windows-standalone.md). This increment has not been published to GitHub releases; older installers retain Docker prerequisites.

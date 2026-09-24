@@ -1,5 +1,11 @@
 # Session transfer
 
+## Workspace appearance — 2026-09-24
+
+Active phase remains **6.8 / M08**. Added persisted Pink/Blue palettes, locally installed Wayfinder/Lemon Milk typography with a geometric supporting face, rounded translucent surfaces and directional tab slides with reduced-motion support. Note/transcript content fonts, inference, recording and student revision behavior are preserved. See [scope and verification](docs/implementation/workspace-appearance.md).
+
+Executed: **60 JavaScript contracts**, **18 desktop tests**, actual Chromium appearance and existing live transcript/note flows, 32 focused contrast pairs across four themes, frontend typecheck/lint and production web build, documentation and whitespace checks. Screenshots are under `.local/appearance-review`. No backend changes, student-data access, microphone, provider calls, font redistribution, installation or push. Installer not rebuilt; next delivery step is packaging the new renderer with the existing standalone runtime and qualifying the installed upgrade. Earlier release gates remain open.
+
 ## Live notes and lecture deletion — 2026-09-23
 
 Active phase remains **6.8 / M08**. Notes now automatically display new saved generated revisions; the desktop provider bridge forwards incremental text instead of buffering complete cloud responses. Existing student revisions and unsaved drafts remain protected. Worth reviewing stays dismissed per lecture across revisions/reloads until reopened. The lecture header opens the existing deletion confirmation, with sidebar cleanup and navigation from all lecture tabs fixed. See [behavior, executed checks and delivery](docs/implementation/live-notes-usability.md).
