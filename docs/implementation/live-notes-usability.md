@@ -28,3 +28,10 @@ The frozen service built successfully and passed native-host PostgreSQL/API star
 The actual packaged Electron app passed first-library setup, PostgreSQL migrations, synthetic PCM verified storage, normal Quit/reopen and identical audio readback in `.local/standalone-smoke-e3c205fa-b236-463f-bc59-c4c3a08cde4d`. Renderer isolation remained enabled. Packaged service SHA-256 matches the tested frozen executable: `789195F46B90A4107AD7B813B2C4EFCEF9C50C373693DACAE0843A3A829937A3`.
 
 The legacy Python browser scenario's revision expectations were updated but that full scenario was not rerun; the executed browser evidence is the current Chromium synthetic flow described above. Documentation/whitespace checks passed. No installed app or student library was changed.
+
+
+## Delivery
+
+Unsigned Windows x64 installer: `.local/notes-fix/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe`, **397,873,440 bytes**, SHA-256 `8C4808EC2A7E66A7E6833A3D9EC60E180B7EF46AAAE1D9D69AB3CB8CBC729157`. Installer build exited successfully. Close Notetaker normally before installing and retain the existing library selection. Actual installed upgrade and live connected-provider inference remain separate qualification steps.
+
+Source increment: `7dbce42`. No push or automatic installation was performed.
