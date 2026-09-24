@@ -8,7 +8,9 @@
   <link rel="stylesheet" href="setup.css">
 </head>
 <body>
-  <main>
+  <div class="desktop-titlebar">notetaker.</div>
+  <section id="loading" hidden role="status"><div class="loading-orb" aria-hidden="true">n</div><h1>Opening your study space</h1><p id="loading-status">Starting your saved library…</p></section>
+  <main id="setup-content" hidden>
     <header class="setup-header">
       <div class="brand-mark" aria-hidden="true">n</div>
       <div><p class="eyebrow">NOTETAKER · WINDOWS</p><h1>Your local study space.</h1><p class="lede">One calm place for recordings, transcripts and detailed notes. Your lecture library stays on this computer.</p></div>
@@ -25,6 +27,7 @@
       <div class="card-content"><p class="eyebrow">THEN, CHECK YOUR MODELS</p><h2 id="models-title">Models on this computer</h2><p>Installed Ollama models appear in a lecture’s note chooser. Speech recognition uses a local faster-whisper folder. Detected files are listed for reference only; Notetaker never imports or downloads them automatically.</p><div class="actions"><button id="refresh" class="secondary">Refresh model discovery</button><button id="speech" class="quiet">Choose speech model folder</button></div><pre id="models" aria-live="polite">Looking for local models…</pre></div>
     </section>
 
+    <section class="setup-card"><div class="card-icon">03</div><div class="card-content"><h2>Your first lecture, step by step</h2><ol><li>Choose a speech model folder above. It must contain model.bin, config.json and tokenizer.json. <button id="guide" class="quiet">How to get a speech model</button></li><li>Create your standalone library, or choose your existing Docker workspace. If you changed the model while services were running, pause and start them again.</li><li>Open the workspace, add a course and a lecture, then choose an installed local note model in Note preferences. Install a compatible model with Ollama separately if none is available.</li><li>Open Capture, select your input, and start recording. Wait for confirmed audio saves before quitting.</li></ol><p>Next time, your saved library starts automatically. You can return here through Workspace settings.</p></div></section>
     <p id="error" class="error" role="alert"></p>
     <p id="location" class="location"></p>
   </main>

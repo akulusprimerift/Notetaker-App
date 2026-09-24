@@ -15,13 +15,24 @@ const explicitData = app.commandLine.getSwitchValue('user-data-dir');
 if (explicitData && path.isAbsolute(explicitData)) app.setPath('userData', explicitData);
 app.enableSandbox();
 let window, setupWindow, providerBridge, bridgeConfig, quitting = false, starting = false, message = 'Checking local services…', speechPath = '', serviceRoot = '';
+let appearance = 'light', autoStarting = false;
+const palettes = {light:['#e0e1dd','#1b263b'],dark:['#090d17','#f2f2f5'],pink:['#ffe5ec','#4b1830'],blue:['#caf0f8','#03045e']};
+function chromeOptions(){return {titleBarStyle:'hidden',titleBarOverlay:{color:palettes[appearance][0],symbolColor:palettes[appearance][1],height:40},backgroundColor:palettes[appearance][0],roundedCorners:true};}
 let serviceMode = 'docker', nativeRuntime, shutdownComplete = false, shutdownStarted = false, speechRestartRequired = false, libraryChosen = false;
 const nativeResources = () => app.isPackaged ? path.join(process.resourcesPath,'native-runtime') : process.env.NOTETAKER_NATIVE_RESOURCES;
 async function nativeAvailable(){try{if(!nativeResources())return false;await fs.access(path.join(nativeResources(),'runtime-manifest.json'));return true;}catch{return false;}}
 const setupURL = pathToFileURL(path.join(__dirname, 'setup.html')).href;
 const runtime = () => app.isPackaged ? path.join(app.getPath('userData'), 'services') : path.resolve(__dirname, '../..');
 const configPath = () => path.join(app.getPath('userData'), 'desktop-settings.json');
-async function saveConfig() {await fs.writeFile(configPath(),JSON.stringify({speechPath,serviceRoot,serviceMode,libraryChosen}));}
+let configWrite=Promise.resolve();
+function saveConfig() {
+  const content=JSON.stringify({speechPath,serviceRoot,serviceMode,libraryChosen,appearance});
+  configWrite=configWrite.catch(()=>{}).then(async()=>{
+    await fs.writeFile(configPath()+'.tmp',content);
+    await fs.rename(configPath()+'.tmp',configPath());
+  });
+  return configWrite;
+}
 
 async function healthStatus() {
   if(serviceMode==='native'&&!nativeRuntime?.ready)return false;
@@ -39,7 +50,7 @@ async function setup() {
 async function showSetup() {
   if (window.webContents.getURL() === setupURL) {window.show();return;}
   if (setupWindow && !setupWindow.isDestroyed()) {setupWindow.show();return;}
-  setupWindow = new BrowserWindow({width:960,height:850,title:'Notetaker setup',
+  setupWindow = new BrowserWindow({...chromeOptions(),width:960,height:850,title:'Notetaker setup',
     webPreferences:{preload:path.join(__dirname,'preload.cjs'),nodeIntegration:false,contextIsolation:true,sandbox:true}});
   setupWindow.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   setupWindow.webContents.on('will-navigate',(event,url)=>{if(url!==setupURL)event.preventDefault();});
@@ -113,9 +124,9 @@ else {
     providerBridge = new ProviderBridge(app.getPath('userData'), require('electron').safeStorage, {openExternal:url=>require('electron').shell.openExternal(url), codexExecutable:app.isPackaged?path.join(process.resourcesPath,'account-client/bin/codex.exe'):path.join(__dirname,'../../node_modules/@openai/codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin/codex.exe')});
     try {bridgeConfig=await providerBridge.start();}
     catch (error) {console.error('Provider bridge could not start:', error.message);bridgeConfig=null;}
-    try {const config=JSON.parse(await fs.readFile(configPath(),'utf8'));speechPath=config.speechPath || '';serviceRoot=config.serviceRoot || '';serviceMode=config.serviceMode==='native'?'native':'docker';libraryChosen=config.libraryChosen!==false;} catch { /* First launch. */ }
+    try {const config=JSON.parse(await fs.readFile(configPath(),'utf8'));appearance=typeof config.appearance==='string'&&Object.hasOwn(palettes,config.appearance)?config.appearance:'light';speechPath=config.speechPath || '';serviceRoot=config.serviceRoot || '';serviceMode=config.serviceMode==='native'?'native':'docker';libraryChosen=config.libraryChosen!==false;} catch { /* First launch. */ }
     if (!speechPath && !app.isPackaged) speechPath=path.join(runtime(),'.local/models/faster-whisper-small.en');
-    window = new BrowserWindow({width:1360,height:950,minWidth:760,minHeight:600,title:'Notetaker',show:false,icon:path.join(__dirname,'icon.ico'),
+    window = new BrowserWindow({...chromeOptions(),width:1360,height:950,minWidth:760,minHeight:600,title:'Notetaker',show:false,icon:path.join(__dirname,'icon.ico'),
       webPreferences:{preload:path.join(__dirname,'preload.cjs'),nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true,backgroundThrottling:false}});
     session.defaultSession.setPermissionCheckHandler((contents, permission, origin) =>
       permission === 'media' && localPage(contents?.getURL() || '') && localPage(origin));
@@ -140,7 +151,7 @@ else {
     // intentionally removed so the desktop shell does not compete with the
     // lecture navigation.
     require('electron').Menu.setApplicationMenu(null);
-    register('setup:status',async()=>({starting,message:starting?message:speechRestartRequired?'Speech model saved. Finish recording, then quit and reopen Notetaker to use it.':await healthy()?(!speechPath?'Audio saving is ready. Choose a speech model folder and restart services to enable transcription and automatic notes.':'Your local workspace is ready.'):message.startsWith('Could not')?message:serviceMode==='native'?'Standalone workspace is stopped. Start it to continue.':'Choose a standalone library or start your existing Docker workspace.',dataPath:app.getPath('userData'),serviceRoot,serviceMode,nativeAvailable:await nativeAvailable()}));
+    register('setup:status',async()=>({appearance,autoStarting,starting,message:starting?message:speechRestartRequired?'Speech model saved. Finish recording, then quit and reopen Notetaker to use it.':await healthy()?(!speechPath?'Audio saving is ready. Choose a speech model folder and restart services to enable transcription and automatic notes.':'Your local workspace is ready.'):message.startsWith('Could not')?message:serviceMode==='native'?'Standalone workspace is stopped. Start it to continue.':'Choose a standalone library or start your existing Docker workspace.',dataPath:app.getPath('userData'),serviceRoot,serviceMode,nativeAvailable:await nativeAvailable()}));
     register('setup:start',startServices);
     register('setup:native',async()=>{
       if(starting)throw new Error('Wait for startup to finish.');
@@ -191,16 +202,25 @@ else {
     register('app:choose-speech',chooseSpeech,true);
     register('app:speech-guide',()=>shell.openExternal('https://huggingface.co/Systran/faster-whisper-small.en/tree/main'),true);
     register('app:open-setup',showSetup,true);
+    ipcMain.handle('app:appearance',async(event,value)=>{
+      authorize(event,true);
+      if(typeof value!=='string'||!Object.hasOwn(palettes,value))throw new Error('Unknown theme.');
+      appearance=value;await saveConfig();
+      for(const target of [window,setupWindow])if(target&&!target.isDestroyed())target.setTitleBarOverlay({color:palettes[value][0],symbolColor:palettes[value][1]});
+    });
+
     // Show progress before starting bundled services or verifying their files.
+    autoStarting=libraryChosen;
     await setup();window.show();
     try {
       if(!libraryChosen&&await nativeAvailable())return;
-      if(serviceMode==='native')await startServices();
+      if(libraryChosen)await startServices();
       if(await bridgeReady()) await window.loadURL(ORIGIN);
       else if(await healthy()&&bridgeConfig){await startServices(true);if(await bridgeReady())await window.loadURL(ORIGIN);else await setup();}
       else await setup();
     }
     catch {message='Could not open the local workspace. Check Docker Desktop and retry.';await setup();}
+    autoStarting=false;
     window.show();
   });
 }

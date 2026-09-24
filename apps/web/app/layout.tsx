@@ -3,5 +3,5 @@ import './globals.css';
 import './themes.css';
 export const metadata: Metadata = {title:'Notetaker — Your lecture library',description:'A private workspace for detailed lecture notes.'};
 export default function Layout({children}:{children:React.ReactNode}) {
-  return <html lang="en"><body>{children}</body></html>;
+  return <html lang="en"><body><div className="desktop-titlebar" aria-hidden="true">notetaker.</div>{children}</body></html>;
 }

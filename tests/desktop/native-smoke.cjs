@@ -44,6 +44,8 @@ const {_electron:electron}=require('../../.venv/Lib/site-packages/playwright/dri
   }
   try{
     let page=await launch();
+    const chrome=await application.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].getContentBounds());
+    assert.ok(chrome.width>0);
     await page.getByLabel('App theme').selectOption('blue');
     assert.equal(await page.locator('html').getAttribute('data-theme'),'blue');
     assert.equal(await page.locator('h1').evaluate(element=>getComputedStyle(element).fontFamily.includes('Workspace Sans')),true);
@@ -71,6 +73,31 @@ const {_electron:electron}=require('../../.venv/Lib/site-packages/playwright/dri
       return {course:course.id,lecture:lecture.id,chunk:receipt.chunk_id,hash,storage:receipt.storage_state};
     });
     assert.equal(saved.storage,'verified');
+    const exports=await page.evaluate(async lecture=>{
+      const session=await(await fetch('/api/session/open',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).json();
+      const base='/api/lectures/'+lecture;
+      const state=await(await fetch(base+'/finalization')).json();
+      const response=await fetch(base+'/finalization',{method:'POST',headers:{'Content-Type':'application/json','x-csrf-token':session.csrf_token,'idempotency-key':crypto.randomUUID()},body:JSON.stringify({expected_cursor:state.cursor,expected_edit_version:state.edit_version,available_only:true})});
+      if(!response.ok)throw Error('Synthetic finalization failed: '+await response.text());
+      let snapshot;
+      for(let attempt=0;attempt<40;attempt++){
+        const final=await(await fetch(base+'/finalization')).json();snapshot=final.history.find(row=>row.snapshot_id)?.snapshot_id;
+        if(snapshot)break;await new Promise(resolve=>setTimeout(resolve,500));
+      }
+      if(!snapshot)throw Error('Final snapshot did not settle');
+      const files={};
+      for(const format of ['docx','pptx','txt']){
+        const file=await fetch(base+'/final-snapshots/'+snapshot+'/export?format='+format);
+        if(!file.ok)throw Error(format+' export failed: '+await file.text());
+        files[format]=Array.from(new Uint8Array(await file.arrayBuffer()));
+      }
+      return files;
+    },saved.lecture);
+    for(const [format,bytes] of Object.entries(exports)){
+      if(format!=='txt')assert.equal(Buffer.from(bytes).subarray(0,2).toString(),'PK');
+      await fs.writeFile(path.join(profile,'synthetic-notes.'+format),Buffer.from(bytes));
+    }
+
     await close();
     page=await launch();
     await page.waitForFunction(()=>document.documentElement.dataset.theme==='blue');

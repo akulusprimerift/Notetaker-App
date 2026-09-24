@@ -423,10 +423,13 @@ def install_notes(app, current, db_session, owned_lecture, receipt):
         return notes_json(db, lecture)
 
     @app.get('/lectures/{lecture_id}/notes/revisions/{revision_id}/export')
-    def export(lecture_id: str, revision_id: str, format: Literal['markdown', 'html'] = 'markdown', session=Depends(current), db=Depends(db_session)):
+    def export(lecture_id: str, revision_id: str, format: Literal['markdown', 'html', 'docx', 'pptx', 'txt'] = 'markdown', session=Depends(current), db=Depends(db_session)):
         lecture = owned_lecture(db, session.owner_id, lecture_id)
         revision = db.scalar(select(NoteRevision).where(NoteRevision.id == revision_id, NoteRevision.lecture_id == lecture_id))
         if not revision: error(404, 'unavailable', 'This saved note revision is unavailable.')
+        if format in ('docx', 'pptx', 'txt'):
+            from .note_exports import document_export
+            return document_export(lecture.title, markdown(db, lecture, revision), format)
         if format == 'html':
             from .visual_notes import html_notes
             return Response(html_notes(lecture.title, revision.content, markdown(db, lecture, revision)), media_type='text/html; charset=utf-8',

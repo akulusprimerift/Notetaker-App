@@ -11,3 +11,6 @@ confluent-kafka
 jsonschema==4.26.0
 websockets
 pypdf
+python-docx
+python-pptx
+markdown-it-py

@@ -6,7 +6,7 @@ datas = [(str(root / 'apps/api/migrations'), 'apps/api/migrations'),
          (str(root / 'contracts/ai'), 'contracts/ai'), (str(root / 'prompts'), 'prompts')]
 binaries = []
 hidden = collect_submodules('notetaker') + ['sqlalchemy.dialects.postgresql.psycopg']
-for package in ['faster_whisper', 'ctranslate2', 'tokenizers', 'av']:
+for package in ['faster_whisper', 'ctranslate2', 'tokenizers', 'av', 'docx', 'pptx']:
     package_data, package_bins, package_imports = collect_all(package)
     datas += package_data
     binaries += package_bins

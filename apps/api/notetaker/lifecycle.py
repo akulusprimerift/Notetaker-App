@@ -300,9 +300,12 @@ def install_lifecycle(app,current,db_session,owned_lecture,receipt):
         return {'id':row.id,'created_at':row.created_at.isoformat()+'Z',**row.content}
 
     @app.get('/lectures/{lecture_id}/final-snapshots/{snapshot_id}/export')
-    def export(lecture_id:str,snapshot_id:str,format:Literal['markdown','html']='markdown',session=Depends(current),db=Depends(db_session)):
+    def export(lecture_id:str,snapshot_id:str,format:Literal['markdown','html','docx','pptx','txt']='markdown',session=Depends(current),db=Depends(db_session)):
         owned_lecture(db,session.owner_id,lecture_id);row=db.get(m.FinalSnapshot,snapshot_id)
         if not row or row.lecture_id!=lecture_id:error(404,'unavailable','This final snapshot is unavailable.')
+        if format in ('docx', 'pptx', 'txt'):
+            from .note_exports import document_export
+            return document_export(row.content['title'], row.markdown, format)
         if format == 'html':
             from .visual_notes import html_notes
             notes = row.content.get('notes')

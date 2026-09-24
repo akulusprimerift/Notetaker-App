@@ -44,6 +44,9 @@ const date=(value:string)=>new Date(value).toLocaleDateString(undefined,{month:'
 const initial=(name:string)=>name.trim().slice(0,1).toUpperCase();
 
 export default function Workspace(){
+  const [sidebarHidden,setSidebarHidden]=useState(false);
+  useEffect(()=>{try{setSidebarHidden(localStorage.getItem('notetaker:sidebar-hidden')==='true');}catch{}},[]);
+  function toggleSidebar(){setSidebarHidden(value=>{try{localStorage.setItem('notetaker:sidebar-hidden',String(!value));}catch{}return !value;});}
   const [session,setSession]=useState<Session|null>(null);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState('');
@@ -161,14 +164,14 @@ export default function Workspace(){
   if(loading)return <main className="loading"><span className="brand-icon">n</span><p role="status">Opening your workspace…</p></main>;
   if(!session)return <main className="welcome"><section className="unlock-card"><h1>Open your workspace</h1><p>Your library is saved on this device.</p>{error&&<p role="alert" className="error">{error}</p>}<button className="primary" onClick={()=>void load()}>Open workspace</button></section></main>;
 
-  return <div className="workspace">
+  return <div className={`workspace ${sidebarHidden?'sidebar-hidden':''}`}>
     <AccountsDialog csrf={session.csrf_token} onSessionExpired={sessionExpired}/><a className="skip" href="#main-content" onClick={event=>{event.preventDefault();document.getElementById('main-content')?.focus()}}>Skip to content</a>
-    <aside className="sidebar"><a className="brand" href="#"><span className="brand-icon">n</span>notetaker<span className="brand-dot">.</span></a>
+    <aside id="lecture-sidebar" className="sidebar" hidden={sidebarHidden}><a className="brand" href="#"><span className="brand-icon">n</span>notetaker<span className="brand-dot">.</span></a>
       <nav aria-label="Workspace"><a href="#" className={`nav-library ${!route?'active':''}`}><span aria-hidden="true">▦</span> Your library</a><div className="nav-title"><span>YOUR COURSES</span><button aria-label="Add a course" onClick={()=>openForm('course')}>+</button></div>
         {courses.length===0?<p className="sidebar-empty">Your courses will appear here.</p>:courses.map(course=><div className="sidebar-course" key={course.id}><a href={`#course/${course.id}`} className={`course-link ${selectedId===course.id?'active':''}`}><span className="course-initial">{initial(course.name)}</span><span>{course.name}</span><span className="course-count">{courseLectures[course.id]?.length??'—'}</span></a>{selectedId===course.id&&courseLectures[course.id]?.map(lecture=><a key={lecture.id} href={`#lecture/${lecture.id}`} className={`lecture-link ${selectedLectureId===lecture.id?'active':''}`}><span className="lecture-link-dot" aria-hidden="true"/><span>{lecture.title}</span></a>)}</div>)}
       </nav><div className="sidebar-bottom"><button type="button" className="secondary full" onClick={()=>window.dispatchEvent(new Event('open-accounts'))}>Accounts &amp; API keys</button><div className="local-note"><span className="status-dot"/>Local workspace</div><p>Saved on this device</p></div>
     </aside>
-    <div className="workspace-body"><div className="topbar"><span>YOUR SPACE TO LEARN</span><div className="topbar-actions"><button type="button" className="desktop-tools accounts-mobile" onClick={()=>window.dispatchEvent(new Event('open-accounts'))}>Accounts &amp; API keys</button><DesktopTools/><Theme/><span className="privacy-badge"><span className="status-dot"/>{session.preview?'Local preview':'Private library'}</span></div></div>
+    <div className="workspace-body"><div className="topbar"><button className="secondary sidebar-toggle" aria-controls="lecture-sidebar" aria-expanded={!sidebarHidden} onClick={toggleSidebar}>{sidebarHidden?'Show library':'Hide library'}</button><span className="topbar-tagline">YOUR SPACE TO LEARN</span><div className="topbar-actions"><button type="button" className="desktop-tools accounts-mobile" onClick={()=>window.dispatchEvent(new Event('open-accounts'))}>Accounts &amp; API keys</button><DesktopTools/><Theme/><span className="privacy-badge"><span className="status-dot"/>{session.preview?'Local preview':'Private library'}</span></div></div>
     <main id="main-content" tabIndex={-1}>
       <div className="preview-notice">{session.preview?'Local preview · ':''}Your model takes notes from the lecture. Review the ideas, check the sources, and keep learning.</div>
       <DataRemoval owner={session.owner_id} csrf={session.csrf_token} onRemoved={dataRemoved}/>

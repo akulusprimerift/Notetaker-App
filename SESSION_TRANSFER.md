@@ -1,5 +1,12 @@
 # Session transfer
 
+## Startup and exports — 2026-09-24
+
+Active phase remains **6.8 / M08**. Implemented themed automatic startup/recovery, guided setup, native theme-colored Windows controls, a persisted sidebar toggle, Slate glass surfaces, prominent Markdown export, a study-use guide/copyable prompt, and Word/PPTX/plain-text/HTML choices for saved revisions and final snapshots. No student data, model downloads, microphone or provider calls. See [behavior and executed evidence](docs/implementation/startup-and-exports.md).
+
+Executed: 60 contracts, 21 desktop tests, full backend 245 passed/1 service-only skip followed by 9 final focused export tests; actual Chromium appearance/sidebar/recorder, setup/loading/recovery/help, four-theme contrast and existing live-note/draft flows; frontend typecheck/lint/build and Python lint. Windows package rebuild is in progress; record its result before ending this session. Earlier installed-upgrade, Office rendering, hardware, human-quality and release gates remain open.
+
+
 ## Appearance installer delivered — 2026-09-24
 
 Active phase remains **6.8 / M08**. The Pink/Blue glass UI, geometric headings, spacing and navigation animations are packaged into `.local/appearance-package/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe` (**397,878,582 bytes**; SHA-256 `8E6AA9B2FFF8636E67B881EA801B3CFAD34E31785E330E77C8FFE8A75EB2D7CA`). [Full packaging evidence](docs/implementation/workspace-appearance.md#installer-delivery--2026-09-24). The installer is unsigned and has not been automatically installed.

@@ -1,4 +1,5 @@
 'use client';
+import ExportNotes from './export-notes';
 import PromptProfiles from './prompt-profiles';
 import ReviewNotice from './review-notice';
 import TranscriptPreview from './transcript-preview';
@@ -102,7 +103,7 @@ export default function Notes({lecture,csrf,onSessionExpired,onOpenTranscript}:{
   const activeModel=selected||state?.preference?.model||'';
   const activeIsCloud=Boolean(models.find(row=>row.name===activeModel)?.provider)||/^(openai|anthropic|chatgpt|claude-subscription)\//.test(activeModel);
   const localModels=models.filter(model=>!model.provider),cloudModels=models.filter(model=>model.provider);
-  return <div className="note-layout generated-notes"><section className="note-paper" aria-labelledby="notes-title">
+  return <div className="note-layout generated-notes">{revision&&<div className="export-toolbar"><ExportNotes url={`/api${path}/${revision.student?'edits':'revisions'}/${revision.id}/export`}/></div>}<section className="note-paper" aria-labelledby="notes-title">
     <TranscriptPreview lecture={lecture} onSessionExpired={onSessionExpired} onOpen={onOpenTranscript}/>
     <div className="paper-heading"><h2 id="notes-title">Your lecture notes</h2><span>{savedProfile?.detail_prompt?.trim()?'CUSTOM DETAIL':(savedProfile?.depth??'detailed').toUpperCase()} · {savedProfile?.layout_prompt?.trim()?'CUSTOM LAYOUT':(savedProfile?.format??'topic_outline').replaceAll('_',' ').toUpperCase()}</span></div>
     <div className="note-status">{!preview.text&&<p role="status">{state?labels[state.status]:'Opening your notes…'}</p>}
@@ -116,7 +117,7 @@ export default function Notes({lecture,csrf,onSessionExpired,onOpenTranscript}:{
       {state&&(state.status==='needs_attention'||state.error_code)&&<button className="secondary" disabled={busy} onClick={()=>void retry()}>Retry notes</button>}
     </div>
     {(preview.active||preview.text)&&<section className="streaming-notes" aria-label="Notes being written"><h3>{preview.active?'Writing now…':'Reconnecting to the writing preview…'}</h3><p className="small muted">Live draft · source checks run before these notes are saved. Scroll up to pause following the newest text.</p><div ref={previewPanel} tabIndex={0} className="streaming-text" onScroll={event=>{const panel=event.currentTarget;followPreview.current=panel.scrollHeight-panel.scrollTop-panel.clientHeight<30}}>{preview.text||'Preparing the next note passages…'}</div></section>}
-    {revision?<div className="generated-content"><div className="note-revision"><span>{revision.student?'Student revision':'Revision'} {revision.revision} · {revision.metadata.model}</span><a className="text-button" href={`/api${path}/${revision.student?'edits':'revisions'}/${revision.id}/export`}>Export Markdown</a></div>
+    {revision?<div className="generated-content"><div className="note-revision"><span>{revision.student?'Student revision':'Revision'} {revision.revision} · {revision.metadata.model}</span></div>
       <p className="small muted">{revision.student?'Your selected student revision. Student changes retain original source links for review.':'AI-generated notes. Source links verify where the evidence came from; review important claims for accuracy.'}</p>
       {state&&<NoteEditor lecture={lecture} revision={revision} editing={state.editing} csrf={csrf} onExpired={onSessionExpired} onSaved={saved=>{setState(current=>current?{...current,editing:{...current.editing,selected:saved}}:current);void refresh().catch(()=>{})}}/>}
       {revision.content.blocks.map(block=><section className={`study-block ${block.kind==='emphasis'?'study-emphasis':''} ${revision.profile?.format==='cornell'&&!revision.profile.layout_prompt?'cornell-block':''}`} key={block.id}><div className="study-block-title"><p className="eyebrow">{block.kind==='emphasis'?'Important · AI identified':block.kind}</p><h3>{block.topic}</h3></div>{block.passages.map(passage=><div className="study-passage" key={passage.id}>

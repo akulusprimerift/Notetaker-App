@@ -6,6 +6,10 @@ async function run(action) {
 }
 async function status() {
   const value = await window.desktopSetup.status();
+  document.documentElement.dataset.theme=value.appearance;
+  element('loading').hidden=!value.autoStarting;
+  element('setup-content').hidden=value.autoStarting;
+  element('loading-status').textContent=value.message;
   element('status').textContent = value.message;
   element('location').textContent = 'Windows app data: ' + value.dataPath + '\n' + (value.serviceMode==='native'?'Standalone library: '+value.dataPath+'\\standalone-library':value.serviceRoot?'Existing workspace: '+value.serviceRoot:'Select your existing workspace folder to reuse its library when starting services.');
   element('start').disabled = value.starting;
@@ -31,3 +35,5 @@ element('speech').onclick = () => run(async () => {await window.desktopSetup.spe
 element('workspace').onclick = () => run(async () => {await window.desktopSetup.workspaceFolder();await status();await models();});
 void run(async () => {await status();await models();});
 setInterval(() => {void run(status);}, 3000);
+
+element('guide').onclick=()=>run(()=>window.desktopApp.openSpeechGuide());
