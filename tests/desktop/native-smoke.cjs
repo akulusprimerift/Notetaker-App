@@ -29,7 +29,8 @@ const {_electron:electron}=require('../../.venv/Lib/site-packages/playwright/dri
       console.error('Setup status:',await page.locator('#status').textContent().catch(()=>''));throw error;
     });
     await page.getByRole('heading',{name:'Your lecture library.'}).waitFor();
-    assert.equal(await page.evaluate(()=>typeof require),'undefined');
+    // Evaluate in the renderer: Bun can constant-fold typeof require in a callback.
+    assert.equal(await page.evaluate('typeof require'),'undefined');
     await page.evaluate(()=>{navigator.mediaDevices.getUserMedia=async()=>{throw new Error('Microphone forbidden');};});
     return page;
   }
@@ -43,6 +44,10 @@ const {_electron:electron}=require('../../.venv/Lib/site-packages/playwright/dri
   }
   try{
     let page=await launch();
+    await page.getByLabel('App theme').selectOption('blue');
+    assert.equal(await page.locator('html').getAttribute('data-theme'),'blue');
+    assert.equal(await page.locator('h1').evaluate(element=>getComputedStyle(element).fontFamily.includes('Workspace Sans')),true);
+    await page.screenshot({path:path.join(profile,'blue-packaged.png')});
     const saved=await page.evaluate(async()=>{
       const session=await (await fetch('/api/session/open',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).json();
       async function command(url,body,method='POST',extra={}){
@@ -68,6 +73,10 @@ const {_electron:electron}=require('../../.venv/Lib/site-packages/playwright/dri
     assert.equal(saved.storage,'verified');
     await close();
     page=await launch();
+    await page.waitForFunction(()=>document.documentElement.dataset.theme==='blue');
+    await page.getByLabel('App theme').selectOption('pink');
+    assert.equal(await page.locator('html').getAttribute('data-theme'),'pink');
+    await page.screenshot({path:path.join(profile,'pink-packaged.png')});
     const preserved=await page.evaluate(async saved=>{
       const courses=await(await fetch('/api/courses')).json();
       const response=await fetch(`/api/lectures/${saved.lecture}/audio-chunks/${saved.chunk}`);
@@ -76,6 +85,6 @@ const {_electron:electron}=require('../../.venv/Lib/site-packages/playwright/dri
     },saved);
     assert.equal(preserved.status,200);assert.equal(preserved.course,true);assert.equal(preserved.hash,saved.hash);
     console.log(JSON.stringify({standalone_launch:true,postgres_migrations:true,synthetic_audio_verified:true,
-      close_reopen_readback:true,electron_isolation:true,profile,limitations:'No microphone, human quality, clean-machine or long-duration qualification.'},null,2));
+      close_reopen_readback:true,electron_isolation:true,appearance_and_theme_persistence:true,profile,limitations:'No microphone, human quality, clean-machine or long-duration qualification.'},null,2));
   }finally{if(application)await close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

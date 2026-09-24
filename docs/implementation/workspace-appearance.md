@@ -22,10 +22,29 @@ The refinement reran appearance, contrast, existing live transcript/note flows, 
 
 No student-library access, microphone use, backend changes, model downloads, provider calls, installation or push. Backend tests were not rerun for this presentation-only increment. The Windows installer has not been rebuilt; the existing installed binary will retain its previous appearance until a new package is prepared and installed. Fonts on other machines depend on their installed local faces; demo/commercial fonts are not redistributed.
 
-Next delivery work: package this renderer into the standalone installer using the existing runtime, then qualify the installed upgrade with the existing library retained. Earlier M08 hardware, endurance, accessibility, human quality and release gates remain open.
+Next delivery work after the packaging result below: qualify the installed upgrade with the existing library retained. Earlier M08 hardware, endurance, accessibility, human quality and release gates remain open.
 
 ## Blue theme pre-packaging review
 
 The requested Blue palette is implemented throughout the shared renderer, including the updated geometric typography, glass cards, spacing and navigation. Its primary-button hover now darkens instead of brightening so white text retains at least 4.5:1 contrast; native checkbox/radio accents also follow Blue.
 
 Executed on Windows: the expanded appearance browser check passes all seven lecture destinations at 1440px and 400px, course creation and Accounts & API keys dialog rendering, Blue hover contrast, theme persistence and the previous font/animation/recorder checks. Synthetic empty-state fixtures supply learning, terminology and account inventories; initial test attempts omitted those response shapes and incorrectly waited for Capture's empty content panel instead of its persistently mounted recorder. These test-harness assumptions were corrected before the successful run. No student data, microphone, provider or model was used. Dashboard, materials, study tools and account screenshots were visually reviewed. Focused four-theme contrast checks, lint, typecheck and production build pass. Documentation/whitespace checks pass. Installer remains unbuilt for this appearance increment.
+
+## Installer delivery — 2026-09-24
+
+The appearance increment is now packaged. Unsigned Windows x64 installer: `.local/appearance-package/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe`, **397,878,582 bytes**. SHA-256: `8E6AA9B2FFF8636E67B881EA801B3CFAD34E31785E330E77C8FFE8A75EB2D7CA`. Close Notetaker normally before installing and retain the existing library selection. No automatic installation or push was performed.
+
+The new standalone web build is `.local/desktop-web/eb709f56-a045-48ac-9650-40b1b361f3bc`, build ID `KibrVjYnQ54yljghxi0-h`. Runtime: `.local/appearance-package/runtime`. All 4,957 non-web files from the previous verified `.local/notes-fix/runtime` were checked against its manifest before reuse and again after copying. Backend and desktop sources have no changes since `7dbce42`; no new frozen-service build was needed. The refreshed manifest inventories 6,198 files. Packaged service SHA-256 remains `789195F46B90A4107AD7B813B2C4EFCEF9C50C373693DACAE0843A3A829937A3`; staged/packaged web manifests match at `B12EEF243BC6F1310B815D2C098564DC8E75762E77DE085C361D7DFA1B186BB6`.
+
+Executed for delivery:
+
+- `bun run prepare:desktop-web`; isolated bundle smoke confirms manifest hashes, hydration and all five capture assets.
+- Appearance and existing live transcript/note browser checks pass against the staged production server, using synthetic API responses.
+- 60 JavaScript contracts and 18 desktop tests pass.
+- `bun run build:desktop --config.directories.output=.local/appearance-package/installer` with `NOTETAKER_NATIVE_RESOURCES` pointing to the staged runtime completes successfully.
+- The actual packaged `win-unpacked/Notetaker.exe` passes fresh-library setup/migrations, verified synthetic PCM save, normal Quit/reopen, preserved course and identical audio readback, Blue persistence/Pink selection, and renderer isolation. Profile: `.local/standalone-smoke-c066b215-fbea-4098-a8a6-e773444cd4d4`; packaged Blue screenshot inspected.
+- Documentation and whitespace checks pass. Previous renderer lint/typecheck checks remain applicable; no renderer changes were made during packaging.
+
+The first packaged smoke attempt exposed Bun constant-folding `typeof require` in the callback before Playwright sent it to the renderer. The check now sends the expression as text for actual renderer evaluation; the rerun confirms isolation. No application isolation setting was changed. The first isolated test profile is retained.
+
+The executable is unsigned. Clean-machine installer execution, installed-library upgrade, real microphone, human note quality and endurance remain separate qualification gates. This packaging uses existing selected-model behavior, changes no student library, and redistributes no local display-font files or model weights. Implementation commits: `bf4ce96`, `e708588`, `dfc51db`; packaging evidence and updated smoke coverage are committed separately.

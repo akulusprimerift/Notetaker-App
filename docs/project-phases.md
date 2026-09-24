@@ -1,5 +1,7 @@
 # Project phases
 
+Packaging (2026-09-24): **6.8 / M08** remains active. The [appearance installer](implementation/workspace-appearance.md#installer-delivery--2026-09-24) built successfully and passed packaged synthetic save/reopen/readback, renderer isolation and theme-persistence checks. Actual installed upgrade and earlier release gates remain open.
+
 Blue review (2026-09-24): **6.8 / M08** remains active. Blue presentation checks cover all seven lecture sections at desktop/narrow widths and course/account dialogs; hover contrast is corrected. [Evidence](implementation/workspace-appearance.md) records the passing renderer checks. Standalone installer packaging remains next.
 
 Refinement (2026-09-24): **6.8 / M08** stays active. User review replaces the display heading font with geometric TikTok Sans, strengthens glass surfaces, adds spacing and simplifies animated navigation. [Appearance evidence](implementation/workspace-appearance.md) records the rerun checks; installer delivery remains pending.

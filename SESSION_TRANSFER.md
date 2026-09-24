@@ -1,5 +1,13 @@
 # Session transfer
 
+## Appearance installer delivered — 2026-09-24
+
+Active phase remains **6.8 / M08**. The Pink/Blue glass UI, geometric headings, spacing and navigation animations are packaged into `.local/appearance-package/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe` (**397,878,582 bytes**; SHA-256 `8E6AA9B2FFF8636E67B881EA801B3CFAD34E31785E330E77C8FFE8A75EB2D7CA`). [Full packaging evidence](docs/implementation/workspace-appearance.md#installer-delivery--2026-09-24). The installer is unsigned and has not been automatically installed.
+
+The standalone renderer was freshly built; all 4,957 unchanged native files from the previously verified runtime were hash-checked before/after staging. Production-bundle hydration/assets/hash checks, production appearance and existing live-note/transcript browser flows, **60 contracts**, **18 desktop tests**, documentation/whitespace and installer build passed. Actual packaged Electron passed isolated library startup, synthetic verified audio save, Quit/reopen and identical readback, renderer isolation, Blue persistence and Pink selection. Profile: `.local/standalone-smoke-c066b215-fbea-4098-a8a6-e773444cd4d4`. A Bun constant-folding issue in the test's isolation callback was corrected before the successful rerun; app security was unchanged.
+
+No microphone, student-library access, backend/inference change, font/model download, automatic installation or push. Next: close the existing app, install the new build retaining its library selection, and qualify the installed upgrade. Earlier hardware, human quality, endurance, backup/restore and release gates remain open. Implementation commits are `bf4ce96`, `e708588`, `dfc51db`; delivery evidence/test changes are committed in this packaging increment.
+
 ## Blue theme checked before packaging — 2026-09-24
 
 Active phase remains **6.8 / M08**. Blue uses the latest geometric typography, glass surfaces, spacing and animations. Fixed primary-button hover contrast and matched native choice-control accents. Expanded synthetic browser checks pass all seven lecture sections at 1440px/400px plus course/account dialogs, Blue hover contrast and existing appearance checks. Four-theme contrast, lint/typecheck, production build and documentation/whitespace pass. [Evidence and fixture corrections](docs/implementation/workspace-appearance.md). No note/transcript behavior, student data or installed app was changed. Next: package the updated renderer with the existing standalone runtime and qualify installed upgrade; installer has not yet been rebuilt.
