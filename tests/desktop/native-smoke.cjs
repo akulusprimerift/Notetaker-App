@@ -21,7 +21,8 @@ const {_electron:electron}=require('../../.venv/Lib/site-packages/playwright/dri
     const page=await application.firstWindow();
     if(firstLaunch){
       await page.locator('#native').click();
-      await page.locator('#status').filter({hasText:/Your local workspace is ready\.|Audio saving is ready\./}).waitFor({timeout:660000});
+      await page.locator('#status').filter({hasText:/Your local workspace is ready\.|Audio saving is ready\.|Could not/}).waitFor({timeout:660000});
+      assert.doesNotMatch(await page.locator('#status').textContent(),/Could not/,'Startup failed; inspect the setup message before retrying.');
       await page.locator('#open').click();
       firstLaunch=false;
     }
@@ -46,6 +47,8 @@ const {_electron:electron}=require('../../.venv/Lib/site-packages/playwright/dri
     let page=await launch();
     const chrome=await application.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].getContentBounds());
     assert.ok(chrome.width>0);
+    assert.equal(await page.evaluate(()=>navigator.windowControlsOverlay?.visible),true);
+    assert.equal(await page.locator('.desktop-titlebar').evaluate(el=>getComputedStyle(el).webkitAppRegion),'drag');
     await page.getByLabel('App theme').selectOption('blue');
     assert.equal(await page.locator('html').getAttribute('data-theme'),'blue');
     assert.equal(await page.locator('h1').evaluate(element=>getComputedStyle(element).fontFamily.includes('Workspace Sans')),true);
@@ -112,6 +115,6 @@ const {_electron:electron}=require('../../.venv/Lib/site-packages/playwright/dri
     },saved);
     assert.equal(preserved.status,200);assert.equal(preserved.course,true);assert.equal(preserved.hash,saved.hash);
     console.log(JSON.stringify({standalone_launch:true,postgres_migrations:true,synthetic_audio_verified:true,
-      close_reopen_readback:true,electron_isolation:true,appearance_and_theme_persistence:true,profile,limitations:'No microphone, human quality, clean-machine or long-duration qualification.'},null,2));
+      close_reopen_readback:true,electron_isolation:true,appearance_and_theme_persistence:true,portable_snapshot_exports:true,window_controls_overlay:true,profile,limitations:'No microphone, human quality, clean-machine or long-duration qualification.'},null,2));
   }finally{if(application)await close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

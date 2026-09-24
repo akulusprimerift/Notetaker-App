@@ -22,6 +22,10 @@ const assert=require('node:assert/strict');
  for(const theme of ['light','dark','pink','blue']){
   await page.evaluate(theme=>window.mockStatus.appearance=theme,theme);
   await page.locator(`html[data-theme=${theme}]`).waitFor();
+  const contrast=await page.locator('#native').evaluate(el=>{
+    const luminance=color=>{const values=color.match(/[\d.]+/g).slice(0,3).map(Number).map(value=>{value/=255;return value<=.04045?value/12.92:((value+.055)/1.055)**2.4;});return values[0]*.2126+values[1]*.7152+values[2]*.0722;};
+    const style=getComputedStyle(el),a=luminance(style.color),b=luminance(style.backgroundColor);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+  });assert.ok(contrast>=4.5,theme+' setup primary contrast '+contrast);
   await page.screenshot({path:`.local/setup-${theme}.png`,fullPage:true});
  }
  console.log('Setup loading, recovery, guide, four themes and reduced motion passed.');
