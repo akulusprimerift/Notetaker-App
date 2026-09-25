@@ -1,5 +1,13 @@
 # Session transfer
 
+## Sidebar join and glass scrollbars — 2026-09-25
+
+Active phase **6.8 / M08**. Removed the sidebar's upper-right rounded gap at the header. Native scrollbars now use transparent tracks, rounded translucent theme-accent handles, hover/pressed feedback and system-color fallback. [Evidence](docs/implementation/paged-notes-and-motion.md#sidebar-join-and-glass-scrollbars--2026-09-25).
+
+Executed: 60 contracts, frontend typecheck/lint/build, synthetic Chromium four-theme appearance/persistence/narrow-layout/sidebar/recorder checks, both-axis overflow and forced-colors probes, documentation/whitespace. Midnight join and visible scrollbar screenshots inspected. No backend or student-data changes, microphone or providers.
+
+Next: package the updated renderer with the verified standalone runtime and qualify packaged/installed upgrade. **This refinement is not yet in the installer or installed application.** Earlier M08 qualification gaps remain open.
+
 ## UI update installer delivered — 2026-09-24
 
 Active phase **6.8 / M08**. Paged notes, integrated header/sidebar animation and liquid-glass/loading changes are packaged at `.local/paged-ui-update/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe` (407,272,519 bytes; SHA-256 `92613B65191C286AB844A33506C6539645BB78F78E127075014B5527889F7203`). [Delivery evidence](docs/implementation/paged-notes-and-motion.md#installer-delivery--2026-09-24).
