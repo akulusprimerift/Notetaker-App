@@ -1,5 +1,7 @@
 # Project phases
 
+Delivery (2026-09-25): **6.8 / M08** remains active. The [glass scrollbar installer](implementation/paged-notes-and-motion.md#glass-scrollbar-installer--2026-09-25) built and passed isolated packaged synthetic save/reopen/export checks. Installed upgrade and earlier release gates remain open.
+
 Update (2026-09-25): **6.8 / M08** remains active. The [sidebar join and glass scrollbars](implementation/paged-notes-and-motion.md#sidebar-join-and-glass-scrollbars--2026-09-25) refinement passed four-theme synthetic browser and frontend checks. Installer delivery is pending; earlier release gates remain open.
 
 Update (2026-09-24): **6.8 / M08** remains active. [Paged notes and motion](implementation/paged-notes-and-motion.md) starts with a bounded numbered saved-note reader; synthetic Chromium checks pass. All three source increments now pass production-renderer and isolated Electron checks, including window integration, sidebar motion and glass/loading refinements. The updated installer has built and passed packaged synthetic save/reopen/export checks; installed-upgrade qualification remains next. Earlier qualification gaps remain open.

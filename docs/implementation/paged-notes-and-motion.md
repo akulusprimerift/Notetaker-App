@@ -54,3 +54,13 @@ Active phase: **6.8 / M08**. The sidebar's upper-right corner now meets the head
 Executed on Windows: 60 JavaScript contracts; frontend typecheck, lint and production build; existing synthetic Chromium four-theme appearance/persistence, 400px layouts, sidebar toggle, reduced-motion and recorder-retention checks. A local synthetic overflow probe exercised both axes in all four themes, checked distinct computed accent colors and forced-colors fallback. Visible-scrollbar screenshots (Chromium's default scrollbar hiding disabled) and the Midnight workspace join were inspected in `.local/appearance-review`. Documentation and whitespace checks passed. No backend changes; Python tests were not rerun.
 
 Source-only refinement: the installed application and installer have not been rebuilt or replaced. No student data, microphone or providers accessed. Next delivery work: prepare/package this renderer with the verified standalone runtime, then qualify the packaged app and installed upgrade. Earlier M08 release gates remain open.
+
+## Glass scrollbar installer — 2026-09-25
+
+The refinement from `f906229` is packaged at `.local/glass-scrollbar-update/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe`: **407,273,058 bytes**, SHA-256 `5148A1C94CAE24837948DA6AA8AC559CAA386E828DAA8D2D90443B4B65328039`. Unsigned Windows x64 standalone installer; not automatically installed.
+
+Fresh web bundle `.local/desktop-web/a35494d6-5fe9-459f-ae0b-61e142977f39`, build ID `KwJ8tSP51EHkbyMC_jATj`, passed production build, manifest integrity, isolated startup/hydration and capture-asset checks. All 21 desktop tests passed. Unchanged native components were hash-verified against `.local/paged-ui-update/runtime`; 5,239 files matched before and after staging in `.local/glass-scrollbar-update/runtime`. Immutable native files were hard-linked to avoid redundant staging disk usage; the new web bundle and manifest are separate. Five packaged host/setup files match source.
+
+The actual packaged executable passed isolated PostgreSQL startup/migrations, synthetic verified audio save, normal Quit/reopen and identical readback, theme persistence, native window controls, renderer isolation and DOCX/PPTX/TXT snapshot exports. Profile: `.local/standalone-smoke-1e92f7be-43b0-4acb-ac89-80298c1a5176`; Blue packaged screenshot inspected. Installer compilation and documentation/whitespace checks passed.
+
+No microphone, student-library access, provider inference, model downloads, installation or push. Next: close Notetaker normally, install this build preserving the existing library selection and qualify installed upgrade. Earlier hardware, human quality, endurance, accessibility, backup/restore, clean-machine and signing gates remain open.

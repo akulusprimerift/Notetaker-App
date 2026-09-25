@@ -1,5 +1,13 @@
 # Session transfer
 
+## Glass scrollbar installer delivered — 2026-09-25
+
+Active phase **6.8 / M08**. The sidebar join and theme-accent scrollbar refinement is packaged in `.local/glass-scrollbar-update/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe` (407,273,058 bytes; SHA-256 `5148A1C94CAE24837948DA6AA8AC559CAA386E828DAA8D2D90443B4B65328039`). Unsigned, not automatically installed. [Delivery evidence](docs/implementation/paged-notes-and-motion.md#glass-scrollbar-installer--2026-09-25).
+
+Fresh standalone web build/integrity/hydration checks and 21 desktop tests passed. All 5,239 reused native files matched their prior hashes before/after staging. Actual packaged startup, synthetic audio save/Quit/reopen/identical readback, theme persistence, native controls, renderer isolation and snapshot exports passed in isolated profile `.local/standalone-smoke-1e92f7be-43b0-4acb-ac89-80298c1a5176`. Packaged screenshot inspected; five packaged host/setup files match source.
+
+Next: close Notetaker normally and install this build retaining the existing library selection; qualify installed upgrade. Earlier release gates remain open. No student-library access, microphone, provider calls, model downloads, automatic installation or push.
+
 ## Sidebar join and glass scrollbars — 2026-09-25
 
 Active phase **6.8 / M08**. Removed the sidebar's upper-right rounded gap at the header. Native scrollbars now use transparent tracks, rounded translucent theme-accent handles, hover/pressed feedback and system-color fallback. [Evidence](docs/implementation/paged-notes-and-motion.md#sidebar-join-and-glass-scrollbars--2026-09-25).
