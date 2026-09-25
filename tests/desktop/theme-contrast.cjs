@@ -11,6 +11,7 @@ const assert=require('node:assert/strict');
     await mkdir('.local/theme-review',{recursive:true});
     for(const theme of ['light','dark','pink','blue']){
       await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);
+      await page.evaluate(()=>Promise.all(document.getAnimations().map(animation=>animation.finished.catch(()=>{}))));
       const contrasts=await page.evaluate(()=>{
         const luminance=color=>{const rgb=color.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4});return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;};
         return ['.materials-guidance','.materials-step-body label','.materials-empty-file','.materials-library-empty p','.note-controls select','.cloud-consent','.provider-connections summary','.model-picker-status'].map(selector=>{

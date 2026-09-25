@@ -17,3 +17,22 @@ Removed the redundant app-name/title strip. Native transparent Windows controls 
 Executed: 21 desktop policy/startup/provider tests; Chromium four-theme/narrow-layout/sidebar persistence/tab motion and recorder retention; actual isolated Electron overlay visibility, top alignment, control clearance, drag/no-drag, renderer isolation and recorder retention. `.local/integrated-chrome.png` inspected. Typecheck/lint passed. Existing immediate sidebar assertions were updated to await animation; the native test uses a string for the renderer isolation expression to avoid Bun folding `typeof require` in the test runner. No installed library or service touched. Installer not rebuilt.
 
 Next: stronger glass surfaces and animated indeterminate loading progress, followed by final build/regressions.
+
+## Section 3 — Liquid glass, interaction feedback and loading
+
+Strengthened transparent panels, blurred layered backgrounds and reflective edges across the workspace. Buttons, navigation links and fields respond to hover/press/focus. Startup and web loading show a moving, changing-gradient glass bar with an accessible indeterminate progress label. Reduced motion removes animated movement (including an older setup button transition). Minimum-width native headers wrap controls safely.
+
+Final executed checks on Windows:
+
+- 60 JavaScript contracts and 21 desktop tests passed.
+- Frontend typecheck/lint and final production web build passed.
+- Chromium four-theme appearance, 400px layout, retained recorder, sidebar persistence and tab motion passed.
+- Paged-note browser checks cover long passages/code, numbered/keyboard navigation, source opening, resize, exact content preservation, live growth without losing section selection and reduced motion. Final rerun passed against the production build.
+- Existing live-note/transcript, automatic revisions, review dismissal, protected draft and deletion flows passed against production. The final run also checks duplicate React keys; the reader/review notice key collision found in the development log was corrected.
+- Actual isolated Electron with the production renderer passed native overlay visibility, drag/no-drag, renderer isolation, top alignment, recorder retention and native 760/1100/1360px width/control-clearance checks.
+- Setup loading/recovery/help and four-theme button contrast passed; loading animation becomes static under reduced motion. 32 existing focused workspace contrast pairs passed after waiting for theme transitions to finish. These checks are not a complete accessibility audit of translucent surfaces.
+- Screenshots `.local/note-pages.png`, `.local/integrated-chrome.png`, `.local/startup-loading.png` and the four-theme appearance captures were inspected. Documentation and whitespace checks passed.
+
+No backend implementation changed, so the Python suite was not rerun. Synthetic data only: no microphone, provider calls, model downloads, student-library changes, installed app replacement or push. This is source/production-renderer verification, not installer/upgrade or release qualification.
+
+Next delivery work: prepare the updated standalone web component, package it with the existing verified native runtime, and qualify the unsigned installer and installed upgrade while preserving the selected library. The installer remains the earlier startup/export build. Human quality, real hardware, endurance, accessibility, coordinated restore and signing gates remain open.

@@ -1,5 +1,13 @@
 # Session transfer
 
+## Paged notes and liquid glass — 2026-09-24
+
+Active phase **6.8 / M08**. All three requested source increments are implemented: bounded numbered notes with continued content and smooth horizontal navigation; integrated native window controls and animated/inert sidebar; stronger glass surfaces, interaction feedback and gradient loading progress. First two commits: `6b2b05d`, `f87056d`; glass/final evidence is committed with this entry. [Detailed evidence](docs/implementation/paged-notes-and-motion.md).
+
+Executed: 60 JavaScript contracts, 21 desktop tests, typecheck/lint/production web build, four-theme Chromium appearance, 32 focused contrast pairs, setup loading/recovery/reduced motion. Production-renderer tests passed long-note pagination/live growth/current section preservation, source links, protected drafts, automatic revisions and deletion. Actual isolated Electron passed overlay/top alignment/dragging/control clearance at 760/1100/1360px and recorder retention. No backend changes; Python suite not rerun. No microphone, provider calls, student-library modification, installation or push.
+
+Next: rebuild the standalone web/runtime installer and qualify installed upgrade with the existing library selection. **The installed application and installer have not been updated for these three commits.** Earlier M08 release/hardware/human-quality/restore/accessibility gates remain open.
+
 ## Integrated header and sidebar — 2026-09-24
 
 Active phase **6.8 / M08**. Section 2 integrates native controls into the workspace header and animates the inert hidden sidebar while retaining recording. Actual isolated Electron and Chromium checks, 21 desktop tests and frontend typecheck/lint passed. [Evidence](docs/implementation/paged-notes-and-motion.md). Section 1 committed as 6b2b05d. Next: glass/loading polish and final build checks. Installer remains unchanged.

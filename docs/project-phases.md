@@ -1,6 +1,6 @@
 # Project phases
 
-Update (2026-09-24): **6.8 / M08** remains active. [Paged notes and motion](implementation/paged-notes-and-motion.md) starts with a bounded numbered saved-note reader; synthetic Chromium checks pass. Window integration and sidebar motion now also pass isolated Electron/Chromium checks; glass/loading refinements follow. Earlier qualification gaps remain open.
+Update (2026-09-24): **6.8 / M08** remains active. [Paged notes and motion](implementation/paged-notes-and-motion.md) starts with a bounded numbered saved-note reader; synthetic Chromium checks pass. All three source increments now pass production-renderer and isolated Electron checks, including window integration, sidebar motion and glass/loading refinements. Installer rebuild and installed-upgrade qualification remain next. Earlier qualification gaps remain open.
 
 Update (2026-09-24): **6.8 / M08** remains active. [Startup and export usability](implementation/startup-and-exports.md) adds guided first launch, automatic themed loading, matching Windows controls, a collapsible library, Slate glass and portable saved-revision exports. Earlier qualification gaps remain open.
 

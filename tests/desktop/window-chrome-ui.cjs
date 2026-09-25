@@ -55,6 +55,12 @@ const assert=require('node:assert/strict');
     await page.getByRole('button',{name:'Show library',exact:true}).click();
     await page.locator('.sidebar').waitFor({state:'visible'});
     assert.equal(await page.locator('.capture-panel').getAttribute('data-retained'),'yes');
+        for(const width of [760,1100,1360]){
+      await browser.evaluate(({BrowserWindow},width)=>BrowserWindow.getAllWindows()[0].setContentSize(width,900),width);
+      await page.waitForTimeout(400);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`native width ${width}`);
+      assert.ok(await page.locator('.topbar-actions').evaluate(el=>{const r=el.getBoundingClientRect(),area=navigator.windowControlsOverlay.getTitlebarAreaRect();return r.top>=40||r.right<=area.x+area.width;}),`controls clear at ${width}`);
+    }
     await page.screenshot({path:'.local/integrated-chrome.png'});
     assert.deepEqual(errors,[]);
     console.log('Actual Electron overlay, top alignment, reserved controls, drag/no-drag and retained recorder passed.');

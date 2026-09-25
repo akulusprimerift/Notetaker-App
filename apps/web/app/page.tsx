@@ -161,7 +161,7 @@ export default function Workspace(){
       command.current=null;setForm(null);location.hash=destination;
     }catch(err){report(err)}finally{setBusy(false)}
   }
-  if(loading)return <main className="loading"><span className="brand-icon">n</span><p role="status">Opening your workspace…</p></main>;
+  if(loading)return <main className="loading"><span className="brand-icon">n</span><p role="status">Opening your workspace…</p><div className="liquid-progress" role="progressbar" aria-label="Opening workspace"><span/></div></main>;
   if(!session)return <main className="welcome"><section className="unlock-card"><h1>Open your workspace</h1><p>Your library is saved on this device.</p>{error&&<p role="alert" className="error">{error}</p>}<button className="primary" onClick={()=>void load()}>Open workspace</button></section></main>;
 
   return <div className={`workspace ${sidebarHidden?'sidebar-hidden':''}`}>

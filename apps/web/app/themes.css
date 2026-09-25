@@ -190,3 +190,34 @@ h1,.brand{font-family:var(--display-font);font-weight:600;letter-spacing:-.045em
   :root[data-desktop=true] .topbar{padding-right:20px;padding-top:44px}
   @media(prefers-reduced-motion:no-preference){.sidebar{transition:max-height .32s,padding .32s,transform .32s,opacity .24s,visibility .32s}}
 }
+/* Reflective edges and translucent layers keep the reading text crisp. */
+.workspace{background-image:radial-gradient(ellipse 620px 640px at 12% 30%,color-mix(in srgb,var(--glow) 48%,transparent),transparent 76%),radial-gradient(ellipse 650px 480px at 90% 8%,color-mix(in srgb,var(--glow-secondary) 40%,transparent),transparent 78%),linear-gradient(140deg,var(--bg),color-mix(in srgb,var(--bg) 90%,var(--glow)))}
+.sidebar,.topbar{background:linear-gradient(135deg,#ffffff26,transparent 48%),color-mix(in srgb,var(--sidebar) 48%,transparent);backdrop-filter:blur(32px) saturate(155%);box-shadow:inset 0 1px #ffffff55,inset -1px 0 #ffffff16,0 12px 40px #0000000d}
+.generated-notes>.note-paper,.capture-panel,.transcript-panel,.course-card,.lecture-row,.modal,.export-toolbar{
+  background:linear-gradient(145deg,#ffffff18,transparent 45%),color-mix(in srgb,var(--surface) 58%,transparent);
+  backdrop-filter:blur(28px) saturate(145%);border-color:color-mix(in srgb,var(--line) 60%,transparent);
+  box-shadow:inset 0 1px #ffffff65,inset 0 -1px #ffffff0d,0 18px 45px #00000012;
+}
+.note-reader{background:linear-gradient(130deg,#ffffff0c,transparent 55%),color-mix(in srgb,var(--surface) 40%,transparent);box-shadow:inset 0 1px #ffffff35}
+.secondary{background:linear-gradient(135deg,#ffffff1c,transparent),color-mix(in srgb,var(--surface) 62%,transparent);box-shadow:inset 0 1px #ffffff30}
+.loading{flex-direction:column;background:radial-gradient(ellipse at 30% 40%,color-mix(in srgb,var(--glow) 35%,transparent),transparent 60%),var(--bg)}
+.loading .brand-icon{width:76px;height:76px;font-size:2.5rem;border-radius:24px;background:linear-gradient(135deg,#ffffff80,transparent),color-mix(in srgb,var(--surface) 60%,transparent);color:var(--accent);box-shadow:inset 0 1px #ffffff99,0 20px 60px color-mix(in srgb,var(--glow) 30%,transparent)}
+.liquid-progress{width:min(260px,70vw);height:9px;margin:18px auto;border:1px solid color-mix(in srgb,var(--line) 55%,transparent);border-radius:99px;overflow:hidden;background:color-mix(in srgb,var(--surface) 55%,transparent);box-shadow:inset 0 1px #ffffff70,0 8px 24px color-mix(in srgb,var(--accent) 18%,transparent)}
+.liquid-progress>span{display:block;width:45%;height:100%;border-radius:inherit;background:linear-gradient(100deg,var(--accent),#a891ef,#6bcddd,#f3b8d5,var(--accent));background-size:300% 100%}
+@media(prefers-reduced-motion:no-preference){
+  button,a,input,textarea,select,summary{transition:transform .18s cubic-bezier(.22,1,.36,1),background .22s,box-shadow .22s,border-color .22s,filter .22s}
+  button:not(:disabled):active,a:active,summary:active{transform:scale(.97)}
+  .nav-library:hover,.course-link:hover,.lecture-link:hover{transform:translateX(3px)}
+  .secondary:hover{box-shadow:inset 0 1px #ffffff65,0 5px 20px color-mix(in srgb,var(--glow) 22%,transparent)}
+  input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+  .liquid-progress>span{animation:liquid-travel 2.2s ease-in-out infinite,liquid-color 3s linear infinite}
+  .loading .brand-icon{animation:loading-float 2.4s ease-in-out infinite}
+  @keyframes liquid-travel{0%{transform:translateX(-110%)}100%{transform:translateX(330%)}}
+  @keyframes liquid-color{to{background-position:300% 0}}
+  @keyframes loading-float{50%{transform:translateY(-6px);box-shadow:inset 0 1px #ffffff99,0 28px 70px color-mix(in srgb,var(--glow-secondary) 40%,transparent)}}
+}
+@media(prefers-reduced-motion:reduce){.liquid-progress>span{width:100%;opacity:.7}}
+@media(min-width:701px) and (max-width:1050px){
+  :root[data-desktop=true] .topbar{height:auto;flex-wrap:wrap;padding-block:14px;gap:12px}
+  :root[data-desktop=true] .topbar-actions{flex-wrap:wrap;gap:10px}
+}
