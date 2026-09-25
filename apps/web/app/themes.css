@@ -150,3 +150,22 @@ h1,.brand{font-family:var(--display-font);font-weight:600;letter-spacing:-.045em
 .topbar-tagline{font-size:.6rem;letter-spacing:.1em;color:var(--muted)}.export-toolbar{grid-column:1/-1;grid-row:1;padding:4px 18px;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--surface) 65%,transparent);backdrop-filter:blur(18px)}
 @media(max-width:1100px){.generated-notes:has(>.export-toolbar) .note-controls{grid-row:2}}
 @media(max-width:700px){.topbar-tagline{display:none}.topbar{flex-wrap:wrap}.topbar-actions{width:auto;flex:1}}
+/* The reader flows all saved text into fixed-height horizontal pages. */
+.note-reader{min-width:0;margin:24px 0;border:1px solid var(--line);border-radius:20px;padding:16px;background:color-mix(in srgb,var(--surface) 60%,transparent)}
+.note-page-heading{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.note-pages-viewport{width:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:thin;outline-offset:4px}
+.note-pages-flow{height:clamp(320px,60vh,640px);column-fill:auto;column-gap:0;column-count:auto;width:100%}
+.note-pages-flow .study-block{margin:0;padding:0 16px 24px;display:block;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.note-pages-flow .study-block-title{break-inside:avoid;break-after:avoid}
+.note-pages-flow .study-passage{display:block;break-inside:auto;orphans:3;widows:3}
+.note-pages-flow .citation-list{break-inside:avoid}
+.note-pages-flow pre{white-space:pre-wrap;overflow-wrap:anywhere;overflow:visible}
+.note-page-nav{display:flex;align-items:center;gap:10px;margin-top:18px}
+.note-page-numbers{display:flex;flex:1;gap:6px;overflow-x:auto;padding:5px}
+.note-page-nav button{min-width:40px;padding:8px 12px}
+.note-page-nav [aria-current=page]{background:var(--accent);color:var(--accent-ink);box-shadow:0 4px 16px color-mix(in srgb,var(--glow) 30%,transparent)}
+@media(max-width:700px){.note-reader{padding:12px}.note-pages-flow .study-block{padding-inline:8px}}
+.note-page-nav [aria-current=page]{color:white}
+:root[data-theme=dark] .note-page-nav [aria-current=page]{color:#111626}
+.generated-notes>.note-paper,.generated-notes>.export-toolbar{min-width:0}
+.note-pages-flow{position:relative}

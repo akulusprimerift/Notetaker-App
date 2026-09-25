@@ -1,5 +1,7 @@
 # Project phases
 
+Update (2026-09-24): **6.8 / M08** remains active. [Paged notes and motion](implementation/paged-notes-and-motion.md) starts with a bounded numbered saved-note reader; synthetic Chromium checks pass. Window integration and glass/loading refinements follow. Earlier qualification gaps remain open.
+
 Update (2026-09-24): **6.8 / M08** remains active. [Startup and export usability](implementation/startup-and-exports.md) adds guided first launch, automatic themed loading, matching Windows controls, a collapsible library, Slate glass and portable saved-revision exports. Earlier qualification gaps remain open.
 
 Packaging (2026-09-24): **6.8 / M08** remains active. The [appearance installer](implementation/workspace-appearance.md#installer-delivery--2026-09-24) built successfully and passed packaged synthetic save/reopen/readback, renderer isolation and theme-persistence checks. Actual installed upgrade and earlier release gates remain open.

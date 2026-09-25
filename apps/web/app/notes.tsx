@@ -1,5 +1,6 @@
 'use client';
 import ExportNotes from './export-notes';
+import NotePages from './note-pages';
 import PromptProfiles from './prompt-profiles';
 import ReviewNotice from './review-notice';
 import TranscriptPreview from './transcript-preview';
@@ -120,11 +121,11 @@ export default function Notes({lecture,csrf,onSessionExpired,onOpenTranscript}:{
     {revision?<div className="generated-content"><div className="note-revision"><span>{revision.student?'Student revision':'Revision'} {revision.revision} · {revision.metadata.model}</span></div>
       <p className="small muted">{revision.student?'Your selected student revision. Student changes retain original source links for review.':'AI-generated notes. Source links verify where the evidence came from; review important claims for accuracy.'}</p>
       {state&&<NoteEditor lecture={lecture} revision={revision} editing={state.editing} csrf={csrf} onExpired={onSessionExpired} onSaved={saved=>{setState(current=>current?{...current,editing:{...current.editing,selected:saved}}:current);void refresh().catch(()=>{})}}/>}
-      {revision.content.blocks.map(block=><section className={`study-block ${block.kind==='emphasis'?'study-emphasis':''} ${revision.profile?.format==='cornell'&&!revision.profile.layout_prompt?'cornell-block':''}`} key={block.id}><div className="study-block-title"><p className="eyebrow">{block.kind==='emphasis'?'Important · AI identified':block.kind}</p><h3>{block.topic}</h3></div>{block.passages.map(passage=><div className="study-passage" key={passage.id}>
+      <NotePages key={lecture}>{revision.content.blocks.map(block=><section className={`study-block ${block.kind==='emphasis'?'study-emphasis':''} ${revision.profile?.format==='cornell'&&!revision.profile.layout_prompt?'cornell-block':''}`} key={block.id}><div className="study-block-title"><p className="eyebrow">{block.kind==='emphasis'?'Important · AI identified':block.kind}</p><h3>{block.topic}</h3></div>{block.passages.map(passage=><div className="study-passage" key={passage.id}>
         <span className="evidence-label">{passage.student_edited?'Student revision · review against the original sources':passage.evidence_kind==='material_paraphrase'?'From uploaded material and cited evidence':passage.evidence_kind==='lecture_paraphrase'?'From the lecture':passage.evidence_kind==='exact_quote'?'Exact lecture quote':passage.evidence_kind==='ai_explanation'?'Additional AI explanation':'Uncertain'}</span>
         {block.kind==='code'||block.kind==='equation'?<pre><code>{passage.text}</code></pre>:<p className="study-text">{block.kind==='emphasis'?<strong>{passage.text}</strong>:passage.text}</p>}
         <div className="citation-list">{passage.sources.map((citation,index)=><button key={index} className="text-button" onClick={()=>void openSource(citation)}>Source {index+1} ↗<span className="sr-only"> for {block.topic}, passage {passage.id}</span></button>)}</div>
-      </div>)}</section>)}
+      </div>)}</section>)}</NotePages>
       {(revision.content.issues.length>0||revision.source_issues.length>0||revision.content.coverage.some(c=>c.disposition!=='used'))&&<ReviewNotice key={lecture} lecture={lecture}>
         {revision.source_issues.length>0&&<p>The transcript includes recording gaps or uncertain recognition. Check the warnings in the transcript below.</p>}
         {revision.content.issues.map((issue,index)=><p key={index}>{issue.detail}</p>)}

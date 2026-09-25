@@ -1,5 +1,9 @@
 # Session transfer
 
+## Paged notes — 2026-09-24
+
+Active phase **6.8 / M08**. Section 1 adds a bounded numbered note reader with continued text, horizontal swipe/scroll, keyboard navigation, source links and reduced motion. Windows Chromium long-note/narrow-layout/source checks and frontend typecheck/lint passed. See [evidence and next sections](docs/implementation/paged-notes-and-motion.md). No installed app or student data changed. Next: integrated window header/sidebar motion, then glass/loading polish; build and installer qualification remain pending.
+
 ## Startup and exports — 2026-09-24
 
 Active phase remains **6.8 / M08**. Implemented themed automatic startup/recovery, guided setup, native theme-colored Windows controls, a persisted sidebar toggle, Slate glass surfaces, prominent Markdown export, a study-use guide/copyable prompt, and Word/PPTX/plain-text/HTML choices for saved revisions and final snapshots. No student data, model downloads, microphone or provider calls. See [behavior and executed evidence](docs/implementation/startup-and-exports.md).
