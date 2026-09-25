@@ -17,7 +17,7 @@ app.enableSandbox();
 let window, setupWindow, providerBridge, bridgeConfig, quitting = false, starting = false, message = 'Checking local services…', speechPath = '', serviceRoot = '';
 let appearance = 'light', autoStarting = false;
 const palettes = {light:['#e0e1dd','#1b263b'],dark:['#090d17','#f2f2f5'],pink:['#ffe5ec','#4b1830'],blue:['#caf0f8','#03045e']};
-function chromeOptions(){return {titleBarStyle:'hidden',titleBarOverlay:{color:palettes[appearance][0],symbolColor:palettes[appearance][1],height:40},backgroundColor:palettes[appearance][0],roundedCorners:true};}
+function chromeOptions(){return {titleBarStyle:'hidden',titleBarOverlay:{color: '#00000000',symbolColor:palettes[appearance][1],height:40},backgroundColor:palettes[appearance][0],roundedCorners:true};}
 let serviceMode = 'docker', nativeRuntime, shutdownComplete = false, shutdownStarted = false, speechRestartRequired = false, libraryChosen = false;
 const nativeResources = () => app.isPackaged ? path.join(process.resourcesPath,'native-runtime') : process.env.NOTETAKER_NATIVE_RESOURCES;
 async function nativeAvailable(){try{if(!nativeResources())return false;await fs.access(path.join(nativeResources(),'runtime-manifest.json'));return true;}catch{return false;}}
@@ -206,7 +206,7 @@ else {
       authorize(event,true);
       if(typeof value!=='string'||!Object.hasOwn(palettes,value))throw new Error('Unknown theme.');
       appearance=value;await saveConfig();
-      for(const target of [window,setupWindow])if(target&&!target.isDestroyed())target.setTitleBarOverlay({color:palettes[value][0],symbolColor:palettes[value][1]});
+      for(const target of [window,setupWindow])if(target&&!target.isDestroyed())target.setTitleBarOverlay({color: '#00000000',symbolColor:palettes[value][1]});
     });
 
     // Show progress before starting bundled services or verifying their files.

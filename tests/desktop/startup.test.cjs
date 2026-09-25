@@ -23,7 +23,7 @@ test('returning native library shows loading then opens workspace automatically'
   const result=await launch({serviceMode:'native',libraryChosen:true,appearance:'blue'});
   assert.equal(result.starts,1);assert.equal(result.loads[0].status.autoStarting,true);
   assert.equal(result.loads.at(-1).url,'http://127.0.0.1:3000');
-  assert.equal(result.windows[0].options.titleBarOverlay.color,'#caf0f8');
+  assert.equal(result.windows[0].options.titleBarOverlay.color,'#00000000');
   assert.equal(result.windows[0].options.webPreferences.sandbox,true);
 });
 test('fresh install keeps explicit library selection and failed startup returns recovery controls',async()=>{
@@ -34,7 +34,7 @@ test('fresh install keeps explicit library selection and failed startup returns 
 });
 test('appearance IPC persists an allowlisted theme and rejects foreign frames',async()=>{
   const result=await launch({serviceMode:'native',libraryChosen:true});const change=result.handlers.get('app:appearance');
-  await change(result.event(result.windows[0]),'pink');assert.equal(result.stored().appearance,'pink');assert.equal(result.windows[0].overlay.color,'#ffe5ec');
+  await change(result.event(result.windows[0]),'pink');assert.equal(result.stored().appearance,'pink');assert.equal(result.windows[0].overlay.color,'#00000000');assert.equal(result.windows[0].overlay.symbolColor,'#4b1830');
   await assert.rejects(()=>change(result.event(result.windows[0]),'unknown'));
   await assert.rejects(()=>change(result.event(result.windows[0]),['light']));
   await assert.rejects(()=>change({sender:{},senderFrame:{url:'http://127.0.0.1:3000'}},'dark'));

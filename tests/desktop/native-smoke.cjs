@@ -48,7 +48,7 @@ const {_electron:electron}=require('../../.venv/Lib/site-packages/playwright/dri
     const chrome=await application.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].getContentBounds());
     assert.ok(chrome.width>0);
     assert.equal(await page.evaluate(()=>navigator.windowControlsOverlay?.visible),true);
-    assert.equal(await page.locator('.desktop-titlebar').evaluate(el=>getComputedStyle(el).webkitAppRegion),'drag');
+    assert.equal(await page.locator('.topbar').evaluate(el=>getComputedStyle(el).webkitAppRegion),'drag');
     await page.getByLabel('App theme').selectOption('blue');
     assert.equal(await page.locator('html').getAttribute('data-theme'),'blue');
     assert.equal(await page.locator('h1').evaluate(element=>getComputedStyle(element).fontFamily.includes('Workspace Sans')),true);

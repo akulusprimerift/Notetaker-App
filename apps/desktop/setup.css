@@ -273,3 +273,4 @@ body{min-height:100vh;background-attachment:fixed}.desktop-titlebar{z-index:20;b
 button.secondary,button.quiet{background:var(--surface);color:var(--ink)}button.quiet{padding:6px 10px}button:hover:not(:disabled){background:var(--accent);color:var(--bg)}button.secondary:hover:not(:disabled),button.quiet:hover:not(:disabled){background:var(--surface);color:var(--accent)}button:focus-visible{outline-color:var(--accent)}
 
 button.primary,button.primary:hover:not(:disabled){color:#fff}:root[data-theme=dark] button.primary,:root[data-theme=dark] button.primary:hover:not(:disabled){color:var(--bg)}
+body{padding-top:0}.desktop-titlebar{background:transparent;border-radius:0}

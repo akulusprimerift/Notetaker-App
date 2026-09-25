@@ -55,11 +55,12 @@ const assert=require('node:assert/strict');
     }
     await page.locator('.capture-panel').evaluate(el=>el.dataset.retained='yes');
     await page.getByRole('button',{name:'Hide library',exact:true}).click();
-    assert.equal(await page.locator('.sidebar').isVisible(),false);
+    await page.locator('.sidebar').waitFor({state:'hidden'});
+    assert.equal(await page.locator('.sidebar').evaluate(el=>el.inert),true);
     assert.equal(await page.locator('.capture-panel').getAttribute('data-retained'),'yes');
     await page.reload();await page.getByRole('button',{name:'Show library',exact:true}).waitFor();
     await page.getByRole('button',{name:'Show library',exact:true}).click();
-    assert.equal(await page.locator('.sidebar').isVisible(),true);
+    await page.locator('.sidebar').waitFor({state:'visible'});
     // Inspect actual font use, rather than only the declared CSS family.
     const cdp=await page.context().newCDPSession(page);
     await cdp.send('DOM.enable');await cdp.send('CSS.enable');

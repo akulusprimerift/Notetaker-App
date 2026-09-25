@@ -142,8 +142,6 @@ h1,.brand{font-family:var(--display-font);font-weight:600;letter-spacing:-.045em
 }
 @media(max-width:700px){#main-content{padding:24px 20px}.page-heading{margin-bottom:28px}.course-card{padding:24px}.lecture-tabs button{flex-basis:125px}.lecture-toolbar{padding:16px;gap:16px}.brand{font-size:1.4rem}}
 
-.desktop-titlebar{display:none}:root[data-desktop=true] body{padding-top:40px}:root[data-desktop=true] .desktop-titlebar{display:block;position:fixed;inset:0 140px auto 0;height:40px;padding:10px 20px;z-index:30;-webkit-app-region:drag;color:var(--muted);font-size:13px}:root[data-desktop=true] .sidebar{top:40px;height:calc(100vh - 40px)}
-.workspace.sidebar-hidden{grid-template-columns:minmax(0,1fr)}.sidebar[hidden]{display:none}.sidebar-toggle{padding:8px 12px;font-size:.75rem;flex-shrink:0}
 :root:not([data-theme]) .note-paper,:root[data-theme=light] .note-paper,:root[data-theme=light] .capture-panel,:root[data-theme=light] .transcript-panel{background:linear-gradient(135deg,#ffffff65,transparent),color-mix(in srgb,var(--surface) 65%,transparent);backdrop-filter:blur(24px) saturate(135%);box-shadow:inset 0 1px #ffffffb0,0 14px 40px #415a7712;border-color:color-mix(in srgb,var(--line) 45%,transparent)}
 .export-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:16px 0}.export-actions summary{cursor:pointer}.export-actions details a{display:inline-flex;margin:8px}.export-help pre{white-space:pre-wrap;padding:16px;border-radius:12px}.note-revision{flex-wrap:wrap}.export-help p,.export-help li{line-height:1.7}
 
@@ -169,3 +167,26 @@ h1,.brand{font-family:var(--display-font);font-weight:600;letter-spacing:-.045em
 :root[data-theme=dark] .note-page-nav [aria-current=page]{color:#111626}
 .generated-notes>.note-paper,.generated-notes>.export-toolbar{min-width:0}
 .note-pages-flow{position:relative}
+/* Native window buttons share the workspace header rather than adding a row. */
+.desktop-titlebar{display:none}
+:root[data-desktop=true] .topbar{position:sticky;top:0;z-index:20;padding-right:160px;min-height:64px;-webkit-app-region:drag}
+:root[data-desktop=true] .topbar :is(button,a,select,label){-webkit-app-region:no-drag}
+:root[data-desktop=true] body:not(:has(.workspace)) .desktop-titlebar{display:block;position:fixed;inset:0 140px auto 0;height:40px;-webkit-app-region:drag;z-index:30}
+.workspace{--library-width:235px;grid-template-columns:var(--library-width) minmax(0,1fr)}
+.workspace.sidebar-hidden{grid-template-columns:0 minmax(0,1fr)}
+.workspace-body{grid-column:2;min-width:0}
+.sidebar{width:var(--library-width);min-width:0;opacity:1;transform:translateX(0);visibility:visible}
+.sidebar-hidden .sidebar{transform:translateX(-100%);opacity:0;visibility:hidden;pointer-events:none}
+.sidebar-toggle{padding:8px 12px;font-size:.75rem;flex-shrink:0}
+@media(prefers-reduced-motion:no-preference){
+  .workspace{transition:grid-template-columns .32s cubic-bezier(.22,1,.36,1)}
+  .sidebar{transition:transform .32s cubic-bezier(.22,1,.36,1),opacity .24s,visibility .32s}
+}
+@media(max-width:1200px){:root[data-desktop=true] .topbar-tagline{display:none}}
+@media(max-width:1050px){.workspace{--library-width:200px}}
+@media(max-width:700px){
+  .sidebar{width:100%;max-height:240px;overflow:hidden}
+  .sidebar-hidden .sidebar{max-height:0;padding-block:0;border:0;transform:translateY(-12px)}
+  :root[data-desktop=true] .topbar{padding-right:20px;padding-top:44px}
+  @media(prefers-reduced-motion:no-preference){.sidebar{transition:max-height .32s,padding .32s,transform .32s,opacity .24s,visibility .32s}}
+}

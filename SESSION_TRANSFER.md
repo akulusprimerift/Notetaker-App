@@ -1,5 +1,9 @@
 # Session transfer
 
+## Integrated header and sidebar — 2026-09-24
+
+Active phase **6.8 / M08**. Section 2 integrates native controls into the workspace header and animates the inert hidden sidebar while retaining recording. Actual isolated Electron and Chromium checks, 21 desktop tests and frontend typecheck/lint passed. [Evidence](docs/implementation/paged-notes-and-motion.md). Section 1 committed as 6b2b05d. Next: glass/loading polish and final build checks. Installer remains unchanged.
+
 ## Paged notes — 2026-09-24
 
 Active phase **6.8 / M08**. Section 1 adds a bounded numbered note reader with continued text, horizontal swipe/scroll, keyboard navigation, source links and reduced motion. Windows Chromium long-note/narrow-layout/source checks and frontend typecheck/lint passed. See [evidence and next sections](docs/implementation/paged-notes-and-motion.md). No installed app or student data changed. Next: integrated window header/sidebar motion, then glass/loading polish; build and installer qualification remain pending.
