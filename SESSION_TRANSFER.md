@@ -1,5 +1,13 @@
 # Session transfer
 
+## UI update installer delivered — 2026-09-24
+
+Active phase **6.8 / M08**. Paged notes, integrated header/sidebar animation and liquid-glass/loading changes are packaged at `.local/paged-ui-update/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe` (407,272,519 bytes; SHA-256 `92613B65191C286AB844A33506C6539645BB78F78E127075014B5527889F7203`). [Delivery evidence](docs/implementation/paged-notes-and-motion.md#installer-delivery--2026-09-24).
+
+Fresh standalone web build/hash/hydration checks passed. All 5,239 reused native files verified before/after staging; packaged host/setup files match source. Actual packaged startup, synthetic audio save/Quit/reopen/identical readback, native overlay, theme persistence and snapshot exports passed in isolated profile `.local/standalone-smoke-c6aada68-9f3b-4090-a7b8-f77e56222834`. A first-test finalization cursor conflict was handled by a bounded refetch/retry in the test; full rerun passed. Product fencing unchanged.
+
+The installer is unsigned and has not been automatically installed. Next: close Notetaker normally, install this update and retain the existing library selection; qualify installed upgrade. No student data, microphone, live providers or models accessed. Earlier M08 release gates remain open.
+
 ## Paged notes and liquid glass — 2026-09-24
 
 Active phase **6.8 / M08**. All three requested source increments are implemented: bounded numbered notes with continued content and smooth horizontal navigation; integrated native window controls and animated/inert sidebar; stronger glass surfaces, interaction feedback and gradient loading progress. First two commits: `6b2b05d`, `f87056d`; glass/final evidence is committed with this entry. [Detailed evidence](docs/implementation/paged-notes-and-motion.md).

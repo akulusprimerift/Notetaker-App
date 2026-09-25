@@ -1,5 +1,7 @@
 # Standalone Windows distribution
 
+Latest UI update (2026-09-24): [paged notes and glass installer](paged-notes-and-motion.md#installer-delivery--2026-09-24) is available under .local/paged-ui-update/installer with packaged startup, synthetic save/reopen/readback and export checks. Installed-upgrade qualification remains open.
+
 Latest installer (2026-09-24): the [appearance delivery](workspace-appearance.md#installer-delivery--2026-09-24) packages Pink/Blue themes, glass surfaces and animated navigation under `.local/appearance-package/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe`. It reuses the hash-verified unchanged native services and passes packaged synthetic audio save/reopen/readback and theme-persistence checks. See the linked evidence for size/checksum and qualification limits.
 
 Upload repair (2026-09-22): the frozen service now dispatches the document-reader command used by material uploads. See [cause and regression coverage](course-materials.md#windows-upload-repair--2026-09-22) and the latest [installer evidence](../../SESSION_TRANSFER.md). To exercise a future packaged reader, set `NOTETAKER_TEST_SERVICE_EXECUTABLE` to its absolute `NotetakerService.exe` path and run `uv run --no-project python -m pytest apps/api/tests/test_windows_material_parser.py -q` with `PYTHONPATH=apps/api`. This checks all supported formats and rejects unreadable inputs without opening a student library.

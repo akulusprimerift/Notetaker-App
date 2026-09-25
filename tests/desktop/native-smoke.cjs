@@ -79,9 +79,15 @@ const {_electron:electron}=require('../../.venv/Lib/site-packages/playwright/dri
     const exports=await page.evaluate(async lecture=>{
       const session=await(await fetch('/api/session/open',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).json();
       const base='/api/lectures/'+lecture;
-      const state=await(await fetch(base+'/finalization')).json();
-      const response=await fetch(base+'/finalization',{method:'POST',headers:{'Content-Type':'application/json','x-csrf-token':session.csrf_token,'idempotency-key':crypto.randomUUID()},body:JSON.stringify({expected_cursor:state.cursor,expected_edit_version:state.edit_version,available_only:true})});
-      if(!response.ok)throw Error('Synthetic finalization failed: '+await response.text());
+      // Background reconciliation may advance the cursor immediately after sealing.
+      // Refetch only on the expected-version conflict; never hide other failures.
+      for(let attempt=0;attempt<5;attempt++){
+        const state=await(await fetch(base+'/finalization')).json();
+        const response=await fetch(base+'/finalization',{method:'POST',headers:{'Content-Type':'application/json','x-csrf-token':session.csrf_token,'idempotency-key':crypto.randomUUID()},body:JSON.stringify({expected_cursor:state.cursor,expected_edit_version:state.edit_version,available_only:true})});
+        if(response.ok)break;
+        const failure=await response.json();
+        if(failure.error?.code!=='finalization_version'||attempt===4)throw Error('Synthetic finalization failed: '+JSON.stringify(failure));
+      }
       let snapshot;
       for(let attempt=0;attempt<40;attempt++){
         const final=await(await fetch(base+'/finalization')).json();snapshot=final.history.find(row=>row.snapshot_id)?.snapshot_id;

@@ -36,3 +36,13 @@ Final executed checks on Windows:
 No backend implementation changed, so the Python suite was not rerun. Synthetic data only: no microphone, provider calls, model downloads, student-library changes, installed app replacement or push. This is source/production-renderer verification, not installer/upgrade or release qualification.
 
 Next delivery work: prepare the updated standalone web component, package it with the existing verified native runtime, and qualify the unsigned installer and installed upgrade while preserving the selected library. The installer remains the earlier startup/export build. Human quality, real hardware, endurance, accessibility, coordinated restore and signing gates remain open.
+
+## Installer delivery — 2026-09-24
+
+The three UI increments are now packaged in `.local/paged-ui-update/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe` (407,272,519 bytes; SHA-256 `92613B65191C286AB844A33506C6539645BB78F78E127075014B5527889F7203`). This is an unsigned x64 update, not automatically installed. Close Notetaker normally before installing and retain the existing library selection.
+
+Source UI commit: `0b3d2c4`. Fresh standalone web bundle: `.local/desktop-web/00976265-b5c2-4780-82fc-2b12df9edf4a`, build ID `xwo4ZBRSINtuVxDnysb45`. Runtime: `.local/paged-ui-update/runtime`. All 5,239 unchanged service/vendor/notice files matched the earlier verified runtime both before and after copying. No backend/contracts/prompts changed since the frozen startup/export service. Five packaged desktop host/setup files match current source. Web bundle hashes, isolated hydration and capture assets passed; installer build completed successfully.
+
+The actual packaged executable passed PostgreSQL startup/migrations, native overlay/dragging, Blue/Pink appearance, synthetic verified audio save, normal Quit/automatic reopen, identical audio readback and portable final-snapshot exports in `.local/standalone-smoke-c6aada68-9f3b-4090-a7b8-f77e56222834`. Packaged screenshot inspected. The initial test hit a legitimate finalization expected-version conflict during background reconciliation; the test now refetches state and retries only that conflict, with a five-attempt bound. The full rerun passed; application fencing is unchanged.
+
+No microphone, student-library access, live provider, model download, installation or push. Next: installed upgrade using the existing library; earlier clean-machine, human quality, real hardware, endurance, accessibility, backup/restore and signing gates remain open.
