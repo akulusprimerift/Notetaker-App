@@ -1,5 +1,16 @@
 # Session transfer
 
+## Performance/restart Windows update delivered — 2026-09-30
+
+Active phase: **6.8 / M08 — shared performance and stop/restart repair**; macOS 6.9.3 remains paused. Source commits `3743011` and `7214afb` are packaged in `.local/restart-speed/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe` (**407,285,900 bytes**, SHA-256 `F717209E63E766A8905AFBAAD245E3205E7FC4116BA8C3FB2D7BDFF5ECA437F6`). Unsigned; **not automatically installed**. [Full behavior, evidence and limits](docs/implementation/live-speed-restart.md).
+
+Executed: **260 backend passed, 2 existing skips**, **63 JavaScript contracts**, **39 desktop tests**; frontend typecheck/lint/production build, Python lint, docs/whitespace checks; deterministic stop/upload and pause/resume regressions failed before and passed after fixes. Real Chromium passed offline recovery and three recorder restarts; production renderer passed three note pause/resume cycles and existing draft/revision/deletion checks. Fresh frozen service, staged web integrity/hydration, 1,806 reused runtime hashes and installer build passed. Actual packaged Electron passed **three recording stop/restart cycles using real API/storage**, synthetic saved audio, Quit/reopen/identical readback, isolation, themes, native controls and exports. Isolated profile `.local/standalone-smoke-f6eef723-9659-4367-a67b-ba6f29219e14`.
+
+Local small.en CPU/int8 synthetic warm decode improved from 3.096 to 2.729 seconds on a ten-second sample, with identical text. Live beam defaults to 1, configurable back to 5; saved-only windows retain 5. Notes retain 6,000 output tokens and source checks while using bounded context and coalesced previews. Queue polling is 0.5 seconds. No real-lecture accuracy or end-to-end note-throughput claim. Cancellation fences stale work immediately; an executing provider unwinds at a preview/check or timeout while role locks prevent overlapping calls.
+
+**Exact next work:** close Notetaker normally and install the new update retaining the existing library selection; qualify installed upgrade and the user's workflow before returning to macOS. No microphone, student-library changes, model downloads, cloud inference, automatic installation or push. Existing human-quality/hardware/release and native Mac gates remain open. Earlier entries below describe intermediate/historical states.
+
+
 ## Stop/restart fixes verified in shared source — 2026-09-30
 
 Active phase: **6.8 / M08 — shared performance and stop/restart repair**. macOS 6.9.3 remains paused. Speed increment committed as `3743011`; recording stop/upload ordering and note pause/resume fencing now pass regressions that failed on the old code. Resume has an explicit button label and notes requests release busy controls after a bounded timeout. [Behavior and evidence](docs/implementation/live-speed-restart.md).
