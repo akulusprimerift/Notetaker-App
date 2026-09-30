@@ -9,6 +9,7 @@ const {discoverModels,discoverSpeechModels,validSpeechFolder} = require('./model
 const {findPowerShell} = require('./powershell.cjs');
 const {ProviderBridge} = require('./provider-bridge.cjs');
 const {NativeRuntime} = require('./native-runtime.cjs');
+const {accountExecutable} = require('./platform.cjs');
 
 app.setName('Notetaker');
 const explicitData = app.commandLine.getSwitchValue('user-data-dir');
@@ -73,6 +74,7 @@ async function startServices(force=false) {
     return;
   }
   if (!force && await healthy()) {message='Your local workspace is ready.';return;}
+  if(process.platform!=='win32')throw new Error('Docker workspace startup is currently supported on Windows. Use a bundled standalone Mac runtime.');
   const powershell = await findPowerShell();
   if (!powershell) throw new Error('PowerShell 7 was not found. Install PowerShell 7, restart Notetaker, and try again.');
   if (app.isPackaged && !serviceRoot) {
@@ -121,7 +123,7 @@ if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => {if(window){window.show();window.focus();}});
   app.whenReady().then(async () => {
-    providerBridge = new ProviderBridge(app.getPath('userData'), require('electron').safeStorage, {openExternal:url=>require('electron').shell.openExternal(url), codexExecutable:app.isPackaged?path.join(process.resourcesPath,'account-client/bin/codex.exe'):path.join(__dirname,'../../node_modules/@openai/codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin/codex.exe')});
+    providerBridge = new ProviderBridge(app.getPath('userData'), require('electron').safeStorage, {openExternal:url=>require('electron').shell.openExternal(url), codexExecutable:accountExecutable({packaged:app.isPackaged,resources:process.resourcesPath,root:path.resolve(__dirname,'../..')})});
     try {bridgeConfig=await providerBridge.start();}
     catch (error) {console.error('Provider bridge could not start:', error.message);bridgeConfig=null;}
     try {const config=JSON.parse(await fs.readFile(configPath(),'utf8'));appearance=typeof config.appearance==='string'&&Object.hasOwn(palettes,config.appearance)?config.appearance:'light';speechPath=config.speechPath || '';serviceRoot=config.serviceRoot || '';serviceMode=config.serviceMode==='native'?'native':'docker';libraryChosen=config.libraryChosen!==false;} catch { /* First launch. */ }

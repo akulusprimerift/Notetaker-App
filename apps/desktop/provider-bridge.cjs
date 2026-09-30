@@ -7,7 +7,7 @@ const {randomUUID} = require('node:crypto');
 const {mkdtemp, mkdir, readFile, rename, rm, writeFile} = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const {spawn} = require('node:child_process');
+const {spawnOwned:spawn,killOwned,closeOwned}=require('./owned-child.cjs');
 const readline = require('node:readline');
 const {AccountClient,loginUrl}=require('./account-client.cjs');
 
@@ -61,8 +61,8 @@ async function body(request) {
 function processResult(executable, args, options={}, timeout=30_000) {
   return new Promise((resolve, reject) => {
     const child = spawn(executable, args, {cwd:options.cwd, env:options.env, windowsHide:true, stdio:['ignore','pipe','ignore']});
-    let output = '', timer = setTimeout(() => {child.kill();reject(new BridgeError('provider_timeout', 'The provider client took too long to respond.'));}, timeout);
-    child.stdout.on('data', chunk => {output += chunk.toString(); if (output.length > 2_000_000) {child.kill();clearTimeout(timer);reject(new BridgeError('invalid_output', 'The provider returned too much output.'));}});
+    let output = '', timer = setTimeout(() => {killOwned(child);reject(new BridgeError('provider_timeout', 'The provider client took too long to respond.'));}, timeout);
+    child.stdout.on('data', chunk => {output += chunk.toString(); if (output.length > 2_000_000) {killOwned(child);clearTimeout(timer);reject(new BridgeError('invalid_output', 'The provider returned too much output.'));}});
     child.once('error', error => {clearTimeout(timer);reject(new BridgeError('subscription_client_unavailable', error.code === 'ENOENT' ? 'The selected official provider client could not be started.' : 'The official provider client could not be started.'));});
     child.once('exit', code => {clearTimeout(timer);if(code===0)resolve(output);else reject(new BridgeError('provider_authentication', 'The official provider client did not complete the request.'));});
   });
@@ -84,7 +84,7 @@ function codexGenerate(row, messages, directory, onPreview) {
     const child=spawn(row.executable, codexArgs(row.executable), {cwd,env,windowsHide:true,stdio:['pipe','pipe','ignore']});
     const reader=readline.createInterface({input:child.stdout});
     let text='', final='', finished=false, timer=setTimeout(()=>finish(new BridgeError('provider_timeout','The ChatGPT client took too long to respond.')),600_000);
-    const finish=(error, value)=>{if(finished)return;finished=true;clearTimeout(timer);reader.close();if(child.exitCode===null)child.kill();void rm(cwd,{recursive:true,force:true});if(error)reject(error);else resolve(value);};
+    const finish=(error, value)=>{if(finished)return;finished=true;clearTimeout(timer);reader.close();if(child.exitCode===null)killOwned(child);void rm(cwd,{recursive:true,force:true});if(error)reject(error);else resolve(value);};
     const send=value=>{try{child.stdin.write(JSON.stringify(value)+'\n');}catch{finish(new BridgeError('subscription_client_unavailable','The ChatGPT client closed unexpectedly.'));}};
     reader.on('line', line=>{
       let event;try{event=JSON.parse(line);}catch{finish(new BridgeError('subscription_client_unavailable','The ChatGPT client returned invalid output.'));return;}
@@ -113,8 +113,8 @@ async function claudeGenerate(row, messages, directory, onPreview) {
     const args=[row.executable,'-p','--model',row.model,'--output-format','stream-json','--verbose','--include-partial-messages','--tools','','--disallowedTools','*','--strict-mcp-config','--mcp-config','{"mcpServers":{}}','--safe-mode','--setting-sources','','--settings','{"disableAllHooks":true}','--no-session-persistence','--no-chrome','--max-turns','1'];
     const result=await new Promise((resolve,reject)=>{
       const child=spawn(args[0],args.slice(1),{cwd,env,windowsHide:true,stdio:['pipe','pipe','ignore']});
-      const reader=readline.createInterface({input:child.stdout});let text='',timer=setTimeout(()=>{child.kill();reject(new BridgeError('provider_timeout','The Claude subscription took too long to respond.'));},600_000),done=false;
-      const finish=(error,value)=>{if(done)return;done=true;clearTimeout(timer);reader.close();if(child.exitCode===null)child.kill();if(error)reject(error);else resolve(value);};
+      const reader=readline.createInterface({input:child.stdout});let text='',timer=setTimeout(()=>{killOwned(child);reject(new BridgeError('provider_timeout','The Claude subscription took too long to respond.'));},600_000),done=false;
+      const finish=(error,value)=>{if(done)return;done=true;clearTimeout(timer);reader.close();if(child.exitCode===null)killOwned(child);if(error)reject(error);else resolve(value);};
       reader.on('line',line=>{let event;try{event=JSON.parse(line);}catch{finish(new BridgeError('subscription_client_unavailable','The Claude client returned invalid output.'));return;}if(event.type==='stream_event'){const part=event.event||{};if(part.type==='content_block_start'&&part.content_block?.type==='tool_use')finish(new BridgeError('unexpected_tool_request','The subscription provider requested an unsupported action.'));text+=part.delta?.text||'';onPreview?.(text);}if(event.type==='result'){if(event.is_error||event.subtype!=='success')finish(new BridgeError('provider_limit_or_failure','The Claude subscription stopped before completing the note request.'));else finish(null,{raw:event.result||text,metrics:{client:'claude-code',billing:'subscription',usage:event.usage||{}}});}});
       child.once('error',error=>finish(new BridgeError('subscription_client_unavailable',error.code==='ENOENT'?'The selected Claude client could not be started.':'The Claude client could not be started.')));
       child.once('exit',code=>{if(!done&&code!==0)finish(new BridgeError('provider_authentication','The Claude subscription client did not complete the request.'));});
@@ -290,7 +290,7 @@ class ProviderBridge {
     } catch(error) {const failure=error instanceof BridgeError?error:new BridgeError('provider_bridge_failure','The provider connection could not be completed.',503);sendJson(response,failure.status,{code:failure.code,message:failure.message});}finally{if(lockedProvider)this.busy.delete(lockedProvider);}
   }
   async start() {this.server=createServer((request,response)=>void this.handle(request,response));await new Promise((resolve,reject)=>{this.server.once('error',reject);this.server.listen(0,'0.0.0.0',resolve);});this.port=this.server.address().port;return {url:`http://host.docker.internal:${this.port}`,token:this.token,port:this.port};}
-  async close() {for(const client of this.clients)await client.close();if(this.server)await new Promise(resolve=>this.server.close(resolve));this.server=null;}
+  async close() {closeOwned();for(const client of this.clients)await client.close();if(this.server)await new Promise(resolve=>this.server.close(resolve));this.server=null;}
 }
 
 module.exports={ProviderBridge,PROVIDERS,safeEnvironment,codexArgs};

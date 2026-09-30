@@ -1,14 +1,17 @@
-"""Owned Windows service tree for an explicitly separate PostgreSQL library."""
+"""Shared standalone service tree for an explicitly separate PostgreSQL library."""
 import ctypes
 from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
 import socket
+import signal
 import subprocess
 import sys
 import threading
 import time
+
+from .runtime_platform import executable, protect_library, run_command, stop_children, subprocess_options
 
 
 def own_process_tree():
@@ -43,7 +46,8 @@ def own_process_tree():
 def require_free_ports(ports):
     for port in ports:
         with socket.socket() as probe:
-            probe.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+            if sys.platform == 'win32':
+                probe.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
             try:
                 probe.bind(('127.0.0.1', port))
             except OSError:
@@ -51,18 +55,19 @@ def require_free_ports(ports):
 
 
 def main(config):
-    if sys.platform != 'win32':
-        raise RuntimeError('This runtime is for Windows only')
-    owned_job = own_process_tree()
-    assert owned_job
+    if sys.platform not in ('win32', 'darwin'):
+        raise RuntimeError('Standalone services support Windows and macOS only')
+    if sys.platform == 'win32':
+        owned_job = own_process_tree()
+        assert owned_job
     root = Path(config['resources']).resolve()
     data = Path(config['data']).resolve()
     data.mkdir(parents=True, exist_ok=True)
-    account = os.environ['USERDOMAIN'] + '\\' + os.environ['USERNAME']
-    subprocess.run(['icacls', str(data), '/inheritance:r', '/grant:r', account + ':(OI)(CI)F',
-        '*S-1-5-18:(OI)(CI)F'], check=True, stdout=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW)
+    protect_library(data)
     require_free_ports([3000, 8010, 55432, 19333, 29333, 18080, 28080, 18888, 28888, 18333, 28333, 11435])
     stop = threading.Event()
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        signal.signal(sig, lambda *_: stop.set())
     def watch_parent():
         for _ in sys.stdin:
             stop.set()
@@ -90,24 +95,24 @@ def main(config):
     def external_dll_path():
         # PyInstaller changes the process DLL directory; do not pass its Python
         # dependency DLLs to PostgreSQL, Seaweed or Ollama executables.
-        if getattr(sys, 'frozen', False):
+        if sys.platform == 'win32' and getattr(sys, 'frozen', False):
             ctypes.windll.kernel32.SetDllDirectoryW(None)
         try:
             yield
         finally:
-            if getattr(sys, 'frozen', False):
+            if sys.platform == 'win32' and getattr(sys, 'frozen', False):
                 ctypes.windll.kernel32.SetDllDirectoryW(str(sys._MEIPASS))
-    def run(args, **kwargs):
+    def run(args, *, shutting_down=False, **kwargs):
         with external_dll_path(), (data / 'setup.log').open('ab') as stream:
-            return subprocess.run([str(arg) for arg in args], env=env, cwd=data, check=True,
+            return run_command([str(arg) for arg in args], stop=threading.Event() if shutting_down else stop, env=env, cwd=data,
                 stdin=subprocess.DEVNULL, stdout=stream, stderr=stream,
-                creationflags=subprocess.CREATE_NO_WINDOW, **kwargs)
+                **kwargs)
     def launch(name, args):
         stream = (data / (name + '.log')).open('wb')
         logs.append(stream)
         with external_dll_path():
             child = subprocess.Popen([str(arg) for arg in args], env=env, cwd=data,
-                stdin=subprocess.DEVNULL, stdout=stream, stderr=stream, creationflags=subprocess.CREATE_NO_WINDOW)
+                stdin=subprocess.DEVNULL, stdout=stream, stderr=stream, **subprocess_options())
         children.append(child)
         return child
     def wait_for(check):
@@ -130,13 +135,13 @@ def main(config):
             pwfile = data / 'init-password'
             try:
                 pwfile.write_text(password, encoding='utf-8')
-                run([pg / 'initdb.exe', '-D', pgdata, '-U', 'notetaker', '--auth=scram-sha-256',
+                run([executable(pg, 'initdb'), '-D', pgdata, '-U', 'notetaker', '--auth=scram-sha-256',
                     '--encoding=UTF8', '--locale=C', '--pwfile', pwfile])
             finally:
                 pwfile.unlink(missing_ok=True)
         if (pgdata / 'PG_VERSION').read_text().strip() != '17':
             raise RuntimeError('This database requires a supported upgrade. Existing data was retained.')
-        launch('postgres', [pg / 'postgres.exe', '-D', pgdata, '-h', '127.0.0.1', '-p', '55432'])
+        launch('postgres', [executable(pg, 'postgres'), '-D', pgdata, '-h', '127.0.0.1', '-p', '55432'])
         import psycopg
         def database_ready():
             with psycopg.connect(host='127.0.0.1', port=55432, dbname='postgres', user='notetaker', password=password, connect_timeout=2):
@@ -149,7 +154,7 @@ def main(config):
         s3config = data / 's3.json'
         s3config.write_text(json.dumps({'identities': [{'name': 'notetaker', 'credentials': [
             {'accessKey': 'notetaker', 'secretKey': password}], 'actions': ['Admin', 'Read', 'Write', 'List', 'Tagging']}]}))
-        launch('objects', [root / 'seaweed/weed.exe', 'server', '-ip=127.0.0.1', '-ip.bind=127.0.0.1',
+        launch('objects', [executable(root, 'seaweed/weed'), 'server', '-ip=127.0.0.1', '-ip.bind=127.0.0.1',
             '-dir=' + str(objects), '-master.port=19333', '-volume.port=18080', '-filer', '-filer.port=18888',
             '-s3', '-s3.port=18333', '-s3.port.iceberg=0', '-s3.port.lance=0',
             '-s3.config=' + str(s3config), '-master.volumeSizeLimitMB=256'])
@@ -158,37 +163,31 @@ def main(config):
         settings = Settings(_env_file=None, **{key.lower().removeprefix('notetaker_'): value for key, value in env.items() if key.startswith('NOTETAKER_')})
         store = AudioStore(settings)
         wait_for(lambda: store.ready() is None)
-        executable = [sys.executable] if getattr(sys, 'frozen', False) else [sys.executable, str(Path(__file__).parents[1] / 'windows_service.py')]
+        service_command = [sys.executable] if getattr(sys, 'frozen', False) else [sys.executable, str(Path(__file__).parents[1] / 'windows_service.py')]
         progress('Checking library migrations. Your existing library is retained…')
-        run([*executable, 'migrate'], timeout=180)
+        run([*service_command, 'migrate'], timeout=180)
         progress('Starting the lecture workspace API…')
-        launch('api', [*executable, 'api'])
+        launch('api', [*service_command, 'api'])
         import urllib.request
         wait_for(lambda: urllib.request.urlopen('http://127.0.0.1:8010/health', timeout=2).status == 200)
         progress('Starting local processing workers…')
-        launch('ollama', [root / 'ollama/ollama.exe', 'serve'])
-        launch('notes', [*executable, 'notes'])
+        launch('ollama', [executable(root, 'ollama/ollama'), 'serve'])
+        launch('notes', [*service_command, 'notes'])
         # Keep reconciliation alive even without a model: saved audio must acquire
         # visible retryable model_unavailable jobs rather than wait silently.
-        launch('speech', [*executable, 'speech'])
+        launch('speech', [*service_command, 'speech'])
         print(json.dumps({'status': 'ready'}), flush=True)
         while not stop.wait(.5):
             if any(child.poll() is not None for child in children):
                 raise RuntimeError('A local service stopped. Close and reopen Notetaker to recover.')
     finally:
-        for child in reversed(children[1:]):
-            if child.poll() is None:
-                child.terminate()
-        for child in reversed(children[1:]):
-            try:
-                child.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                child.kill()
+        stop_children(children[1:])
         if children and children[0].poll() is None:
             try:
-                run([pg / 'pg_ctl.exe', '-D', pgdata, 'stop', '-m', 'fast', '-w', '-t', '15'], timeout=20)
+                run([executable(pg, 'pg_ctl'), '-D', pgdata, 'stop', '-m', 'fast', '-w', '-t', '15'], timeout=20, shutting_down=True)
             except Exception:
-                children[0].terminate()
+                pass
+        stop_children(children[:1])
         for stream in logs:
             stream.close()
 

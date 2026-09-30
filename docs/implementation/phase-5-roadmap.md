@@ -1,5 +1,9 @@
 # Phase 5: Implementation roadmap
 
+Current phase (2026-09-29): **6.9.1 — macOS platform foundation** is the single active implementation phase. Windows is accepted for the current development scope; its earlier qualification gaps remain open. Shared executable selection, runtime target validation, Mac service controls and owned-group cleanup are implemented with Windows and simulated Mac regression evidence. Native arm64 startup/save/quit/reopen remains unverified. See [implementation, evidence and exact next work](phase-6-9-macos.md). Earlier dated active-phase entries below are historical.
+
+The macOS sequence is 6.9.1 platform foundation → 6.9.2 standalone arm64 runtime → 6.9.3 native integration → 6.9.4 complete lecture workflow → 6.9.5 signed/notarized installer → 6.9.6 release qualification. Preserve existing Windows/Docker libraries and explicit local model selection.
+
 Update (2026-09-23): **M08** remains active. [Speech workspace usability](speech-workspace-ux.md) replaces manual marking with model-inferred emphasis, places a bounded live transcript above notes, and adds guided local speech selection plus native readiness reporting. Existing saved bookmarks and revisions remain intact; hardware, human-quality and release gates remain open.
 
 

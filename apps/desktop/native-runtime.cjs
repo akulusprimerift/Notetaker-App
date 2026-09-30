@@ -5,6 +5,8 @@ const path = require('node:path');
 const {spawn} = require('node:child_process');
 const {createHash, randomBytes} = require('node:crypto');
 
+const {desktopPlatform,validateRuntimeTarget}=require('./platform.cjs');
+
 const delay = ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function safeRelative(value) {
   if(typeof value!=='string'||!value||path.isAbsolute(value)||value.includes('\\')||value.split('/').some(part=>!part||part==='.'||part==='..'))
@@ -25,8 +27,8 @@ async function verifyBundle(root) {
 }
 
 class NativeRuntime {
-  constructor({resources,dataPath,safeStorage,utilityProcess,onFailure=()=>{},onProgress=()=>{}}){
-    Object.assign(this,{resources,dataPath,safeStorage,utilityProcess,onFailure,onProgress});
+  constructor({resources,dataPath,safeStorage,utilityProcess,onFailure=()=>{},onProgress=()=>{},platform=desktopPlatform()}){
+    Object.assign(this,{resources,dataPath,safeStorage,utilityProcess,onFailure,onProgress,platform});
     this.host=null;this.web=null;this.ready=false;this.stopping=false;
   }
   async start({speechPath='',bridgeConfig}={}){
@@ -35,9 +37,11 @@ class NativeRuntime {
     this.stopping=false;
     this.onProgress('Checking bundled runtime files…');
     const manifest=await verifyBundle(this.resources);
+    if(this.stopping)throw new Error('Standalone startup was cancelled.');
+    validateRuntimeTarget(manifest,this.platform);
     const library=path.join(this.dataPath,'standalone-library');
     const secretPath=path.join(this.dataPath,'standalone-secret.bin');
-    if(!this.safeStorage.isEncryptionAvailable())throw new Error('Windows protected storage is unavailable.');
+    if(!this.safeStorage.isEncryptionAvailable())throw new Error('Protected system storage is unavailable.');
     let secret;
     try{secret=this.safeStorage.decryptString(await fs.readFile(secretPath));}
     catch(error){
@@ -53,9 +57,10 @@ class NativeRuntime {
     // A writable copy keeps Next cache and generated files outside installation.
     await fs.mkdir(webRoot,{recursive:true});
     await fs.cp(path.join(this.resources,'web'),webRoot,{recursive:true});
+    if(this.stopping)throw new Error('Standalone startup was cancelled.');
     const env={...process.env};
     for(const key of Object.keys(env))if(/^(NODE_OPTIONS|NODE_PATH|ELECTRON_RUN_AS_NODE|PYTHON|NOTETAKER_)/i.test(key))delete env[key];
-    const host=spawn(path.join(this.resources,'service','NotetakerService.exe'),['host'],{
+    const host=spawn(path.join(this.resources,'service',this.platform.service),['host'],{
       cwd:this.dataPath,env,windowsHide:true,stdio:['pipe','pipe','pipe'],
     });
     this.host=host;
@@ -104,9 +109,15 @@ class NativeRuntime {
     if(this.web){this.web.kill();this.web=null;}
     const host=this.host;
     if(host){
-      host.stdin.end();
-      await Promise.race([new Promise(resolve=>host.once('exit',resolve)),delay(25000)]);
-      if(host.exitCode===null)host.kill();
+      if(host.exitCode===null&&host.signalCode===null){
+        await new Promise(resolve=>{
+          const done=()=>{clearTimeout(timer);host.removeListener('exit',done);resolve();};
+          const timer=setTimeout(done,60000);
+          host.once('exit',done);
+          host.stdin.end();
+        });
+        if(host.exitCode===null&&host.signalCode===null)host.kill();
+      }
       this.host=null;
     }
   }

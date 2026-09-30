@@ -4,7 +4,22 @@ const fs=require('node:fs/promises');
 const path=require('node:path');
 const os=require('node:os');
 const {createHash}=require('node:crypto');
+const {EventEmitter}=require('node:events');
 const {safeRelative,verifyBundle,NativeRuntime}=require('../../apps/desktop/native-runtime.cjs');
+
+test('native shutdown waits for parent-pipe cleanup and does not kill a cleanly exited host',async()=>{
+  const runtime=new NativeRuntime({resources:'unused',dataPath:'unused',safeStorage:{},utilityProcess:{}});
+  const host=new EventEmitter();host.exitCode=null;host.signalCode=null;
+  host.kill=()=>assert.fail('clean shutdown must not force termination');
+  host.stdin={end:()=>{host.exitCode=0;host.emit('exit',0);}};
+  runtime.host=host;runtime.ready=true;
+  await runtime.stop();
+  assert.equal(runtime.host,null);assert.equal(runtime.ready,false);
+  assert.equal(host.listenerCount('exit'),0);
+  runtime.host=host;
+  host.stdin.end=()=>assert.fail('already exited host must not receive another stop');
+  await runtime.stop();
+});
 
 test('native runtime rejects paths outside its bundle',()=>{
   for(const value of ['../secret','/absolute','C:\\secret','a/../b','a\\b','a//b'])assert.throws(()=>safeRelative(value));

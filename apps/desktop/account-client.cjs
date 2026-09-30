@@ -1,6 +1,6 @@
 'use strict';
 
-const {spawn}=require('node:child_process');
+const {spawnOwned:spawn,killOwned}=require('./owned-child.cjs');
 const readline=require('node:readline');
 
 // Only provider-owned HTTPS login pages may leave the desktop host.
@@ -57,7 +57,7 @@ class AccountClient {
   close(error=new Error('Account request cancelled.')) {
     if(this.closed)return this.exited;this.closed=true;
     for(const map of [this.pending,this.waiters]){for(const entry of map.values())entry.reject(error);map.clear();}
-    this.reader.close();if(this.child.exitCode===null)this.child.kill();
+    this.reader.close();if(this.child.exitCode===null)killOwned(this.child);
     return this.exited;
   }
 }

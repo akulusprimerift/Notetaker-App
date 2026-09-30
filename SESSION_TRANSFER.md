@@ -1,5 +1,15 @@
 # Session transfer
 
+## Phase 6.9.1 platform foundation implemented — 2026-09-29
+
+Active phase remains **6.9.1 — macOS platform foundation**, Apple Silicon first. Shared source preparation is implemented and verified on Windows with simulated Mac contracts; native Mac foundation qualification is still open. Windows is accepted for the current development scope with its earlier release/hardware/human-quality gaps retained. Earlier active-phase entries below are historical.
+
+Implemented platform-specific service/account-helper paths and matching packaging resource selection, runtime target checks with legacy Windows bundle compatibility, Mac service launch/private-library permissions, cancellation-aware setup commands and owned process-group cleanup. Windows keeps Job Objects, ACLs and its Docker startup path. Workers stop before PostgreSQL; parent disconnect/signals request shutdown. Mac provider helpers receive group cleanup on completion/cancellation. No migrations, student-library changes, model downloads, microphone access, live providers, installer replacement or push.
+
+Executed: **255 backend passed, 2 skipped** (existing service-only case and real POSIX group test); **60 JavaScript contracts**, **25 desktop tests**; frontend typecheck/lint/production build, Python lint, documentation/whitespace checks. Actual isolated Windows Electron first-launch setup, hardened renderer and clean Quit passed without opening a library. Initial new-test harness failures were corrected and rerun. [Detailed implementation/evidence](docs/implementation/phase-6-9-macos.md) records limits and the synthetic profile.
+
+**Exact next work:** on the user's Apple Silicon Mac, set up Bun/uv and run shared tests plus the real POSIX owned-tree test. Prepare the 6.9.2 arm64 frozen service and PostgreSQL/SeaweedFS/Ollama/account-helper bundle with explicit Mac manifest metadata. Then verify isolated synthetic audio save → Quit → reopen → identical audio readback, parent disconnect, startup failure and descendant cleanup. This Windows session has not built or tested a native Mac app. Sudden supervisor SIGKILL/descendants escaping their group remain a Mac containment qualification gap; native menus/permissions/Keychain/Dock/sleep behavior follow in 6.9.3. Existing Windows installers remain unchanged.
+
 ## macOS delivery plan and phase transition — 2026-09-29
 
 Active development phase: **6.9 — macOS delivery**, starting with **6.9.1 — Platform foundation**. The user accepts the Windows version as finished for the current development scope and requests moving on from 6.8 / M08. Earlier Windows installed-upgrade, signing, hardware, accessibility, endurance, backup/restore and human-quality qualification gaps remain recorded; this transition does not claim those checks passed. Earlier active-phase and next-work entries below are historical.

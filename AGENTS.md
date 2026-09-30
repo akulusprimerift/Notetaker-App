@@ -56,6 +56,7 @@ Follow nearby conventions; prefer small domain-focused modules, explicit types a
 | 6.6 / M06 | Durable drafts, protected edits, settings snapshots, regeneration proposals, conflicts, keep/merge/replace and undo. Detail/format are custom prompts; do not restore redundant dropdowns. |
 | 6.7 / M07 | Finalization, immutable final snapshots, retention and deletion reconciliation. |
 | 6.8 / M08 | Windows host/installer, lifecycle, endurance, backup/restore and release gates. |
+| 6.9 | macOS Apple Silicon delivery: platform foundation, standalone runtime, native integration, workflow, distribution and qualification. |
 | 7.1 | Note usefulness: emphasis, catch-up and terminology. |
 | 7.2 | Course materials and visual evidence when justified. |
 | 7.3 | Learning tools, practice and personalization. |

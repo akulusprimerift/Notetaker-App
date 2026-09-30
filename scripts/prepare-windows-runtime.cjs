@@ -32,7 +32,7 @@ async function main(){
   await copy('apps/desktop/third-party/native','notices');
   const webManifest=JSON.parse(await fs.readFile(path.join(web,'bundle-manifest.json'),'utf8'));
   const files=await inventory(destination);
-  await fs.writeFile(path.join(destination,'runtime-manifest.json'),JSON.stringify({schema_version:1,
+  await fs.writeFile(path.join(destination,'runtime-manifest.json'),JSON.stringify({schema_version:1,platform:'win32',arch:'x64',
     profile:'windows-postgresql-seaweed-reconciliation',web_build_id:webManifest.build_id,
     user_models_bundled:false,ollama_compute:'CPU',sources,files},null,2)+'\n');
   console.log('Prepared native runtime: '+destination);
