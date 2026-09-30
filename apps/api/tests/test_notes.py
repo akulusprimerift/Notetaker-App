@@ -273,6 +273,10 @@ def test_provider_rejects_incomplete_tool_output_or_changed_model(mode):
         provider.generate(evidence, SimpleNamespace(model='qwen3:4b',model_digest=DIGEST))
     assert failure.value.code == {'truncated':'truncated_output','tools':'invalid_output','changed':'model_changed','preflight':'context_limit'}[mode]
     assert calls[0]['options']['num_predict'] == 1
+    assert calls[0]['options']['num_ctx'] < CONTEXT
+    if mode != 'preflight':
+        assert calls[1]['options']['num_ctx'] == calls[0]['options']['num_ctx']
+        assert calls[1]['options']['num_predict'] == 6000
 
 
 def test_course_neutral_preferences_are_versioned_and_drive_generation(notes):

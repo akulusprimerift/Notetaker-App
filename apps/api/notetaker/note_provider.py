@@ -2,6 +2,7 @@
 import json
 import re
 import httpx
+from time import monotonic
 from .note_contract import compact, SCHEMA
 from .note_draft import prepare, draft_messages, canonical, DRAFT_GRAMMAR, DRAFT_PROMPT, DRAFT_SCHEMA
 from .security import digest
@@ -91,6 +92,7 @@ class OllamaNotes:
         return installed, details
 
     def stream_chat(self, body, on_preview):
+        last_preview = float('-inf')
         raw, final, total = '', None, 0
         try:
             with httpx.Client(base_url=self.url, timeout=600, trust_env=False, follow_redirects=False) as client:
@@ -106,7 +108,10 @@ class OllamaNotes:
                         if message.get('tool_calls'): raise NoteFailure('invalid_output')
                         raw += message.get('content', '')
                         if len(raw.encode('utf-8')) > 2_000_000: raise NoteFailure('invalid_output')
-                        on_preview(preview_text(raw))
+                        stamp = monotonic()
+                        if item.get('done') or stamp - last_preview >= .1:
+                            on_preview(preview_text(raw))
+                            last_preview = stamp
                         if item.get('done'):
                             final = item
                             break
@@ -126,16 +131,19 @@ class OllamaNotes:
         # Include the entire template plus a 1024-token reserve for special tokens. Do not
         # apply this guard to other tokenizers. Reject whole input rather than truncate it.
         bound = sum(len(m['content'].encode()) for m in request_messages) + len(details.get('template', '').encode()) + 1024
-        if bound + OUTPUT > CONTEXT or len(evidence['sources']) > 200:
+        if bound + OUTPUT + 512 > CONTEXT or len(evidence['sources']) > 200:
             raise NoteFailure('context_limit')
-        options = {'temperature': 0, 'seed': 42, 'num_ctx': CONTEXT, 'num_predict': OUTPUT}
+        # Allocate for this bounded section instead of reserving the maximum KV
+        # cache for every short live request. Keep the full detailed-output budget.
+        context = min(CONTEXT, max(8192, ((bound + OUTPUT + 512 + 2047) // 2048) * 2048))
+        options = {'temperature': 0, 'seed': 42, 'num_ctx': context, 'num_predict': OUTPUT}
         body = {'model': preference.model, 'messages': request_messages, 'format': DRAFT_GRAMMAR,
             'stream': False, 'think': False, 'keep_alive': '2m', 'options': options}
         # Ask this model to evaluate the identical prompt with one throwaway output token.
         # This gives an actual tokenizer count before the note-generation request.
         probe = self.request('chat', {**body, 'options': {**options, 'num_predict': 1}}, timeout=600)
         tokens = probe.get('prompt_eval_count')
-        if type(tokens) is not int or tokens <= 0 or tokens + OUTPUT + 512 > CONTEXT:
+        if type(tokens) is not int or tokens <= 0 or tokens + OUTPUT + 512 > context:
             raise NoteFailure('context_limit')
         self.verify(preference.model, preference.model_digest)
         response = self.stream_chat(body, on_preview) if on_preview else self.request('chat', body, timeout=600)

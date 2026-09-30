@@ -1,5 +1,13 @@
 # Session transfer
 
+## Speed first, then stop/restart repair — 2026-09-30
+
+Active phase: **6.8 / M08 — shared performance and stop/restart repair**. The user pauses macOS 6.9.3 until these regressions are fixed. Speed changes use live speech beam 1 (configurable 1–5), half-second idle reconciliation, bounded note context allocation with the unchanged 6,000-token output allowance, and coalesced streaming preview parsing. [Evidence and remaining work](docs/implementation/live-speed-restart.md).
+
+Executed: initial 71 focused backend checks and Python lint passed. Existing local small.en on newly generated 10-second synthetic speech: beam 5 took 3.517/3.096 seconds, beam 1 took 2.787/2.729 seconds, identical recognized text in these four runs. This is narrow synthetic evidence, not real-lecture accuracy or latency qualification. Final context-allocation regression run: 44 passed. Documentation and whitespace checks passed. No microphone, download, student-data change, installed binary replacement or push.
+
+Next: repair and test recording stop/upload races and note pause/resume cancellation, complete shared checks, and package/qualify the Windows update before returning to Mac work.
+
 ## Phase 6.9.3 Mac integration source implemented — 2026-09-30
 
 Active phase: **6.9.3 — macOS integration**, at the user's request. Earlier 6.9.1 native containment, 6.9.2 runtime build/startup and Windows release/human-quality gates remain open. This work is verified on Windows with simulated Mac contracts; it does not complete native Mac qualification. [Behavior, evidence, limitations and exact next checks](docs/implementation/macos-integration.md).

@@ -1,5 +1,7 @@
 # Phase 5: Implementation roadmap
 
+Priority override (2026-09-30): macOS work is paused at the user’s request. **6.8 / M08 — shared Windows performance and stop/restart repair** is the single active implementation phase. Deliver faster live transcription and notes first, then repair recording/notes restart. Preserve all earlier qualification gaps. [Repair evidence and next work](live-speed-restart.md). Earlier current-phase entries below are historical.
+
 Current phase (2026-09-30): **6.9.3 — macOS integration** is the single active implementation phase, at the user’s request. Native menus, window/Dock behavior, microphone permission recovery and sleep/wake recorder handling are implemented in shared source with Windows and synthetic evidence. Keychain uses the existing protected-storage bridge. Native Mac qualification remains open, including earlier 6.9.1 containment and 6.9.2 runtime build/startup gates. See [integration behavior, evidence and exact next work](macos-integration.md). Earlier dated active-phase entries below are historical.
 
 The macOS sequence is 6.9.1 platform foundation → 6.9.2 standalone arm64 runtime → 6.9.3 native integration → 6.9.4 complete lecture workflow → 6.9.5 signed/notarized installer → 6.9.6 release qualification. Preserve existing Windows/Docker libraries and explicit local model selection.

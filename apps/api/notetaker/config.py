@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from urllib.parse import urlsplit
 
 
@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     audio_bucket: str = "notetaker-audio"
     speech_model_path: str = ".local/models/faster-whisper-small.en"
     speech_threads: int = 4
+    speech_live_beam_size: int = Field(default=1, ge=1, le=5)
     speech_status_path: str = ''
     speech_status_session: str = ''
     kafka_bootstrap: str = "127.0.0.1:9092"

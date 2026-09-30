@@ -307,7 +307,7 @@ def main():
                 succeeded=execute(sessions,store,provider,claimed)
                 log.info('speech_attempt job_id=%s published=%s',claimed[0],succeeded)
             if args.once:break
-            if not claimed:time.sleep(2)
+            if not claimed:time.sleep(.5)
     finally:
         status_stopped.set()
         if consumer:consumer.close()
