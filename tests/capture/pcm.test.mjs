@@ -5,6 +5,28 @@ import vm from 'node:vm';
 import {encodeWav,matchesAck,admissionBytes} from '../../apps/web/public/capture/pcm.mjs';
 import {Recorder} from '../../apps/web/public/capture/recorder.mjs';
 
+test('stop waits for an older upload read before closing and sealing the journal',async()=>{
+  const recorder=new Recorder({owner:'owner',lecture:'lecture',csrf:'csrf',onChange:()=>{}});
+  let row={id:'run',admitted:true,stopped:false,server_sealed:false,gaps:[],samples:48000,next_sequence:1,pending_bytes:0};
+  let releaseRead,readStarted,sealed=false,first=true;
+  const reading=new Promise(resolve=>{readStarted=resolve;});
+  recorder.run={...row};recorder.active=true;
+  recorder.node={port:{postMessage:()=>queueMicrotask(()=>recorder.workerMessage({kind:'finished'}))},disconnect:()=>{}};
+  recorder.journal={get:async()=>{
+    const snapshot={...row};
+    if(first){first=false;readStarted();await new Promise(resolve=>{releaseRead=resolve;});}
+    return snapshot;
+  },patch:async(_owner,_id,patch)=>(row={...row,...patch}),pending:async()=>[],list:async()=>[{...row}]};
+  recorder.api=async(path)=>{if(path.endsWith('/seal'))sealed=true;return {manifest_version:1};};
+  recorder.refresh=async()=>{};
+  const uploading=recorder.sync();await reading;
+  const stopping=recorder.stop();
+  await new Promise(resolve=>setImmediate(resolve));releaseRead();
+  await Promise.all([uploading,stopping]);
+  assert.equal(row.stopped,true);assert.equal(sealed,true);assert.equal(row.server_sealed,true);
+  assert.equal(recorder.working,false);assert.equal(recorder.run.stopped,true);
+});
+
 test('sleep flushes available audio, retains its gap after saves and never resumes capture',async()=>{
   const recorder=new Recorder({owner:'owner',lecture:'lecture',csrf:'csrf',onChange:()=>{}});
   let stopped=0,terminated=0,sealed;
@@ -34,7 +56,7 @@ test('sleep cancels an in-flight microphone request before admission',async()=>{
   await recorder.interrupt('suspend');
   resolveStream({getTracks:()=>[{stop:()=>stopped++}]});
   await starting;
-  assert.equal(stopped,1);assert.equal(recorder.active,false);assert.equal(recorder.run,undefined);
+  assert.equal(stopped,1);assert.equal(recorder.active,false);assert.equal(recorder.run,null);
   assert.match(recorder.message,/cancelled/);
 });
 

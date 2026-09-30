@@ -1,5 +1,14 @@
 # Session transfer
 
+## Stop/restart fixes verified in shared source — 2026-09-30
+
+Active phase: **6.8 / M08 — shared performance and stop/restart repair**. macOS 6.9.3 remains paused. Speed increment committed as `3743011`; recording stop/upload ordering and note pause/resume fencing now pass regressions that failed on the old code. Resume has an explicit button label and notes requests release busy controls after a bounded timeout. [Behavior and evidence](docs/implementation/live-speed-restart.md).
+
+Executed: **260 backend passed, 2 existing skips**, **63 JavaScript contracts**, **39 desktop tests**; frontend typecheck/lint/build and Python lint; production browser note pause/resume (three cycles), streamed revisions/protected drafts/deletion; actual Chromium synthetic audio offline recovery and three recorder stop/restart cycles without reload; staged web hashes/hydration/assets. Synthetic local speech benchmark and quality limits are recorded below. No microphone, student-library change, downloads, external inference or push.
+
+Next: finish the fresh frozen Windows service, stage it with the newly built web component and verified existing vendor binaries, build the unsigned installer, and run isolated packaged save/restart/Quit/reopen checks. The installed app is not yet replaced. Provider cancellation still waits for the executing call to reach a fenced preview/check or timeout; role locks prevent overlap. Earlier human-quality/hardware/release and native Mac qualification remain open.
+
+
 ## Speed first, then stop/restart repair â€” 2026-09-30
 
 Active phase: **6.8 / M08 â€” shared performance and stop/restart repair**. The user pauses macOS 6.9.3 until these regressions are fixed. Speed changes use live speech beam 1 (configurable 1â€“5), half-second idle reconciliation, bounded note context allocation with the unchanged 6,000-token output allowance, and coalesced streaming preview parsing. [Evidence and remaining work](docs/implementation/live-speed-restart.md).

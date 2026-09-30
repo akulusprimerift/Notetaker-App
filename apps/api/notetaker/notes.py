@@ -401,6 +401,13 @@ def install_notes(app, current, db_session, owned_lecture, receipt):
         pref = NotePreference(lecture_id=lecture.id, version=body.expected_version + 1, model=body.model,
             model_digest=installed['digest'] if body.enabled else old.model_digest, enabled=body.enabled)
         db.add(pref); db.flush()
+        # Fence obsolete work immediately, including pause/resume before the
+        # worker's next heartbeat. The inference slot still prevents overlap.
+        db.execute(update(Job).where(Job.lecture_id == lecture.id,
+            Job.kind == 'notes.generate', Job.status.in_(['due', 'running']))
+            .values(status='cancelled', error_code='superseded', lease_expires_at=None))
+        db.execute(update(NoteRequest).where(NoteRequest.lecture_id == lecture.id)
+            .values(preview='', preview_attempt=''))
         db.add(CommandReceipt(owner_id=owner, action=action, key=key, fingerprint=fingerprint, result_id=pref.id))
         from .lifecycle import notify
         notify(db,lecture,'notes.preferences',pref.id)

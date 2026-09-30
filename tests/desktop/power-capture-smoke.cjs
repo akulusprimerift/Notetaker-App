@@ -63,14 +63,26 @@ const {chromium}=require('../../.venv/Lib/site-packages/playwright/driver/packag
     assert.equal(saved.state.active,false);assert.equal(saved.seal.final_sample_count,interrupted.samples);
     assert.deepEqual(saved.seal.gaps,interrupted.gaps);assert.match(saved.state.message,/missing time was not recorded/);
     assert.equal(saved.uploaded.reduce((n,row)=>n+row.sample_count,0),interrupted.samples);
+    // Reuse the very same recorder after Stop, without navigation or reload.
+    for(let cycle=0;cycle<3;cycle++){
+      const priorId=await page.evaluate(()=>window.recorder.run.id);
+      await page.evaluate(()=>window.recorder.start());
+      await page.waitForFunction(()=>window.captureState.active&&window.recorder.run.samples>0);
+      assert.notEqual(await page.evaluate(()=>window.recorder.run.id),priorId);
+      await page.evaluate(()=>window.recorder.stop());
+      const stopped=await page.evaluate(()=>({run:window.recorder.run,state:window.captureState,seal:window.sealed}));
+      assert.equal(stopped.state.working,false);assert.equal(stopped.state.active,false);
+      assert.equal(stopped.run.server_sealed,true);assert.equal(stopped.run.pending_bytes,0);
+      assert.equal(stopped.seal.final_sample_count,stopped.run.samples);
+    }
     await page.evaluate(async()=>{
       const {openJournal}=await import('/capture/journal.mjs');
       const id=window.recorder.run.id;await window.recorder.dispose();
       const journal=await openJournal();window.reopened=await journal.get('synthetic-owner',id);journal.close();
     });
     const reopened=await page.evaluate(()=>window.reopened);
-    assert.equal(reopened.server_sealed,true);assert.equal(reopened.pending_bytes,0);assert.deepEqual(reopened.gaps,interrupted.gaps);
+    assert.equal(reopened.server_sealed,true);assert.equal(reopened.pending_bytes,0);assert.deepEqual(reopened.gaps,[]);
     assert.equal(await page.evaluate(()=>window.powerListener),null);
-    console.log('Synthetic Chromium sleep/offline/wake/retry/journal reopen passed; samples:',interrupted.samples);
+    console.log('Synthetic Chromium sleep/offline/wake/retry, three stop/restart cycles and journal reopen passed; interrupted samples:',interrupted.samples);
   }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error);process.exitCode=1;});

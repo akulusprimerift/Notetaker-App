@@ -24,7 +24,13 @@ const assert=require('node:assert/strict');
       else if(path.endsWith('/transcript'))body=transcript;
       else if(path.endsWith('/capture'))body={available:true,capture_epoch:1,runs:[]};
       else if(path.endsWith('/notes'))body=notes;
-      else if(path.endsWith('/note-models'))body={models:[],available:true};
+      else if(path.endsWith('/note-models'))body={models:[{name:'qwen3:4b',digest:'a'.repeat(64),size:10000000}],available:true};
+      else if(path.endsWith('/notes/model')){
+        const choice=route.request().postDataJSON();
+        assert.equal(choice.expected_version,notes.preference?.version??0);
+        notes.preference={version:choice.expected_version+1,model:choice.model,enabled:choice.enabled};
+        notes.status=choice.enabled?'queued':'paused';body=notes.preference;
+      }
       else if(path.endsWith('/notes/stream'))return route.fulfill({contentType:'text/event-stream',body:'data: '+JSON.stringify({active:true,text:'A streamed study explanation.'})+'\n\n'});
       await route.fulfill({json:body});
     });
@@ -43,6 +49,14 @@ const assert=require('node:assert/strict');
     await page.locator('.capture-panel').evaluate(el=>el.dataset.retained='yes');
     await page.getByRole('tab',{name:/Study notes/}).click();
     await page.locator('.study-emphasis strong').filter({hasText:'Context matters'}).waitFor();
+    await page.getByLabel('Note model',{exact:true}).selectOption('qwen3:4b');
+    await page.getByRole('button',{name:'Start automatic notes',exact:true}).click();
+    for(let cycle=0;cycle<3;cycle++){
+      await page.getByRole('button',{name:'Pause automatic notes',exact:true}).click();
+      const resume=page.getByRole('button',{name:'Resume automatic notes',exact:true});
+      await resume.waitFor();assert.equal(await resume.isEnabled(),true);await resume.click();
+      await page.getByRole('button',{name:'Pause automatic notes',exact:true}).waitFor();
+    }
     const exportButton=page.getByRole('link',{name:'Export Markdown',exact:false});
     assert.match(await exportButton.getAttribute('href'),/revisions\/notes1\/export$/);
     await page.getByRole('button',{name:'How to use your notes'}).click();

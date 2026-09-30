@@ -35,7 +35,7 @@ export default function Notes({lecture,csrf,onSessionExpired,onOpenTranscript}:{
   const sourcePanel=useRef<HTMLElement|null>(null);
   useEffect(()=>{if(source)sourcePanel.current?.focus()},[source]);
   const request=useCallback(async <T,>(path:string,init:RequestInit={}):Promise<T>=>{
-    const response=await fetch('/api'+path,{...init,cache:'no-store',headers:{'Content-Type':'application/json',...init.headers}});
+    const response=await fetch('/api'+path,{signal:AbortSignal.timeout(20000),...init,cache:'no-store',headers:{'Content-Type':'application/json',...init.headers}});
     if(response.status===401){onSessionExpired();throw new Error('The workspace is locked.')}
     if(!response.ok){const body=await response.json().catch(()=>null);throw new Error(body?.error?.message??'The workspace could not be reached. Try again.')}
     return response.json();
@@ -142,7 +142,7 @@ export default function Notes({lecture,csrf,onSessionExpired,onOpenTranscript}:{
     <label htmlFor="note-detail-prompt">Describe your detail level (optional)</label><textarea id="note-detail-prompt" value={profile.detail_prompt} maxLength={2000} rows={4} disabled={busy} onChange={e=>setCustom({...profile,detail_prompt:e.target.value})} placeholder="e.g. Assume I am new to the subject. Explain each concept fully, keep every worked example, and include a short recap."/>
     <label htmlFor="note-layout-prompt">Describe your layout (optional)</label><textarea id="note-layout-prompt" value={profile.layout_prompt} maxLength={2000} rows={4} disabled={busy} onChange={e=>setCustom({...profile,layout_prompt:e.target.value})} placeholder="e.g. Group by concept, with a definition, explanation, example and self-check question under each heading."/><p className="small muted">Tell your model how much detail you want and how to organize it. Leave these blank for detailed notes grouped by topic. Source links are retained.</p>
     <label htmlFor="note-instructions">Writing preferences (optional)</label><textarea id="note-instructions" value={profile.instructions} maxLength={1000} rows={3} disabled={busy} onChange={e=>setCustom({...profile,instructions:e.target.value})} placeholder="e.g. Explain terminology in plain language and emphasize cause and effect."/>
-    <button className="primary full" disabled={busy||!state||!activeModel||(!activeIsCloud?false:!cloudConsent)||(!selected&&!custom&&!!state.preference?.enabled)} onClick={()=>void choose()}>{busy?'Saving…':state?.preference?'Apply note preferences':'Start automatic notes'}</button>
+    <button className="primary full" disabled={busy||!state||!activeModel||(!activeIsCloud?false:!cloudConsent)||(!selected&&!custom&&!!state.preference?.enabled)} onClick={()=>void choose()}>{busy?'Saving…':state?.preference?.enabled===false?'Resume automatic notes':state?.preference?'Apply note preferences':'Start automatic notes'}</button>
     {state?.revision&&<button className="secondary full" disabled={busy||!state.preference?.enabled} onClick={()=>void choose()}>Regenerate notes</button>}
     {state?.preference?.enabled&&<button className="text-button" disabled={busy} onClick={()=>void choose(false)}>Pause automatic notes</button>}
     <p className="small muted">Automatic notes continue when this page is closed, while the app services are running.</p>

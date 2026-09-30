@@ -75,6 +75,23 @@ def test_selected_model_automatically_writes_saved_notes(notes):
     assert client.get(path + '/snapshot').json()['notes']['revision']['id'] == data['revision']['id']
 
 
+def test_pause_resume_immediately_releases_stale_job_and_fences_old_output(notes):
+    app, client, headers, path, _ = notes
+    old = claim(app.state.sessions)
+    for version, enabled in [(1, False), (2, True)]:
+        response = client.post(path + '/notes/model',
+            headers={**headers, 'idempotency-key': str(uuid4())},
+            json={'expected_version': version, 'model': 'qwen3:4b', 'enabled': enabled})
+        assert response.status_code == 200
+    # No heartbeat, old provider completion or lease timeout is needed to resume.
+    fresh = claim(app.state.sessions)
+    assert fresh and fresh[0] != old[0]
+    assert not renew(app.state.sessions, *old)
+    assert not execute(app.state.sessions, FakeNotes(), old, heartbeat=False)
+    assert execute(app.state.sessions, FakeNotes(), fresh, heartbeat=False)
+    assert client.get(path + '/notes').json()['status'] == 'ready'
+
+
 def test_corrected_transcript_refreshes_notes_and_keeps_old_export(notes):
     app, client, headers, path, _ = notes
     assert execute(app.state.sessions, FakeNotes(), claim(app.state.sessions), heartbeat=False)

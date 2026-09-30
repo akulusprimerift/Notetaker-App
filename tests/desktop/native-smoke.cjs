@@ -85,6 +85,31 @@ const {_electron:electron}=require(playwrightDriver);
       return {course:course.id,lecture:lecture.id,chunk:receipt.chunk_id,hash,storage:receipt.storage_state};
     });
     assert.equal(saved.storage,'verified');
+    await page.evaluate(async lecture=>{
+      const session=await(await fetch('/api/session/open',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).json();
+      const {Recorder}=await import('/capture/recorder.mjs');
+      const recorder=new Recorder({owner:session.owner_id,lecture,csrf:session.csrf_token,onChange:()=>{},
+        streamFactory:async()=>{
+          const context=new AudioContext(),tone=context.createOscillator(),output=context.createMediaStreamDestination();
+          tone.connect(output);tone.start();await context.resume();
+          for(const track of output.stream.getTracks()){
+            const stop=track.stop.bind(track);track.stop=()=>{stop();tone.stop();void context.close();};
+          }
+          return output.stream;
+        }});
+      await recorder.init();
+      try{
+        for(let cycle=0;cycle<3;cycle++){
+          await recorder.start();
+          if(!recorder.active)throw Error('Restart failed: '+recorder.message);
+          const deadline=Date.now()+10000;
+          while(!recorder.run.samples&&Date.now()<deadline)await new Promise(resolve=>setTimeout(resolve,100));
+          if(!recorder.run.samples)throw Error('Synthetic capture did not produce samples');
+          await recorder.stop();
+          if(recorder.working||!recorder.run.server_sealed||recorder.run.pending_bytes)throw Error('Stop failed: '+recorder.message);
+        }
+      }finally{await recorder.dispose();}
+    },saved.lecture);
     const exports=await page.evaluate(async lecture=>{
       const session=await(await fetch('/api/session/open',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).json();
       const base='/api/lectures/'+lecture;
@@ -130,7 +155,7 @@ const {_electron:electron}=require(playwrightDriver);
     },saved);
     assert.equal(preserved.status,200);assert.equal(preserved.course,true);assert.equal(preserved.hash,saved.hash);
     console.log(JSON.stringify({standalone_launch:true,postgres_migrations:true,synthetic_audio_verified:true,
-      close_reopen_readback:true,electron_isolation:true,appearance_and_theme_persistence:true,portable_snapshot_exports:true,
+      close_reopen_readback:true,recording_restart_cycles:3,electron_isolation:true,appearance_and_theme_persistence:true,portable_snapshot_exports:true,
       platform:process.platform,arch:process.arch,window_controls_overlay:process.platform==='win32'?true:null,
       profile,limitations:'No microphone, human quality, clean-machine or long-duration qualification. Mac native chrome belongs to 6.9.3.'},null,2));
   }finally{if(application)await close();}

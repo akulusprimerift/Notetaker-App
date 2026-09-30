@@ -73,6 +73,7 @@ export class Recorder {
       if(this.disposed||this.startInterrupted)throw new Error('Recording setup was interrupted. Start a new segment when ready.');
       if(!this.server.available)throw new Error('Audio storage is unavailable. Recording has not started.');
       if(this.local.some(run=>!run.server_sealed||run.pending_bytes))throw new Error('Recover the previous recording on this browser before starting another segment.');
+      this.run=null;
       const stream=this.streamFactory?await this.streamFactory():await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
       if(this.disposed||this.startInterrupted){for(const track of stream.getTracks())track.stop();throw new Error('Recording setup was cancelled.');}
       this.stream=stream;this.context=new AudioContext();await this.context.resume();
@@ -174,6 +175,9 @@ export class Recorder {
       clearTimeout(timeout);
       if(!flushed)reason=reason??'sleep_or_suspension';
       await this.writeChain;
+      // An upload may still hold a pre-stop journal snapshot. Let it finish
+      // before closing the run, then perform a fresh sync to seal the tail.
+      await this.syncPromise;
       this.run=await this.journal.get(this.owner,this.run.id);
       const gaps=[...this.run.gaps];
       if(reason)gaps.push({reason,after_sample:this.run.samples,unknown_extent:true});
@@ -191,6 +195,7 @@ export class Recorder {
   }
   async tick() {
     if(this.disposed||this.erased)return;
+    if(this.working)return;
     if(this.active&&Date.now()-this.latestSampleAt>6500) {await this.stop('sleep_or_suspension');return;}
     if(!this.blocked&&(this.active || (this.run?.stopped&&(!this.run.server_sealed||this.run.pending_bytes))))await this.sync();
     else if(!this.working)await this.refresh().catch(()=>{});
