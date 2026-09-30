@@ -1,5 +1,32 @@
 # Session transfer
 
+## macOS delivery plan and phase transition — 2026-09-29
+
+Active development phase: **6.9 — macOS delivery**, starting with **6.9.1 — Platform foundation**. The user accepts the Windows version as finished for the current development scope and requests moving on from 6.8 / M08. Earlier Windows installed-upgrade, signing, hardware, accessibility, endurance, backup/restore and human-quality qualification gaps remain recorded; this transition does not claim those checks passed. Earlier active-phase and next-work entries below are historical.
+
+The user has access to an **Apple Silicon Mac for building and testing**. Target **macOS arm64 first**, preserving the Windows app's features and standalone installation experience through the existing Electron/React/FastAPI architecture. Intel Mac support is a possible follow-up, not part of this first target. Keep one shared application with platform-specific packaging and operating-system integration; preserve existing Windows and Docker libraries.
+
+### Sequential milestones
+
+| Milestone | Planned work | Completion condition |
+| --- | --- | --- |
+| **6.9.1 — Platform foundation** | Separate Windows executable paths, account-helper selection and service controls from shared logic. Add macOS startup, shutdown and owned-child-process cleanup. Verify Windows behavior remains intact. | The desktop host supports distinct Windows and macOS configurations with relevant regression checks. |
+| **6.9.2 — Standalone Mac runtime** | Set up the project on the Mac using Bun and uv. Build the Python backend and speech workers for arm64; bundle compatible PostgreSQL, SeaweedFS, Ollama and account-helper executables. Keep the library and writable files outside the installed app and retain explicit local model selection. | The Mac app starts its bundled services without requiring end users to install Docker, Python or developer tools. |
+| **6.9.3 — macOS integration** | Add microphone permission requests and denial recovery, Keychain-backed credentials, Mac window controls, menus and Command-key shortcuts. Handle Dock reopening, window close versus Quit, and sleep/wake interruptions while preserving saved audio and disclosing gaps. | Native Mac interactions and application lifecycle protect recordings and library data. |
+| **6.9.4 — Complete lecture workflow** | Verify synthetic capture, durable saves and quit/reopen recovery; timestamped transcription and streamed notes with selected local models; citations, protected edits, regeneration, materials, study tools and exports. Exercise missing models, service failures and low storage. Measure concurrent transcription and note generation on the Mac. | An installed Mac build completes the lecture workflow with recorded evidence and measured performance limits. |
+| **6.9.5 — Installer and distribution** | Produce the arm64 app and drag-to-Applications DMG with icon, version metadata and dependency notices. Configure Apple Developer signing for the app and bundled executables, notarization and downloaded-app checks. Test replacing an older build while retaining its library. | A signed, notarized installer launches successfully in a clean Mac environment. |
+| **6.9.6 — Release qualification** | Test extended sessions, interruption recovery, backup/restore, accessibility, keyboard navigation, display scaling and upgrade preservation. Test real microphone behavior only with explicit authorization. Document supported macOS versions, measured hardware requirements and installation steps. | The Mac release passes agreed acceptance checks and is ready to distribute. |
+
+### Environment, constraints and next work
+
+Shared-code preparation can proceed on Windows; native Mac runtime builds, packaging and macOS validation require the Mac or a macOS build runner. Device qualification requires actual Mac hardware. Apple Developer signing credentials are needed for the planned public signed/notarized distribution; their availability is not yet established.
+
+Keep models user-selected, with no automatic model downloads or external-provider fallback. Initially plan CPU transcription with the existing faster-whisper/CTranslate2 stack; measure Apple Silicon performance before deciding whether an alternative speech backend is needed. Existing cloud choices remain explicit per lecture. Use synthetic audio only unless the user authorizes physical microphone testing.
+
+**Exact next work:** begin 6.9.1 by auditing desktop/runtime packaging and extracting platform-specific executable resolution and service lifecycle behavior, with meaningful Windows regression checks. Then prepare the arm64 runtime build on the user's Mac. The first end-to-end foundation target is an isolated Mac library that saves synthetic audio, quits cleanly and reopens with identical audio intact; the full lecture workflow follows.
+
+**Evidence:** this entry records the agreed plan only. No macOS implementation, build, installation, recording or release qualification has been performed in this update. Executed: `bun run verify:docs` passed (43 planning Markdown files, 251 local links); `git diff --check` passed. Application tests were not run for this documentation-only change.
+
 ## Glass scrollbar installer delivered — 2026-09-25
 
 Active phase **6.8 / M08**. The sidebar join and theme-accent scrollbar refinement is packaged in `.local/glass-scrollbar-update/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe` (407,273,058 bytes; SHA-256 `5148A1C94CAE24837948DA6AA8AC559CAA386E828DAA8D2D90443B4B65328039`). Unsigned, not automatically installed. [Delivery evidence](docs/implementation/paged-notes-and-motion.md#glass-scrollbar-installer--2026-09-25).
