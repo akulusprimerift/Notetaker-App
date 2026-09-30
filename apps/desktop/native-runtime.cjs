@@ -50,7 +50,7 @@ class NativeRuntime {
       catch(missing){if(missing.code!=='ENOENT')throw missing;}
       secret=randomBytes(32).toString('hex');
       await fs.mkdir(this.dataPath,{recursive:true});
-      await fs.writeFile(secretPath,this.safeStorage.encryptString(secret),{flag:'wx'});
+      await fs.writeFile(secretPath,this.safeStorage.encryptString(secret),{flag:'wx',mode:0o600});
     }
     const webRoot=path.join(this.dataPath,'standalone-web',manifest.web_build_id);
     safeRelative(manifest.web_build_id);

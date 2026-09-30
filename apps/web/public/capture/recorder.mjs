@@ -38,6 +38,7 @@ export class Recorder {
     return result;
   }
   async init() {
+    this.unsubscribePower=window.desktopApp?.onPower?.(kind=>{void this.interrupt(kind);});
     window.addEventListener('beforeunload',this.beforeUnload);
     window.addEventListener('lecture-removed',this.removed);
     document.addEventListener('click',this.navigate,true);
@@ -65,30 +66,32 @@ export class Recorder {
   }
   async start(takeover=false) {
     if(this.disposed||this.working||this.active)return;
+    this.startInterrupted=false;this.startingCapture=true;
     this.blocked=false;this.working=true;this.message='Checking microphone and recovery storage…';this.emit();
     try {
       await this.takeLock();await this.refresh();
+      if(this.disposed||this.startInterrupted)throw new Error('Recording setup was interrupted. Start a new segment when ready.');
       if(!this.server.available)throw new Error('Audio storage is unavailable. Recording has not started.');
       if(this.local.some(run=>!run.server_sealed||run.pending_bytes))throw new Error('Recover the previous recording on this browser before starting another segment.');
       const stream=this.streamFactory?await this.streamFactory():await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
-      if(this.disposed){for(const track of stream.getTracks())track.stop();throw new Error('Recording setup was cancelled.');}
+      if(this.disposed||this.startInterrupted){for(const track of stream.getTracks())track.stop();throw new Error('Recording setup was cancelled.');}
       this.stream=stream;this.context=new AudioContext();await this.context.resume();
       const rate=this.context.sampleRate;
       const estimate=await navigator.storage.estimate();
       const required=admissionBytes(rate);
       if(!estimate.quota||estimate.quota-(estimate.usage??0)<required||required>MAX_PENDING_BYTES)throw new Error('There is not enough browser storage for a one-hour recording buffer. Free some space before recording.');
       const persistent=await navigator.storage.persist().catch(()=>false);
-      if(this.disposed)throw new Error('Recording setup was cancelled.');
+      if(this.disposed||this.startInterrupted)throw new Error('Recording setup was cancelled.');
       this.run={id:crypto.randomUUID(),owner_id:this.owner,lecture_id:this.lecture,grant:crypto.randomUUID()+crypto.randomUUID(),
         sample_rate:rate,capture_epoch:this.server.capture_epoch+1,expected_capture_epoch:this.server.capture_epoch,
         command:crypto.randomUUID(),takeover,admitted:false,persistent,stopped:false,server_sealed:false,
         next_sequence:0,samples:0,pending_bytes:0,gaps:[]};
       await this.journal.put(this.run); // Persist retry identity before making the admission request.
       const admitted=await this.admit(this.run);
-      if(this.disposed)throw new Error('Recording setup was cancelled. Recover the prepared segment when reopening.');
+      if(this.disposed||this.startInterrupted)throw new Error('Recording setup was cancelled. Recover the prepared segment when reopening.');
       this.run=await this.journal.patch(this.owner,this.run.id,{admitted:true,capture_epoch:admitted.capture_epoch,gaps:admitted.gaps});
       await this.context.audioWorklet.addModule('/capture/worklet.js');
-      if(this.disposed)throw new Error('Recording setup was cancelled.');
+      if(this.disposed||this.startInterrupted)throw new Error('Recording setup was cancelled.');
       this.worker=new Worker('/capture/worker.mjs',{type:'module'});
       this.node=new AudioWorkletNode(this.context,'lecture-capture',{channelCount:1,channelCountMode:'explicit',numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[1]});
       this.source=this.context.createMediaStreamSource(stream);
@@ -109,12 +112,19 @@ export class Recorder {
       this.source.connect(this.node);this.node.connect(this.context.destination);
       this.message=persistent?'Recording. Audio is being saved on this device.':'Recording. Browser persistence was not granted; keep this page open until every segment is confirmed saved.';
     } catch(error) {
-      this.message=error.name==='NotAllowedError'?'Microphone access was declined. Allow it in your browser, then try again.':error.message;
+      this.message=error.name==='NotAllowedError'?(window.desktopApp?.platform==='darwin'?'Microphone access was declined. Enable Notetaker in System Settings → Privacy & Security → Microphone, then quit and reopen the app.':'Microphone access was declined. Allow it in your browser, then try again.'):error.message;
       this.closeMicrophone();
       if(this.context){await this.context.close().catch(()=>{});this.context=null;}
       if(this.run)await this.journal.patch(this.owner,this.run.id,{stopped:true}).catch(()=>{});
       this.releaseLock?.();this.releaseLock=null;
-    } finally {this.working=false;if(!this.disposed)this.local=await this.journal.list(this.owner,this.lecture);this.emit();}
+    } finally {this.startingCapture=false;this.working=false;if(!this.disposed)this.local=await this.journal.list(this.owner,this.lecture);this.emit();}
+  }
+  async interrupt(kind) {
+    if(this.disposed||!['suspend','resume'].includes(kind))return;
+    if(this.startingCapture){this.startInterrupted=true;this.closeMicrophone();}
+    // Resume also stops capture if the renderer could not handle suspend before sleep.
+    // Never restart the microphone automatically or invent the missing duration.
+    if(this.active||this.node)await this.stop('sleep_or_suspension');
   }
   admit(run) {
     return this.api(run.takeover?'/capture-takeover':'/capture-runs',{
@@ -224,7 +234,7 @@ export class Recorder {
       this.run=await this.journal.patch(this.owner,this.run.id,{server_sealed:true});
     }
     await this.refresh();
-    if(this.run.stopped&&this.run.server_sealed&&!this.volatile.length)this.message='This recording segment is saved. Follow transcription progress below.';
+    if(this.run.stopped&&this.run.server_sealed&&!this.volatile.length)this.message=this.run.gaps?.length?'Available audio is saved. An interruption remains marked; missing time was not recorded. Start another segment when ready.':'This recording segment is saved. Follow transcription progress below.';
     else if(this.active)this.message='Recording. Audio is being saved on this device.';
     this.emit();
   }
@@ -272,7 +282,7 @@ export class Recorder {
     finally {this.releaseLock?.();this.releaseLock=null;this.working=false;this.emit();}
   }
   async dispose() {
-    this.disposed=true;clearInterval(this.timer);
+    this.disposed=true;this.unsubscribePower?.();clearInterval(this.timer);
     this.closeMicrophone();
     await this.stop();await this.syncPromise;
     if(this.context){await this.context.close().catch(()=>{});this.context=null;}

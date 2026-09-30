@@ -21,6 +21,22 @@ const {_electron:electron}=require('../../.venv/Lib/site-packages/playwright/dri
     assert.equal(await page.evaluate('typeof require'),'undefined');
     const prefs=await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences());
     assert.equal(prefs.sandbox,true);assert.equal(prefs.contextIsolation,true);assert.equal(prefs.nodeIntegration,false);
+    assert.equal(await page.evaluate(()=>window.desktopApp.platform),'win32');
+    await page.evaluate(()=>{
+      window.syntheticPower=[];
+      window.unsubscribePower=window.desktopApp.onPower(kind=>window.syntheticPower.push(kind));
+    });
+    await app.evaluate(({BrowserWindow})=>{
+      const contents=BrowserWindow.getAllWindows()[0].webContents;
+      contents.send('app:power','suspend');contents.send('app:power','unrecognized');contents.send('app:power','resume');
+    });
+    await page.waitForFunction(()=>window.syntheticPower.length===2);
+    assert.deepEqual(await page.evaluate(()=>window.syntheticPower),['suspend','resume']);
+    await page.evaluate(()=>window.unsubscribePower());
+    await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].webContents.send('app:power','suspend'));
+    // A round-trip confirms the unsubscribe has been applied without exposing raw IPC.
+    await page.evaluate(()=>window.desktopSetup.status());
+    assert.deepEqual(await page.evaluate(()=>window.syntheticPower),['suspend','resume']);
     assert.equal(await fs.stat(path.join(profile,'standalone-library')).then(()=>true,()=>false),false);
     console.log('Isolated Windows Electron setup and renderer isolation passed:',profile);
   }finally{

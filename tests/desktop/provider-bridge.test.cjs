@@ -9,6 +9,28 @@ const {ProviderBridge}=require('../../apps/desktop/provider-bridge.cjs');
 
 const storage={isEncryptionAvailable:()=>true,encryptString:value=>Buffer.from('protected:'+value),decryptString:value=>Buffer.from(value).toString().slice('protected:'.length)};
 
+test('locked or failing protected storage preserves existing credentials without plaintext fallback',async()=>{
+  const directory=await mkdtemp(path.join(os.tmpdir(),'notetaker-keychain-test-'));
+  const protectedStorage={...storage};
+  const bridge=new ProviderBridge(directory,protectedStorage);
+  try{
+    const row={provider:'openai',model:'gpt-test',api_key:'synthetic-key',id:'test'};
+    await bridge.write('openai',row);
+    const original=await readFile(bridge.file('openai'));
+    protectedStorage.isEncryptionAvailable=()=>false;
+    await assert.rejects(bridge.write('openai',{...row,api_key:'replacement'}),/protected storage/);
+    assert.deepEqual(await readFile(bridge.file('openai')),original);
+    protectedStorage.isEncryptionAvailable=()=>true;
+    protectedStorage.encryptString=()=>{throw Error('Keychain locked');};
+    await assert.rejects(bridge.write('openai',{...row,api_key:'replacement'}),/Keychain locked/);
+    protectedStorage.decryptString=()=>{throw Error('Keychain locked');};
+    await assert.rejects(bridge.read('openai'),/connection is unavailable/);
+    assert.deepEqual(await readFile(bridge.file('openai')),original);
+    protectedStorage.decryptString=storage.decryptString;
+    assert.equal((await bridge.read('openai')).api_key,'synthetic-key');
+  }finally{await rm(directory,{recursive:true,force:true});}
+});
+
 test('provider bridge protects connection files and requires its token',async()=>{
   const directory=await mkdtemp(path.join(os.tmpdir(),'notetaker-bridge-test-'));
   const bridge=new ProviderBridge(directory,storage,{fetch:async()=>new Response(JSON.stringify({data:[{id:'gpt-test'}]}))});const config=await bridge.start();

@@ -1,6 +1,6 @@
 # Phase 6.9 — macOS delivery
 
-Current phase (2026-09-29): **6.9.2 — standalone Mac runtime**. See the [build guide and implementation evidence](macos-standalone.md). The 6.9.1 entry below is historical; its native qualification gaps remain open.
+Current phase (2026-09-30): **6.9.3 — macOS integration** is the single active implementation phase, at the user’s request. Native menus, window/Dock behavior, microphone permission recovery and sleep/wake recorder handling are implemented in shared source with Windows and synthetic evidence. Keychain uses the existing protected-storage bridge. Native Mac qualification remains open, including earlier 6.9.1 containment and 6.9.2 runtime build/startup gates. See [integration behavior, evidence and exact next work](macos-integration.md). Earlier dated active-phase entries below are historical.
 
 ## 6.9.1 platform foundation — 2026-09-29
 

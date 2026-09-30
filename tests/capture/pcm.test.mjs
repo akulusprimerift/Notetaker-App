@@ -5,6 +5,39 @@ import vm from 'node:vm';
 import {encodeWav,matchesAck,admissionBytes} from '../../apps/web/public/capture/pcm.mjs';
 import {Recorder} from '../../apps/web/public/capture/recorder.mjs';
 
+test('sleep flushes available audio, retains its gap after saves and never resumes capture',async()=>{
+  const recorder=new Recorder({owner:'owner',lecture:'lecture',csrf:'csrf',onChange:()=>{}});
+  let stopped=0,terminated=0,sealed;
+  let row={id:'run',admitted:true,gaps:[],samples:48000,next_sequence:1,pending_bytes:0};
+  recorder.run=row;recorder.active=true;
+  recorder.stream={getTracks:()=>[{stop:()=>stopped++}]};
+  recorder.node={port:{postMessage:()=>queueMicrotask(()=>recorder.workerMessage({kind:'finished'}))},disconnect:()=>{}};
+  recorder.worker={terminate:()=>terminated++};
+  recorder.journal={get:async()=>row,patch:async(_owner,_id,patch)=>(row={...row,...patch}),pending:async()=>[],list:async()=>[row]};
+  recorder.api=async(path,body)=>{if(path.endsWith('/seal'))sealed=body;return {manifest_version:1};};
+  recorder.refresh=async()=>{};
+  await Promise.all([recorder.interrupt('suspend'),recorder.interrupt('resume')]);
+  assert.equal(stopped,1);assert.equal(terminated,1);assert.equal(recorder.active,false);
+  assert.deepEqual(sealed.gaps,[{reason:'sleep_or_suspension',after_sample:48000,unknown_extent:true}]);
+  assert.equal(sealed.final_sample_count,48000);assert.equal(row.server_sealed,true);
+  assert.match(recorder.message,/missing time was not recorded/);
+  await recorder.interrupt('resume');assert.equal(stopped,1);
+});
+
+test('sleep cancels an in-flight microphone request before admission',async()=>{
+  let resolveStream,stopped=0;
+  const recorder=new Recorder({owner:'owner',lecture:'lecture',csrf:'csrf',onChange:()=>{},streamFactory:()=>new Promise(resolve=>{resolveStream=resolve;})});
+  recorder.takeLock=async()=>{};recorder.refresh=async()=>{};
+  recorder.server.available=true;recorder.journal={list:async()=>[]};
+  const starting=recorder.start();
+  while(!resolveStream)await new Promise(resolve=>setImmediate(resolve));
+  await recorder.interrupt('suspend');
+  resolveStream({getTracks:()=>[{stop:()=>stopped++}]});
+  await starting;
+  assert.equal(stopped,1);assert.equal(recorder.active,false);assert.equal(recorder.run,undefined);
+  assert.match(recorder.message,/cancelled/);
+});
+
 test('PCM WAV preserves the actual sample rate, length and signed sample range',()=>{
   for(const rate of [44100,48000,96000]){
     const wav=encodeWav(new Float32Array([-2,-0.5,0,0.5,2,NaN]),rate),view=new DataView(wav);

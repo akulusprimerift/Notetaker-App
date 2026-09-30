@@ -11,7 +11,7 @@ async function status() {
   element('setup-content').hidden=value.autoStarting;
   element('loading-status').textContent=value.message;
   element('status').textContent = value.message;
-  element('location').textContent = 'Windows app data: ' + value.dataPath + '\n' + (value.serviceMode==='native'?'Standalone library: '+value.dataPath+'\\standalone-library':value.serviceRoot?'Existing workspace: '+value.serviceRoot:'Select your existing workspace folder to reuse its library when starting services.');
+  element('location').textContent = 'App data: ' + value.dataPath + '\n' + (value.serviceMode==='native'?'Standalone library: '+value.libraryPath:value.serviceRoot?'Existing workspace: '+value.serviceRoot:'Select your existing workspace folder to reuse its library when starting services.');
   element('start').disabled = value.starting;
   element('native').hidden = !value.nativeAvailable;
   element('native').disabled = value.starting;

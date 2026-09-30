@@ -51,6 +51,8 @@ export default function Recording({owner,lecture,csrf,onBusy,compact=false}:{own
       <span className="small muted">{pending?`${bytes(pending)} held in this browser, awaiting confirmation`:'No audio waiting in the browser'}</span>
     </div>
     <p role="status" className="capture-message">{state.message}</p>
+    {typeof window!=='undefined'&&window.desktopApp?.platform==='darwin'&&!state.active&&<button className="text-button" onClick={()=>void window.desktopApp?.openMicrophoneSettings().catch(()=>setState(current=>({...current,message:'Open System Settings → Privacy & Security → Microphone. Enable Notetaker, then quit and reopen the app.'})))}>Microphone Settings</button>}
+    {!compact&&typeof window!=='undefined'&&window.desktopApp?.platform==='darwin'&&<p className="small muted">Closing the window keeps recording. Reopen it from the Dock. Sleep interrupts capture; start another segment after waking. Stop recording and wait for confirmed saves before Quit.</p>}
     {compact&&(state.emergency.length>0||recoveryIds.length>0)&&<p className="small recovery-hint">Open the Capture tab to review recovery actions and saved segments.</p>}
     {!compact&&<>
       {state.local.some(run=>run.persistent===false)&&<p className="small muted">The browser did not grant protection against automatic storage clearing. Keep this page open until all audio is confirmed saved.</p>}

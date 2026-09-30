@@ -11,6 +11,13 @@ contextBridge.exposeInMainWorld('desktopSetup', Object.freeze({
   workspaceFolder: () => ipcRenderer.invoke('setup:workspace-folder'),
 }));
 contextBridge.exposeInMainWorld('desktopApp', Object.freeze({
+  platform: process.platform,
+  openMicrophoneSettings: () => ipcRenderer.invoke('app:microphone-settings'),
+  onPower: listener => {
+    const handler=(_event,kind)=>{if(kind==='suspend'||kind==='resume')listener(kind);};
+    ipcRenderer.on('app:power',handler);
+    return ()=>ipcRenderer.removeListener('app:power',handler);
+  },
   appearance: value => ipcRenderer.invoke('app:appearance',value),
   openSetup: () => ipcRenderer.invoke('app:open-setup'),
   chooseSpeech: () => ipcRenderer.invoke('app:choose-speech'),

@@ -43,7 +43,11 @@ const {_electron:electron}=require(playwrightDriver);
   async function close(){
     const app=application;application=null;
     const exited=app.waitForEvent('close',{timeout:60000});
-    await app.evaluate(({app})=>app.quit()).catch(()=>{});
+    await app.evaluate(({app,dialog})=>{
+      // Explicitly confirm Quit only in this isolated synthetic test profile.
+      if(process.platform==='darwin')dialog.showMessageBox=async()=>({response:1});
+      app.quit();
+    }).catch(()=>{});
     await exited;
     // The host closes its own PostgreSQL tree before Electron completes quit.
     await new Promise(resolve=>setTimeout(resolve,2000));

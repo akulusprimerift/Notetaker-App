@@ -1,5 +1,5 @@
 'use strict';
-const {app, BrowserWindow, dialog, ipcMain, session, shell} = require('electron');
+const {app, BrowserWindow, dialog, ipcMain, session, shell, systemPreferences, powerMonitor, Menu} = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const {spawn} = require('node:child_process');
@@ -11,6 +11,8 @@ const {ProviderBridge} = require('./provider-bridge.cjs');
 const {NativeRuntime} = require('./native-runtime.cjs');
 const {accountExecutable} = require('./platform.cjs');
 
+const {requestMicrophone,restoreWindow,macMenu,bindPowerEvents,MICROPHONE_SETTINGS}=require('./mac-integration.cjs');
+
 app.setName('Notetaker');
 const explicitData = app.commandLine.getSwitchValue('user-data-dir');
 if (explicitData && path.isAbsolute(explicitData)) app.setPath('userData', explicitData);
@@ -18,7 +20,7 @@ app.enableSandbox();
 let window, setupWindow, providerBridge, bridgeConfig, quitting = false, starting = false, message = 'Checking local services…', speechPath = '', serviceRoot = '';
 let appearance = 'light', autoStarting = false;
 const palettes = {light:['#e0e1dd','#1b263b'],dark:['#090d17','#f2f2f5'],pink:['#ffe5ec','#4b1830'],blue:['#caf0f8','#03045e']};
-function chromeOptions(){return {titleBarStyle:'hidden',titleBarOverlay:{color: '#00000000',symbolColor:palettes[appearance][1],height:40},backgroundColor:palettes[appearance][0],roundedCorners:true};}
+function chromeOptions(){if(process.platform==='darwin')return {backgroundColor:palettes[appearance][0]};return {titleBarStyle:'hidden',titleBarOverlay:{color: '#00000000',symbolColor:palettes[appearance][1],height:40},backgroundColor:palettes[appearance][0],roundedCorners:true};}
 let serviceMode = 'docker', nativeRuntime, shutdownComplete = false, shutdownStarted = false, speechRestartRequired = false, libraryChosen = false;
 const nativeResources = () => app.isPackaged ? path.join(process.resourcesPath,'native-runtime') : process.env.NOTETAKER_NATIVE_RESOURCES;
 async function nativeAvailable(){try{if(!nativeResources())return false;await fs.access(path.join(nativeResources(),'runtime-manifest.json'));return true;}catch{return false;}}
@@ -121,7 +123,8 @@ function register(name, action, allowWorkspace = false) {ipcMain.handle(name, as
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-  app.on('second-instance', () => {if(window){window.show();window.focus();}});
+  app.on('second-instance', () => restoreWindow(window));
+  app.on('activate', () => restoreWindow(window));
   app.whenReady().then(async () => {
     providerBridge = new ProviderBridge(app.getPath('userData'), require('electron').safeStorage, {openExternal:url=>require('electron').shell.openExternal(url), codexExecutable:accountExecutable({packaged:app.isPackaged,resources:process.resourcesPath,root:path.resolve(__dirname,'../..')})});
     try {bridgeConfig=await providerBridge.start();}
@@ -134,9 +137,8 @@ else {
       permission === 'media' && localPage(contents?.getURL() || '') && localPage(origin));
     session.defaultSession.setPermissionRequestHandler(async (contents, permission, callback, details) => {
       if (!audioPermission(contents, permission, details)) return callback(false);
-      const result = await dialog.showMessageBox(window, {type:'question',buttons:['Allow microphone','Cancel'],defaultId:1,cancelId:1,
-        message:'Allow Notetaker to record your microphone for this lecture?'});
-      callback(result.response===0 && audioPermission(contents, permission, details));
+      try{callback(await requestMicrophone({contents,permission,details,platform:process.platform,systemPreferences,dialog,window,shell}));}
+      catch{callback(false);}
     });
     window.webContents.setWindowOpenHandler(() => ({action:'deny'}));
     window.webContents.on('will-navigate', (event,url) => {if(!localPage(url) && url!==setupURL)event.preventDefault();});
@@ -145,15 +147,18 @@ else {
     window.on('close', event => {
       if(quitting)return;
       event.preventDefault();
+      if(process.platform==='darwin'){window.hide();return;}
       void dialog.showMessageBox(window, {type:'question',buttons:['Keep app open','Hide window','Quit app'],defaultId:0,cancelId:0,
         message:'Finish and save your recording before quitting.',detail:'Hide keeps recording and this workspace running. Quit closes the recorder; already journaled audio remains recoverable. '+(serviceMode==='native'?'Standalone processing pauses until you reopen the app.':'Docker services continue processing.')})
         .then(result => {if(result.response===1)window.hide();if(result.response===2){quitting=true;app.quit();}});
     });
-    // Keep navigation inside the workspace. The default Electron menu bar is
-    // intentionally removed so the desktop shell does not compete with the
-    // lecture navigation.
-    require('electron').Menu.setApplicationMenu(null);
-    register('setup:status',async()=>({appearance,autoStarting,starting,message:starting?message:speechRestartRequired?'Speech model saved. Finish recording, then quit and reopen Notetaker to use it.':await healthy()?(!speechPath?'Audio saving is ready. Choose a speech model folder and restart services to enable transcription and automatic notes.':'Your local workspace is ready.'):message.startsWith('Could not')?message:serviceMode==='native'?'Standalone workspace is stopped. Start it to continue.':'Choose a standalone library or start your existing Docker workspace.',dataPath:app.getPath('userData'),serviceRoot,serviceMode,nativeAvailable:await nativeAvailable()}));
+    Menu.setApplicationMenu(process.platform==='darwin'?Menu.buildFromTemplate(macMenu({
+      showWorkspace:()=>restoreWindow(window),showSetup:()=>void showSetup(),quit:()=>app.quit(),
+    })):null);
+    bindPowerEvents(powerMonitor,kind=>{
+      if(window&&!window.isDestroyed()&&localPage(window.webContents.getURL()))window.webContents.send('app:power',kind);
+    });
+    register('setup:status',async()=>({appearance,autoStarting,starting,message:starting?message:speechRestartRequired?'Speech model saved. Finish recording, then quit and reopen Notetaker to use it.':await healthy()?(!speechPath?'Audio saving is ready. Choose a speech model folder and restart services to enable transcription and automatic notes.':'Your local workspace is ready.'):message.startsWith('Could not')?message:serviceMode==='native'?'Standalone workspace is stopped. Start it to continue.':'Choose a standalone library or start your existing Docker workspace.',dataPath:app.getPath('userData'),libraryPath:path.join(app.getPath('userData'),'standalone-library'),serviceRoot,serviceMode,nativeAvailable:await nativeAvailable()}));
     register('setup:start',startServices);
     register('setup:native',async()=>{
       if(starting)throw new Error('Wait for startup to finish.');
@@ -204,11 +209,15 @@ else {
     register('app:choose-speech',chooseSpeech,true);
     register('app:speech-guide',()=>shell.openExternal('https://huggingface.co/Systran/faster-whisper-small.en/tree/main'),true);
     register('app:open-setup',showSetup,true);
+    register('app:microphone-settings',()=>{
+      if(process.platform!=='darwin')throw new Error('Microphone Settings is available on macOS.');
+      return shell.openExternal(MICROPHONE_SETTINGS);
+    },true);
     ipcMain.handle('app:appearance',async(event,value)=>{
       authorize(event,true);
       if(typeof value!=='string'||!Object.hasOwn(palettes,value))throw new Error('Unknown theme.');
       appearance=value;await saveConfig();
-      for(const target of [window,setupWindow])if(target&&!target.isDestroyed())target.setTitleBarOverlay({color: '#00000000',symbolColor:palettes[value][1]});
+      for(const target of [window,setupWindow])if(target&&!target.isDestroyed())process.platform==='darwin'?target.setBackgroundColor(palettes[value][0]):target.setTitleBarOverlay({color: '#00000000',symbolColor:palettes[value][1]});
     });
 
     // Show progress before starting bundled services or verifying their files.
@@ -221,12 +230,23 @@ else {
       else if(await healthy()&&bridgeConfig){await startServices(true);if(await bridgeReady())await window.loadURL(ORIGIN);else await setup();}
       else await setup();
     }
-    catch {message='Could not open the local workspace. Check Docker Desktop and retry.';await setup();}
+    catch {message='Could not open the local workspace. Check local services and retry.';await setup();}
     autoStarting=false;
     window.show();
   });
 }
+let quitPrompt=false,quitApproved=false;
 app.on('before-quit', event => {
+  if(process.platform==='darwin'&&!quitApproved&&window&&!window.isDestroyed()){
+    event.preventDefault();
+    if(quitPrompt)return;
+    quitPrompt=true;restoreWindow(window);
+    void dialog.showMessageBox(window,{type:'question',buttons:['Keep app open','Quit Notetaker'],defaultId:0,cancelId:0,
+      message:'Finish recording and wait for confirmed saves before quitting.',
+      detail:'Quit stops capture and standalone processing. Journaled audio and drafts remain recoverable; audio still in memory may be lost. Close the window to keep recording in the background instead.'})
+      .then(result=>{if(result.response===1){quitApproved=true;app.quit();}}).catch(()=>{}).finally(()=>{quitPrompt=false;});
+    return;
+  }
   quitting=true;
   if(shutdownComplete)return;
   event.preventDefault();

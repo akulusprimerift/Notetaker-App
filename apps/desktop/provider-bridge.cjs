@@ -130,14 +130,14 @@ class ProviderBridge {
   async read(provider) {
     providerName(provider);
     let encoded;try {encoded=await readFile(this.file(provider),'utf8');} catch(error) {if(error.code==='ENOENT')return null;throw new BridgeError('provider_connection_invalid','This provider connection is unavailable. Connect it again.');}
-    try {const row=JSON.parse(this.safeStorage.decryptString(Buffer.from(encoded,'base64')));if(row.provider!==provider||!MODEL.test(row.model)||(row.models&&(!Array.isArray(row.models)||row.models.some(model=>typeof model!=='string'||!MODEL.test(model)))))throw new Error();return row;}catch{throw new BridgeError('provider_connection_invalid','This provider connection is unavailable. Connect it again.');}
+    try {const row=JSON.parse(this.safeStorage.decryptString(Buffer.from(encoded,'base64')));if(row.provider!==provider||!MODEL.test(row.model)||(row.models&&(!Array.isArray(row.models)||row.models.some(model=>typeof model!=='string'||!MODEL.test(model)))))throw new Error();return row;}catch{throw new BridgeError('provider_connection_invalid','This provider connection is unavailable. Unlock system protected storage (login Keychain on macOS) and restart Notetaker before reconnecting.');}
   }
   async write(provider,row) {
-    if(!this.safeStorage.isEncryptionAvailable())throw new BridgeError('protected_storage_unavailable','Windows protected storage is unavailable. Restart Notetaker and try again.',503);
-    await mkdir(this.directory,{recursive:true});
+    if(!this.safeStorage.isEncryptionAvailable())throw new BridgeError('protected_storage_unavailable','System protected storage is unavailable. Unlock your login Keychain on macOS. Restart Notetaker and try again.',503);
+    await mkdir(this.directory,{recursive:true,mode:0o700});
     const temporary=this.file(provider)+'.'+randomUUID()+'.pending';
     const encoded=this.safeStorage.encryptString(JSON.stringify(row)).toString('base64');
-    try {await writeFile(temporary,encoded,{flag:'wx'});await rename(temporary,this.file(provider));} finally {await rm(temporary,{force:true});}
+    try {await writeFile(temporary,encoded,{flag:'wx',mode:0o600});await rename(temporary,this.file(provider));} finally {await rm(temporary,{force:true});}
   }
   async inventory() {
     const connections=[];

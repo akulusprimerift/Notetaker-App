@@ -10,6 +10,7 @@ module.exports={
   extraResources:shared.extraResources.filter(resource=>!resource.to.startsWith('account-client')).concat([
     {from:path.join(process.env.NOTETAKER_NATIVE_RESOURCES,'account-client'),to:'account-client'},
   ]),
-  mac:{target:[{target:'dir',arch:['arm64']}],identity:null,category:'public.app-category.education'},
+  mac:{target:[{target:'dir',arch:['arm64']}],identity:null,category:'public.app-category.education',
+    extendInfo:{NSMicrophoneUsageDescription:'Notetaker records lecture audio only when you start recording, so it can save and transcribe your lecture.'}},
   artifactName:'Notetaker-${version}-macOS-arm64.${ext}',
 };

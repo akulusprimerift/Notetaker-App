@@ -1,6 +1,6 @@
 # Project phases
 
-Current phase (2026-09-29): **6.9.2 — standalone Mac runtime** is the single active implementation phase. Arm64 service-build, component locking/staging, native dependency audits and unpacked Electron packaging are implemented with Windows contract evidence. Native Mac dependency provisioning, build and service-startup qualification remain open; earlier 6.9.1 process-containment and Windows qualification gaps are retained. See [runtime build guide, evidence and exact next work](implementation/macos-standalone.md). Earlier dated active-phase entries below are historical.
+Current phase (2026-09-30): **6.9.3 — macOS integration** is the single active implementation phase, at the user’s request. Native menus, window/Dock behavior, microphone permission recovery and sleep/wake recorder handling are implemented in shared source with Windows and synthetic evidence. Keychain uses the existing protected-storage bridge. Native Mac qualification remains open, including earlier 6.9.1 containment and 6.9.2 runtime build/startup gates. See [integration behavior, evidence and exact next work](implementation/macos-integration.md). Earlier dated active-phase entries below are historical.
 
 The macOS sequence is 6.9.1 platform foundation → 6.9.2 standalone arm64 runtime → 6.9.3 native integration → 6.9.4 complete lecture workflow → 6.9.5 signed/notarized installer → 6.9.6 release qualification. Preserve existing Windows/Docker libraries and explicit local model selection.
 

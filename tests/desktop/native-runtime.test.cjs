@@ -7,6 +7,31 @@ const {createHash}=require('node:crypto');
 const {EventEmitter}=require('node:events');
 const {safeRelative,verifyBundle,NativeRuntime}=require('../../apps/desktop/native-runtime.cjs');
 
+test('Mac library credential unlock failure never replaces the credential or launches services',async()=>{
+  const directory=await fs.mkdtemp(path.join(os.tmpdir(),'notetaker-runtime-test-'));
+  try{
+    const resources=path.join(directory,'bundle'),dataPath=path.join(directory,'profile');
+    await fs.mkdir(path.join(resources,'service'),{recursive:true});await fs.mkdir(dataPath);
+    const bytes=Buffer.from('synthetic Mac service');
+    await fs.writeFile(path.join(resources,'service','NotetakerService'),bytes);
+    await fs.writeFile(path.join(resources,'runtime-manifest.json'),JSON.stringify({schema_version:1,platform:'darwin',arch:'arm64',
+      files:[{path:'service/NotetakerService',sha256:createHash('sha256').update(bytes).digest('hex')}]}));
+    const secretPath=path.join(dataPath,'standalone-secret.bin');await fs.writeFile(secretPath,'synthetic encrypted secret');
+    const original=await fs.readFile(secretPath);
+    let available=false;
+    const runtime=new NativeRuntime({resources,dataPath,platform:require('../../apps/desktop/platform.cjs').desktopPlatform('darwin','arm64'),
+      safeStorage:{isEncryptionAvailable:()=>available,decryptString:()=>{throw Error('Keychain denied');},encryptString:()=>assert.fail('must not replace an existing credential')},
+      utilityProcess:{fork:()=>assert.fail('must not launch services')}});
+    await assert.rejects(runtime.start(),/Protected system storage/);
+    available=true;await assert.rejects(runtime.start(),/could not be unlocked/);
+    assert.deepEqual(await fs.readFile(secretPath),original);assert.equal(runtime.host,null);
+  }finally{
+    assert.equal(path.dirname(path.resolve(directory)),path.resolve(os.tmpdir()));
+    assert.ok(path.basename(directory).startsWith('notetaker-runtime-test-'));
+    await fs.rm(directory,{recursive:true,force:true});
+  }
+});
+
 test('native shutdown waits for parent-pipe cleanup and does not kill a cleanly exited host',async()=>{
   const runtime=new NativeRuntime({resources:'unused',dataPath:'unused',safeStorage:{},utilityProcess:{}});
   const host=new EventEmitter();host.exitCode=null;host.signalCode=null;
