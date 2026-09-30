@@ -1,6 +1,6 @@
 # Project phases
 
-Current phase (2026-09-29): **6.9.1 — macOS platform foundation** is the single active implementation phase. Windows is accepted for the current development scope; its earlier qualification gaps remain open. Shared executable selection, runtime target validation, Mac service controls and owned-group cleanup are implemented with Windows and simulated Mac regression evidence. Native arm64 startup/save/quit/reopen remains unverified. See [implementation, evidence and exact next work](implementation/phase-6-9-macos.md). Earlier dated active-phase entries below are historical.
+Current phase (2026-09-29): **6.9.2 — standalone Mac runtime** is the single active implementation phase. Arm64 service-build, component locking/staging, native dependency audits and unpacked Electron packaging are implemented with Windows contract evidence. Native Mac dependency provisioning, build and service-startup qualification remain open; earlier 6.9.1 process-containment and Windows qualification gaps are retained. See [runtime build guide, evidence and exact next work](implementation/macos-standalone.md). Earlier dated active-phase entries below are historical.
 
 The macOS sequence is 6.9.1 platform foundation → 6.9.2 standalone arm64 runtime → 6.9.3 native integration → 6.9.4 complete lecture workflow → 6.9.5 signed/notarized installer → 6.9.6 release qualification. Preserve existing Windows/Docker libraries and explicit local model selection.
 

@@ -3,7 +3,12 @@ const path=require('node:path');
 const fs=require('node:fs/promises');
 const assert=require('node:assert/strict');
 const {randomUUID}=require('node:crypto');
-const {_electron:electron}=require('../../.venv/Lib/site-packages/playwright/driver/package');
+const {execFileSync}=require('node:child_process');
+const playwrightDriver=process.platform==='win32'?path.resolve(__dirname,'../../.venv/Lib/site-packages/playwright/driver/package'):
+  execFileSync('uv',['run','--no-project','python','-c',
+    'import pathlib, playwright; print(pathlib.Path(playwright.__file__).parent / "driver" / "package")'],
+    {cwd:path.resolve(__dirname,'../..'),encoding:'utf8'}).trim();
+const {_electron:electron}=require(playwrightDriver);
 
 (async()=>{
   const root=path.resolve(__dirname,'../..');
@@ -12,7 +17,7 @@ const {_electron:electron}=require('../../.venv/Lib/site-packages/playwright/dri
   const profile=path.join(root,'.local','standalone-smoke-'+randomUUID());
   await fs.mkdir(profile,{recursive:true});
   const env={...process.env,NOTETAKER_NATIVE_RESOURCES:resources};delete env.ELECTRON_RUN_AS_NODE;
-  const executable=process.env.NOTETAKER_TEST_EXECUTABLE||path.join(root,'node_modules/electron/dist/electron.exe');
+  const executable=process.env.NOTETAKER_TEST_EXECUTABLE||require('electron');
   const args=[...(process.env.NOTETAKER_TEST_EXECUTABLE?[]:[root]),'--user-data-dir='+profile];
   let application;
   let firstLaunch=true;
@@ -47,7 +52,7 @@ const {_electron:electron}=require('../../.venv/Lib/site-packages/playwright/dri
     let page=await launch();
     const chrome=await application.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].getContentBounds());
     assert.ok(chrome.width>0);
-    assert.equal(await page.evaluate(()=>navigator.windowControlsOverlay?.visible),true);
+    if(process.platform==='win32')assert.equal(await page.evaluate(()=>navigator.windowControlsOverlay?.visible),true);
     assert.equal(await page.locator('.topbar').evaluate(el=>getComputedStyle(el).webkitAppRegion),'drag');
     await page.getByLabel('App theme').selectOption('blue');
     assert.equal(await page.locator('html').getAttribute('data-theme'),'blue');
@@ -121,6 +126,8 @@ const {_electron:electron}=require('../../.venv/Lib/site-packages/playwright/dri
     },saved);
     assert.equal(preserved.status,200);assert.equal(preserved.course,true);assert.equal(preserved.hash,saved.hash);
     console.log(JSON.stringify({standalone_launch:true,postgres_migrations:true,synthetic_audio_verified:true,
-      close_reopen_readback:true,electron_isolation:true,appearance_and_theme_persistence:true,portable_snapshot_exports:true,window_controls_overlay:true,profile,limitations:'No microphone, human quality, clean-machine or long-duration qualification.'},null,2));
+      close_reopen_readback:true,electron_isolation:true,appearance_and_theme_persistence:true,portable_snapshot_exports:true,
+      platform:process.platform,arch:process.arch,window_controls_overlay:process.platform==='win32'?true:null,
+      profile,limitations:'No microphone, human quality, clean-machine or long-duration qualification. Mac native chrome belongs to 6.9.3.'},null,2));
   }finally{if(application)await close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

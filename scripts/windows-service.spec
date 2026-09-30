@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 from PyInstaller.utils.hooks import collect_all, collect_submodules
 
 root = Path(SPECPATH).parent
@@ -14,5 +15,6 @@ for package in ['faster_whisper', 'ctranslate2', 'tokenizers', 'av', 'docx', 'pp
 a = Analysis([str(root / 'apps/api/windows_service.py')], pathex=[str(root / 'apps/api')],
     binaries=binaries, datas=datas, hiddenimports=hidden, excludes=['PySide6', 'PyQt6', 'tkinter'], noarchive=False)
 pyz = PYZ(a.pure)
-exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='NotetakerService', console=True)
+exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='NotetakerService', console=True,
+          target_arch='arm64' if sys.platform == 'darwin' else None)
 coll = COLLECT(exe, a.binaries, a.datas, name='NotetakerService')

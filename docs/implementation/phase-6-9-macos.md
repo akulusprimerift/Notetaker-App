@@ -1,5 +1,7 @@
 # Phase 6.9 — macOS delivery
 
+Current phase (2026-09-29): **6.9.2 — standalone Mac runtime**. See the [build guide and implementation evidence](macos-standalone.md). The 6.9.1 entry below is historical; its native qualification gaps remain open.
+
 ## 6.9.1 platform foundation — 2026-09-29
 
 Active phase: **6.9.1**, targeting Apple Silicon. The user accepts Windows for the current development scope; earlier Windows release and human-quality qualification gaps remain open. This increment prepares the shared source on Windows. It is not a Mac installer or a claim of native Mac qualification.
