@@ -1,5 +1,13 @@
 # Session transfer
 
+## Phase 6.9.4 workflow harness and Windows baseline — 2026-10-01
+
+Active phase: **6.9.4 — complete Mac lecture workflow**, at the user's request; the Windows priority repair is delivered and macOS resumes. 6.9.1–6.9.3 native Mac qualification remains open because no Mac app has been built. `scripts/test-windows-host.py` now runs on Windows or Mac and drives one synthetic lecture through the frozen host: material, speech readiness, missing-note-model refusal, paced verified capture, live passages/streamed notes, citations/source audio, protected edit → regeneration → merge → undo, recall/self-assessment/catch-up, exports, finalization and byte-identical audio. Without a speech model it checks the missing-model path. [Behavior, baseline and Mac commands](docs/implementation/macos-workflow.md).
+
+Executed on Windows standalone runtime `.local/audio-retention/runtime` with small.en and qwen3:4b: 272 s paced lecture **passed** (first passage 9.5 s, first saved notes 94.3 s, transcript done 89.9 s and notes settled 588.7 s after capture end, max speech backlog 52.2 s); 68 s paced and missing-speech-model runs passed. **39 desktop tests**, **63 JavaScript contracts**, Python lint passed. Three harness defects (heartbeat, escaped marker, stream metrics) were fixed and rerun; no product code changed. The user closed the installed app for the run; their library was not accessed.
+
+**Exact next work:** on the Apple Silicon Mac, finish 6.9.2 runtime preparation, then run both harness modes and the packaged smoke per the linked guide and record Mac limits. Service-failure and low-storage checks need a disposable Mac volume/user. No microphone, download, provider, installer build or push.
+
 ## Live transcription and audio storage repair — 2026-09-30
 
 Active phase: **6.8 / M08 — priority repair before macOS**; 6.9.3 stays paused. Root cause of "audio saves but never transcribes": the bundled SeaweedFS default `-volume.max=8` was full, so every chunk upload was refused and no speech jobs existed. SeaweedFS now starts with `-volume.max=0`; capture runs at 16 kHz; live cores are 4 s. New lectures delete transcribed audio behind final live passages unless **Keep lecture audio** is on; finalizing offers keep-all or delete-all. Migration 0018 is additive and keeps audio for existing lectures. [Behavior, evidence and limits](docs/implementation/live-transcription-storage.md).

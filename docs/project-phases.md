@@ -1,5 +1,7 @@
 # Project phases
 
+Current phase (2026-10-01): **6.9.4 — complete Mac lecture workflow** is the single active phase; the 6.8 priority repair is delivered. A cross-platform [workflow/performance harness](implementation/macos-workflow.md) passes on the Windows standalone runtime as a reference baseline. Native Mac runs, and the open 6.9.1–6.9.3 qualification, remain required. Earlier current-phase entries below are historical.
+
 Priority repair (2026-09-30, latest): **6.8 / M08** remains active with macOS paused. [Live transcription and audio storage](implementation/live-transcription-storage.md) fixes refused audio uploads, captures at 16 kHz, shortens live cores and adds audio retention with a finalize keep/delete choice. Cloud-consent persistence and Claude subscription models follow. Earlier qualification gaps remain open.
 
 Priority override (2026-09-30): macOS work is paused at the user’s request. **6.8 / M08 — shared Windows performance and stop/restart repair** is the single active implementation phase. Speed improvements and recording/notes restart repairs are implemented and packaged, with isolated Windows synthetic verification. Installed-upgrade and real-lecture qualification remain open. Preserve all earlier qualification gaps. [Repair evidence and next work](implementation/live-speed-restart.md). Earlier current-phase entries below are historical.
