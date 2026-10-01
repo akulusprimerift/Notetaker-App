@@ -12,7 +12,8 @@ from .db import database
 from .audio_store import AudioStore
 from .models import (Lecture, Job, Outbox, Inbox, SpeechWindow, SpeechGeneration, CaptureRun, AudioManifestRevision,
     TranscriptSegment, TranscriptVersion, UploadReservation, now)
-from .transcription import lock_lecture, schedule, read_audio, freeze_transcript, windows_for, current_runs, valid_window, saved_through
+from .transcription import (lock_lecture, schedule, read_audio, freeze_transcript, windows_for, current_runs, valid_window,
+    saved_through, release_frontier, released_limit)
 from .resource_budget import available, inference_slot
 from .speech_provider import WhisperProvider, SpeechFailure, validate_result
 
@@ -177,6 +178,29 @@ def publish(sessions, job_id, token, result):
         freeze_transcript(db,lecture);db.commit();return True
 
 
+def release_transcribed(sessions, store, lecture_id):
+    """Delete audio already behind final live passages unless the student keeps it.
+
+    The frontier is committed before deletion, so reads never meet a missing object.
+    """
+    with sessions() as db:
+        lecture=lock_lecture(db,lecture_id)
+        if not lecture or lecture.keep_audio or lecture.audio_removed or lecture.tombstoned:return 0
+        keys=[]
+        for run in current_runs(db,lecture):
+            frontier=release_frontier(db,lecture,run)
+            if frontier<=run.released_through:continue
+            old=released_limit(run);run.released_through=frontier;new=released_limit(run)
+            keys.extend(row.object_key for row in db.scalars(select(UploadReservation).where(UploadReservation.run_id==run.id))
+                if old<row.identity['start_sample']+row.identity['sample_count']<=new)
+        db.commit()
+    for key in keys:
+        try:store.delete_verified(key)
+        # ponytail: a failed delete leaves an orphan until audio/lecture removal reconciles the prefix.
+        except Exception:log.warning('speech_release_delete_failed')
+    return len(keys)
+
+
 def fail(sessions, job_id, token, failure):
     with sessions() as db:
         active=live_attempt(db,job_id,token)
@@ -215,7 +239,11 @@ def execute(sessions, store, provider, claimed, heartbeat=True):
                     on_preview=lambda text:preview(sessions,job_id,token,text))
             else:
                 result=provider.transcribe(audio,window,run.sample_rate)
-        return publish(sessions,job_id,token,result)
+        published=publish(sessions,job_id,token,result)
+        if published:
+            try:release_transcribed(sessions,store,window.lecture_id)
+            except Exception:log.warning('speech_release_failed job_id=%s',job_id)
+        return published
     except SpeechFailure as exc:
         fail(sessions,job_id,token,exc);return False
     except Exception:

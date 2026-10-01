@@ -2,10 +2,10 @@
 import ExportNotes from './export-notes';
 import {useCallback,useEffect,useRef,useState} from 'react';
 type Final={id:string;status:string;issues:string[];snapshot_id:string|null;created_at:string};
-type State={cursor:number;edit_version:number;audio_removed:boolean;status:string;history:Final[]};
+type State={cursor:number;edit_version:number;audio_removed:boolean;keep_audio:boolean;status:string;history:Final[]};
 type Saved={title:string;issues:string[];notes:{content:{blocks:{id:string;topic:string;passages:{id:string;text:string}[]}[]}}|null;transcript:{segments:{id:string;text:string}[]}|null};
 export default function Finalization({lecture,csrf,busy,onRemoved,deleteRequested=false,onDeleteHandled}:{lecture:string;csrf:string;busy:boolean;onRemoved:(lecture:string,kind:string)=>void;deleteRequested?:boolean;onDeleteHandled?:()=>void}){
-  const [state,setState]=useState<State|null>(null),[error,setError]=useState(''),[working,setWorking]=useState(false),[confirm,setConfirm]=useState<'final'|'available'|'reopen'|'audio'|'lecture'|null>(null),[view,setView]=useState<Saved|null>(null);
+  const [state,setState]=useState<State|null>(null),[error,setError]=useState(''),[working,setWorking]=useState(false),[confirm,setConfirm]=useState<'final'|'available'|'reopen'|'audio'|'lecture'|null>(null),[view,setView]=useState<Saved|null>(null),[discard,setDiscard]=useState<boolean|null>(null);
   useEffect(()=>{if(deleteRequested){setConfirm('lecture');onDeleteHandled?.();}},[deleteRequested,onDeleteHandled]);
   const command=useRef<{body:string;path:string;key:string}|null>(null);
   const base='/api/lectures/'+lecture;
@@ -15,7 +15,7 @@ export default function Finalization({lecture,csrf,busy,onRemoved,deleteRequeste
     if(!state||!confirm)return;setWorking(true);setError('');
     const removing=confirm==='audio'||confirm==='lecture';
     const path=base+(removing?'/deletion':confirm==='reopen'?'/finalization/reopen':'/finalization');
-    const body=JSON.stringify(removing?{kind:confirm,expected_cursor:state.cursor}:{expected_cursor:state.cursor,expected_edit_version:state.edit_version,available_only:confirm==='available'});
+    const body=JSON.stringify(removing?{kind:confirm,expected_cursor:state.cursor}:{expected_cursor:state.cursor,expected_edit_version:state.edit_version,available_only:confirm==='available',discard_audio:!state.audio_removed&&(discard??!state.keep_audio)});
     if(command.current?.body!==body||command.current.path!==path)command.current={body,path,key:crypto.randomUUID()};
     try{
       const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf,'Idempotency-Key':command.current.key},body});const data=await response.json();if(!response.ok)throw new Error(data.error?.message??'This action needs another attempt.');
@@ -40,6 +40,10 @@ export default function Finalization({lecture,csrf,busy,onRemoved,deleteRequeste
     <button className="secondary" disabled={busy||working||!state} onClick={()=>setConfirm('lecture')}>Delete lecture</button></div>
     {confirm&&<div className="recovery-box" role="group" aria-label="Confirm data action"><h3>{confirm==='reopen'?'Reopen recording recovery?':confirm==='lecture'?'Delete this lecture permanently?':confirm==='audio'?'Remove all audio permanently?':confirm==='available'?'Save an incomplete final snapshot now?':'Finish this lecture?'}</h3>
       <p>{confirm==='reopen'?'Earlier final snapshots stay unchanged. Recover buffered audio or record another segment, then finalize again to create a new snapshot.':confirm==='lecture'?'This removes the lecture, transcript, notes, revision history, final snapshots and audio. Browser copies are removed on reconnect. Exported files are outside the app.':confirm==='audio'?'This removes audio and browser audio buffers. Transcript, notes, revisions and final snapshots stay saved. Playback and speech retry will no longer be available.':confirm==='available'?'Pending processing will be cancelled. Only saved transcript and notes are included, with incomplete results clearly marked. Unsaved note drafts are not part of the final snapshot.':'Audio intake closes immediately, including uploads from other tabs. Saved audio is processed and the selected saved notes are protected. Unsaved note drafts are not part of the final snapshot.'}</p>
+      {(confirm==='final'||confirm==='available')&&state&&!state.audio_removed&&<fieldset className="audio-choice"><legend>Lecture audio after finalizing</legend>
+        <label><input type="radio" name="final-audio" checked={!(discard??!state.keep_audio)} onChange={()=>setDiscard(false)}/> Keep all remaining audio for playback</label>
+        <label><input type="radio" name="final-audio" checked={discard??!state.keep_audio} onChange={()=>setDiscard(true)}/> Delete all audio once the final snapshot is saved (transcript and notes stay)</label>
+      </fieldset>}
       <button className="primary" disabled={busy||working||!state} onClick={()=>void act()}>{working?'Working…':'Confirm'}</button> <button className="secondary" disabled={working} onClick={()=>setConfirm(null)}>Cancel</button>
     </div>}
     {!!state?.history.length&&<details><summary>Final snapshot history ({state.history.filter(row=>row.snapshot_id).length})</summary>{state.history.filter(row=>row.snapshot_id).map(row=><div key={row.id}><p>{new Date(row.created_at).toLocaleString()} · {labels[row.status]}</p><ExportNotes url={base+'/final-snapshots/'+row.snapshot_id+'/export'} label="Saved final snapshot"/> <button className="text-button" onClick={async()=>{try{const response=await fetch(base+'/final-snapshots/'+row.snapshot_id);if(!response.ok)throw new Error('Snapshot unavailable.');setView(await response.json())}catch(e){setError((e as Error).message)}}}>Read snapshot</button></div>)}</details>}

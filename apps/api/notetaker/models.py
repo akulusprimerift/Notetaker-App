@@ -61,6 +61,8 @@ class Lecture(Base):
     status: Mapped[str] = mapped_column(String(24), default="prepared")
     lifecycle_epoch: Mapped[int] = mapped_column(Integer, default=1)
     audio_removed: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    # New lectures release transcribed audio unless the student keeps it; migrated rows keep theirs.
+    keep_audio: Mapped[bool] = mapped_column(Boolean, default=False, server_default="1")
     capture_epoch: Mapped[int] = mapped_column(Integer, default=0)
     audio_epoch: Mapped[int] = mapped_column(Integer, default=1)
     update_seq: Mapped[int] = mapped_column(Integer, default=0)
@@ -168,6 +170,8 @@ class CaptureRun(Base):
     last_sequence: Mapped[int | None] = mapped_column(Integer)
     final_sample_count: Mapped[int | None] = mapped_column(BigInteger)
     gaps: Mapped[list] = mapped_column(JSON, default=list)
+    # Live cores ending here are final; audio before it (less speech context) has been deleted.
+    released_through: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
     heartbeat_at: Mapped[datetime] = mapped_column(DateTime, default=now)
     __table_args__ = (UniqueConstraint("id", "lecture_id"), UniqueConstraint("lecture_id", "capture_epoch"),
@@ -383,6 +387,7 @@ class Finalization(Base):
     expected_edit_version: Mapped[int] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(24), default='speech')
     issues: Mapped[list] = mapped_column(JSON, default=list)
+    discard_audio: Mapped[bool] = mapped_column(Boolean, default=False, server_default='0')
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
 
 

@@ -157,7 +157,9 @@ def main(config):
         launch('objects', [executable(root, 'seaweed/weed'), 'server', '-ip=127.0.0.1', '-ip.bind=127.0.0.1',
             '-dir=' + str(objects), '-master.port=19333', '-volume.port=18080', '-filer', '-filer.port=18888',
             '-s3', '-s3.port=18333', '-s3.port.iceberg=0', '-s3.port.lance=0',
-            '-s3.config=' + str(s3config), '-master.volumeSizeLimitMB=256'])
+            # The default eight-volume cap filled with system volumes and one full audio
+            # volume, refusing every upload. Zero sizes the cap from free disk space.
+            '-s3.config=' + str(s3config), '-master.volumeSizeLimitMB=256', '-volume.max=0'])
         from .config import Settings
         from .audio_store import AudioStore
         settings = Settings(_env_file=None, **{key.lower().removeprefix('notetaker_'): value for key, value in env.items() if key.startswith('NOTETAKER_')})

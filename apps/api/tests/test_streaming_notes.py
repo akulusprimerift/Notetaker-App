@@ -74,13 +74,14 @@ def test_later_section_failure_keeps_saved_notes_and_appends_do_not_cancel_runni
     assert client.get(path+'/transcript').json()['mode'] == 'live'
 
 
-def test_six_second_cores_publish_before_seal_and_notes_wait_for_context(capture):
+def test_four_second_cores_publish_before_seal_and_notes_wait_for_context(capture):
     app,client,headers,path,run=capture
     enable(app,client,headers,path)
     for sequence in range(4):
         assert upload(client,headers,path,run,sequence,count=96000).status_code==200
         plan_pending(app.state.sessions);finish_all(app);plan(app.state.sessions)
-        if sequence<3: assert client.get(path+'/transcript').json()['snapshot'] is None
+        # The first 4 s core publishes once its 2 s right context is saved (6 s of audio).
+        if sequence<2: assert client.get(path+'/transcript').json()['snapshot'] is None
     transcript=client.get(path+'/transcript').json()
     assert transcript['snapshot']['segments'] and transcript['mode']=='live'
     assert claim(app.state.sessions) is None

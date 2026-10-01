@@ -24,6 +24,11 @@ def enable(app, client, headers, path):
     assert response.status_code == 200
 
 
+def keep(client, headers, path):
+    # Gap replanning needs the original audio, so these cases keep it.
+    assert client.put(path+'/audio-retention', headers=headers, json={'keep_audio':True}).json() == {'keep_audio':True}
+
+
 def append(app, client, headers, path, run, sequence):
     assert upload(client,headers,path,run,sequence,count=1440000).status_code == 200
     plan_pending(app.state.sessions)
@@ -37,7 +42,7 @@ def test_live_capture_notes_and_seal_reuse_sources(capture):
     transcript = client.get(path+'/transcript').json()
     assert transcript['mode'] == 'live'
     assert transcript['snapshot']['stability'] == 'provisional'
-    assert transcript['processing_delay_seconds'] == 6
+    assert transcript['processing_delay_seconds'] == 2
     original = transcript['snapshot']['segments'][0]
     plan(app.state.sessions)
     assert execute(app.state.sessions,FakeNotes(),claim(app.state.sessions),heartbeat=False)
@@ -51,7 +56,7 @@ def test_live_capture_notes_and_seal_reuse_sources(capture):
     assert final['snapshot']['segments'][0]['id'] == original['id']
     with app.state.sessions() as db:
         windows = db.scalars(select(SpeechWindow).order_by(SpeechWindow.core_start)).all()
-        assert [(w.core_start//48000,w.core_end//48000) for w in windows] == [(i,i+6) for i in range(0,54,6)]+[(54,60)]
+        assert [(w.core_start//48000,w.core_end//48000) for w in windows] == [(i,i+4) for i in range(0,56,4)]+[(56,60)]
         before = db.scalar(select(func.count()).select_from(TranscriptSnapshot))
     plan_pending(app.state.sessions)
     with app.state.sessions() as db: assert db.scalar(select(func.count()).select_from(TranscriptSnapshot)) == before
@@ -98,6 +103,7 @@ def test_missing_speech_model_is_visible_and_saved_audio_recovers(capture):
 
 def test_late_gap_replaces_crossing_live_window_and_fences_result(capture):
     app,client,headers,path,run=capture
+    keep(client,headers,path)
     upload(client,headers,path,run,count=1440000)
     plan_pending(app.state.sessions)
     chosen=speech_claim(app.state.sessions)
@@ -108,7 +114,7 @@ def test_late_gap_replaces_crossing_live_window_and_fences_result(capture):
         db.get(Job,chosen[0]).lease_expires_at=now()-timedelta(seconds=1);db.commit()
     plan_pending(app.state.sessions);finish_all(app)
     segments=client.get(path+'/transcript').json()['snapshot']['segments']
-    assert len(segments)==6 and all(p['end_sample']<=144000 or p['start_sample']>=144000 for p in segments)
+    assert len(segments)==8 and all(p['end_sample']<=144000 or p['start_sample']>=144000 for p in segments)
 
 
 def test_pending_notes_coalesce_and_keep_latest_snapshot(capture):
@@ -157,7 +163,7 @@ def test_speech_model_outage_leaves_capture_and_replay_available(capture):
     with app.state.sessions() as db:
         db.get(Job,chosen[0]).due_at=now();db.commit()
     plan_pending(app.state.sessions);finish_all(app)
-    assert client.get(path+'/transcript').json()['counts']['completed']==9
+    assert client.get(path+'/transcript').json()['counts']['completed']==14
 
 
 def test_websocket_replay_reset_and_session_revocation(capture):
@@ -264,13 +270,14 @@ def test_seal_during_live_inference_cannot_skip_unplanned_tail(capture):
     assert speech_execute(app.state.sessions,app.state.audio_store,FakeSpeech(),chosen,heartbeat=False)
     plan_pending(app.state.sessions);finish_all(app)
     assert client.get(path+'/transcript').json()['processing_delay_seconds']==0
-    assert client.get(path+'/transcript').json()['counts']['completed']==5
+    assert client.get(path+'/transcript').json()['counts']['completed']==8
 
 
 def test_gap_replanning_preserves_later_cores_without_overlap(capture):
     from notetaker.transcription import windows_for
     from notetaker.models import Lecture
     app,client,headers,path,run=capture
+    keep(client,headers,path)
     for sequence in range(3):append(*capture,sequence)
     original=client.get(path+'/transcript').json()['snapshot']['segments']
     seal(client,headers,path,run,last=2,samples=4320000,
@@ -279,6 +286,6 @@ def test_gap_replanning_preserves_later_cores_without_overlap(capture):
     with app.state.sessions() as db:
         windows=windows_for(db,db.get(Lecture,path.split('/')[-1]))
         spans=[(w.core_start//48000,w.core_end//48000) for w,_,_ in windows]
-        assert spans==[(0,6),(6,10),(10,12)]+[(i,i+6) for i in range(12,90,6)]
+        assert spans==[(0,4),(4,8),(8,10),(10,12)]+[(i,i+4) for i in range(12,88,4)]+[(88,90)]
     final=client.get(path+'/transcript').json()['snapshot']['segments']
     assert {p['id'] for p in original if p['start_sample'] >= 12*48000} <= {p['id'] for p in final}

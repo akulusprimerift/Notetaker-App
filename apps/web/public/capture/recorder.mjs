@@ -1,6 +1,9 @@
 import {openJournal} from './journal.mjs';
 import {admissionBytes,MAX_PENDING_BYTES} from './pcm.mjs';
 
+// Speech models decode at 16 kHz; capturing at device rate (often 48 kHz) tripled stored bytes.
+export const SPEECH_RATE=16000;
+
 export class CaptureError extends Error {
   constructor(message,status=0,code='connection') {super(message);this.status=status;this.code=code;}
 }
@@ -76,7 +79,7 @@ export class Recorder {
       this.run=null;
       const stream=this.streamFactory?await this.streamFactory():await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
       if(this.disposed||this.startInterrupted){for(const track of stream.getTracks())track.stop();throw new Error('Recording setup was cancelled.');}
-      this.stream=stream;this.context=new AudioContext();await this.context.resume();
+      this.stream=stream;this.context=new AudioContext({sampleRate:SPEECH_RATE});await this.context.resume();
       const rate=this.context.sampleRate;
       const estimate=await navigator.storage.estimate();
       const required=admissionBytes(rate);

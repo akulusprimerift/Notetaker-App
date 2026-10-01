@@ -144,6 +144,32 @@ def settle_final(db, lecture, request, available=False):
     db.add(snapshot);db.flush()
     request.status='incomplete' if issues else 'complete';request.issues=sorted(set(issues));lecture.status='finalized'
     notify(db,lecture,'lecture.finalized',snapshot.id)
+    if request.discard_audio and not lecture.audio_removed:
+        # The student chose to keep none of the audio once the snapshot is saved.
+        begin_removal(db,lecture,db.scalar(select(m.Course.owner_id).where(m.Course.id==lecture.course_id)),'audio')
+        lecture.status='finalized'
+
+
+def begin_removal(db, lecture, owner_id, kind):
+    """Fence workers and inventory objects; reconciliation deletes them. Lecture lock required."""
+    existing=db.scalar(select(m.Deletion).where(m.Deletion.lecture_id==lecture.id,m.Deletion.kind==kind))
+    if existing:return existing
+    lecture.audio_removed=True;lecture.audio_epoch+=1;lecture.capture_epoch+=1
+    if kind=='lecture':lecture.tombstoned=True;lecture.lifecycle_epoch+=1;lecture.status='deleting'
+    else:
+        lecture.status='audio_removed'
+        pref=latest(db,m.NotePreference,lecture.id,m.NotePreference.version)
+        if pref:db.add(m.NotePreference(lecture_id=lecture.id,version=pref.version+1,model=pref.model,model_digest=pref.model_digest,enabled=False))
+        freeze_transcript(db,lecture)
+    db.execute(update(m.Job).where(m.Job.lecture_id==lecture.id,m.Job.status.in_(['due','running'])).values(status='cancelled',attempt_token=None,error_code='data_removed'))
+    db.execute(update(m.NoteRequest).where(m.NoteRequest.lecture_id==lecture.id).values(preview='',preview_attempt=''))
+    db.execute(update(m.Finalization).where(m.Finalization.lecture_id==lecture.id,m.Finalization.status.in_(['speech','notes','needs_attention'])).values(status='cancelled'))
+    row=m.Deletion(lecture_id=lecture.id,owner_id=owner_id,kind=kind,lifecycle_epoch=lecture.lifecycle_epoch,audio_epoch=lecture.audio_epoch)
+    db.add(row);db.flush()
+    for object_key in db.scalars(select(m.UploadReservation.object_key).where(m.UploadReservation.lecture_id==lecture.id)):
+        db.add(m.DeletionObject(deletion_id=row.id,object_key=object_key))
+    notify(db,lecture,'lecture.data_removed',row.id)
+    return row
 
 
 def reconcile_finalizations(sessions):
@@ -233,6 +259,7 @@ class FinalInput(BaseModel):
     expected_cursor:int=Field(ge=0)
     expected_edit_version:int=Field(ge=0)
     available_only:bool=False
+    discard_audio:bool=False
 
 
 class DeleteInput(BaseModel):
@@ -246,7 +273,7 @@ def install_lifecycle(app,current,db_session,owned_lecture,receipt):
     def state(lecture_id:str,session=Depends(current),db=Depends(db_session)):
         lecture=owned_lecture(db,session.owner_id,lecture_id)
         rows=db.scalars(select(m.Finalization).where(m.Finalization.lecture_id==lecture_id).order_by(m.Finalization.created_at.desc())).all()
-        return {'cursor':lecture.update_seq,'edit_version':editing_version(db,lecture),'audio_removed':lecture.audio_removed,'status':lecture.status,'history':[final_json(db,row) for row in rows]}
+        return {'cursor':lecture.update_seq,'edit_version':editing_version(db,lecture),'audio_removed':lecture.audio_removed,'keep_audio':lecture.keep_audio,'status':lecture.status,'history':[final_json(db,row) for row in rows]}
 
     @app.post('/lectures/{lecture_id}/finalization',status_code=202)
     def start(lecture_id:str,body:FinalInput,request:Request,session=Depends(current),db=Depends(db_session)):
@@ -258,7 +285,7 @@ def install_lifecycle(app,current,db_session,owned_lecture,receipt):
             error(409,'finalization_version','Lecture content changed. Review the latest state and try finalizing again.')
         db.execute(update(m.Finalization).where(m.Finalization.lecture_id==lecture.id,m.Finalization.status.in_(['speech','notes','needs_attention'])).values(status='cancelled'))
         lecture.status='finalizing'
-        row=m.Finalization(lecture_id=lecture.id,lifecycle_epoch=lecture.lifecycle_epoch,audio_epoch=lecture.audio_epoch,expected_edit_version=body.expected_edit_version,issues=seal_available(db,lecture) if not lecture.audio_removed else [])
+        row=m.Finalization(lecture_id=lecture.id,lifecycle_epoch=lecture.lifecycle_epoch,audio_epoch=lecture.audio_epoch,expected_edit_version=body.expected_edit_version,discard_audio=body.discard_audio,issues=seal_available(db,lecture) if not lecture.audio_removed else [])
         db.add(row);db.flush()
         if not lecture.audio_removed:
             schedule(db,lecture);freeze_transcript(db,lecture)
@@ -320,23 +347,7 @@ def install_lifecycle(app,current,db_session,owned_lecture,receipt):
         if prior:return deletion_json(db,db.get(m.Deletion,prior.result_id))
         lecture=owned_lecture(db,session.owner_id,lecture_id);lecture=lock_lecture(db,lecture.id)
         if lecture.update_seq!=body.expected_cursor:error(409,'deletion_version','Lecture content changed. Review it before removing data.')
-        existing=db.scalar(select(m.Deletion).where(m.Deletion.lecture_id==lecture.id,m.Deletion.kind==body.kind))
-        if existing:return deletion_json(db,existing)
-        lecture.audio_removed=True;lecture.audio_epoch+=1;lecture.capture_epoch+=1
-        if body.kind=='lecture':lecture.tombstoned=True;lecture.lifecycle_epoch+=1;lecture.status='deleting'
-        else:
-            lecture.status='audio_removed'
-            pref=latest(db,m.NotePreference,lecture.id,m.NotePreference.version)
-            if pref:db.add(m.NotePreference(lecture_id=lecture.id,version=pref.version+1,model=pref.model,model_digest=pref.model_digest,enabled=False))
-            freeze_transcript(db,lecture)
-        db.execute(update(m.Job).where(m.Job.lecture_id==lecture.id,m.Job.status.in_(['due','running'])).values(status='cancelled',attempt_token=None,error_code='data_removed'))
-        db.execute(update(m.NoteRequest).where(m.NoteRequest.lecture_id==lecture.id).values(preview='',preview_attempt=''))
-        db.execute(update(m.Finalization).where(m.Finalization.lecture_id==lecture.id,m.Finalization.status.in_(['speech','notes','needs_attention'])).values(status='cancelled'))
-        row=m.Deletion(lecture_id=lecture.id,owner_id=session.owner_id,kind=body.kind,lifecycle_epoch=lecture.lifecycle_epoch,audio_epoch=lecture.audio_epoch)
-        db.add(row);db.flush()
-        for object_key in db.scalars(select(m.UploadReservation.object_key).where(m.UploadReservation.lecture_id==lecture.id)):
-            db.add(m.DeletionObject(deletion_id=row.id,object_key=object_key))
-        notify(db,lecture,'lecture.data_removed',row.id)
+        row=begin_removal(db,lecture,session.owner_id,body.kind)
         db.add(m.CommandReceipt(owner_id=session.owner_id,action=action,key=key,fingerprint=fingerprint,result_id=row.id));db.commit()
         return deletion_json(db,row)
 

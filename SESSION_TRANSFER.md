@@ -1,5 +1,13 @@
 # Session transfer
 
+## Live transcription and audio storage repair â€” 2026-09-30
+
+Active phase: **6.8 / M08 â€” priority repair before macOS**; 6.9.3 stays paused. Root cause of "audio saves but never transcribes": the bundled SeaweedFS default `-volume.max=8` was full, so every chunk upload was refused and no speech jobs existed. SeaweedFS now starts with `-volume.max=0`; capture runs at 16 kHz; live cores are 4 s. New lectures delete transcribed audio behind final live passages unless **Keep lecture audio** is on; finalizing offers keep-all or delete-all. Migration 0018 is additive and keeps audio for existing lectures. [Behavior, evidence and limits](docs/implementation/live-transcription-storage.md).
+
+Executed: full backend **266 passed, 2 existing skips**; **63 JavaScript contracts**, **39 desktop tests**; typecheck/lint/production build, Python lint, whitespace; real bundled SeaweedFS cap reproduction; real Chrome 16 kHz capture/recovery/restart; production-renderer retention UI. No microphone, student-library change, download, packaging or push.
+
+**Next:** fix the cloud-consent prompt resetting on navigation, then add Claude subscription models; package and qualify the Windows update afterwards.
+
 ## Performance/restart Windows update delivered — 2026-09-30
 
 Active phase: **6.8 / M08 — shared performance and stop/restart repair**; macOS 6.9.3 remains paused. Source commits `3743011` and `7214afb` are packaged in `.local/restart-speed/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe` (**407,285,900 bytes**, SHA-256 `F717209E63E766A8905AFBAAD245E3205E7FC4116BA8C3FB2D7BDFF5ECA437F6`). Unsigned; **not automatically installed**. [Full behavior, evidence and limits](docs/implementation/live-speed-restart.md).

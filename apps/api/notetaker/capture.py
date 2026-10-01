@@ -38,6 +38,10 @@ class Gap(Input):
     unknown_extent: Literal[True] = True
 
 
+class Retention(Input):
+    keep_audio: bool
+
+
 class Seal(Input):
     expected_version: int | None = Field(default=None, ge=0)
     last_sequence: int = Field(ge=-1, le=100000)
@@ -128,7 +132,10 @@ def install_capture(app, current, db_session, owned_lecture, receipt):
 
     def manifest(db, run):
         rows = db.scalars(select(UploadReservation).where(UploadReservation.run_id == run.id).order_by(UploadReservation.sequence)).all()
-        chunks = [dict(row.identity, chunk_id=row.id, storage_state=row.state) for row in rows]
+        from .transcription import released_limit
+        limit = released_limit(run)
+        chunks = [dict(row.identity, chunk_id=row.id, storage_state=row.state,
+            released=row.identity['start_sample'] + row.identity['sample_count'] <= limit) for row in rows]
         through = sequence = 0
         for row in rows:
             identity = row.identity
@@ -149,6 +156,8 @@ def install_capture(app, current, db_session, owned_lecture, receipt):
             error(422, 'seal_bounds', 'The final audio count does not match the recording manifest.')
         if any(gap.after_sample > body.final_sample_count for gap in body.gaps):
             error(422, 'gap_bounds', 'An interruption is outside this recording segment.')
+        if any(gap.after_sample < run.released_through for gap in body.gaps):
+            error(409, 'gap_released', 'This interruption lies in audio that was already transcribed and released.')
         for row in db.scalars(select(UploadReservation).where(UploadReservation.run_id == run.id)):
             end = row.identity['start_sample'] + row.identity['sample_count']
             if row.sequence > body.last_sequence or end > body.final_sample_count or (row.sequence == body.last_sequence and end != body.final_sample_count):
@@ -212,7 +221,15 @@ def install_capture(app, current, db_session, owned_lecture, receipt):
     def capture_status(lecture_id: str, session=Depends(current), db=Depends(db_session)):
         lecture = lock(db, session.owner_id, lecture_id)
         runs = db.scalars(select(CaptureRun).where(CaptureRun.lecture_id == lecture.id).order_by(CaptureRun.capture_epoch)).all()
-        return {'available':app.state.audio_store.available and not lecture.audio_removed and lecture.status not in ('finalizing','finalized'), 'capture_epoch':lecture.capture_epoch, 'runs':[manifest(db, run) for run in runs], 'processing':'saved_audio'}
+        return {'available':app.state.audio_store.available and not lecture.audio_removed and lecture.status not in ('finalizing','finalized'), 'capture_epoch':lecture.capture_epoch, 'keep_audio':lecture.keep_audio, 'runs':[manifest(db, run) for run in runs], 'processing':'saved_audio'}
+
+    @app.put('/lectures/{lecture_id}/audio-retention')
+    def retention(lecture_id: str, body: Retention, request: Request, session=Depends(current), db=Depends(db_session)):
+        mutation(request, session)
+        lecture = lock(db, session.owner_id, lecture_id)
+        lecture.keep_audio = body.keep_audio
+        db.commit()
+        return {'keep_audio': lecture.keep_audio}
 
     @app.post('/lectures/{lecture_id}/capture-runs', status_code=201)
     def start(lecture_id: str, body: Start, request: Request, session=Depends(current), db=Depends(db_session)):
@@ -393,7 +410,10 @@ def install_capture(app, current, db_session, owned_lecture, receipt):
         row = db.scalar(select(UploadReservation).join(AudioChunk, AudioChunk.id == UploadReservation.id).where(UploadReservation.id == chunk_id, UploadReservation.lecture_id == lecture_id))
         if not row:
             error(404, 'audio_unavailable', 'This audio is unavailable.')
-        run_for(db, lecture, row.run_id)
+        run = run_for(db, lecture, row.run_id)
+        from .transcription import released_limit
+        if row.identity['start_sample'] + row.identity['sample_count'] <= released_limit(run):
+            error(410, 'audio_released', 'This audio was transcribed and not kept.')
         key, checksum, size = row.object_key, row.identity['sha256'], row.identity['byte_length']
         db.commit()
         try:

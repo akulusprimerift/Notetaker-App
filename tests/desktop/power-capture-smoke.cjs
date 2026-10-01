@@ -15,7 +15,7 @@ const {chromium}=require('../../.venv/Lib/site-packages/playwright/driver/packag
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   let browser;
   try{
-    browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
+    browser=await chromium.launch({headless:true,executablePath:process.env.NOTETAKER_CHROMIUM,args:['--autoplay-policy=no-user-gesture-required']});
     const page=await browser.newPage();
     await page.goto(`http://127.0.0.1:${server.address().port}`);
     await page.evaluate(async()=>{
@@ -63,6 +63,8 @@ const {chromium}=require('../../.venv/Lib/site-packages/playwright/driver/packag
     assert.equal(saved.state.active,false);assert.equal(saved.seal.final_sample_count,interrupted.samples);
     assert.deepEqual(saved.seal.gaps,interrupted.gaps);assert.match(saved.state.message,/missing time was not recorded/);
     assert.equal(saved.uploaded.reduce((n,row)=>n+row.sample_count,0),interrupted.samples);
+    // A 48 kHz device stream is resampled to the 16 kHz speech rate before packaging.
+    assert.ok(saved.uploaded.every(row=>row.sample_rate===16000&&row.byte_length===44+row.sample_count*2));
     // Reuse the very same recorder after Stop, without navigation or reload.
     for(let cycle=0;cycle<3;cycle++){
       const priorId=await page.evaluate(()=>window.recorder.run.id);

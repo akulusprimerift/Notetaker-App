@@ -10,7 +10,7 @@ from .models import (Lecture, CaptureRun, AudioManifestRevision, UploadReservati
 from .security import error, mutation
 
 CORE_SECONDS = 24
-LIVE_CORE_SECONDS = 6
+LIVE_CORE_SECONDS = 4
 CONTEXT_SECONDS = 2
 
 
@@ -41,6 +41,9 @@ def saved_through(db, run):
 def valid_window(window, run):
     if not window.live:
         return window.manifest_version == run.manifest_version
+    # Released audio cannot be re-transcribed; its completed live passages stay final.
+    if window.core_end <= run.released_through:
+        return True
     # Verified chunks are immutable. Appending/sealing does not invalidate a live
     # core, but a newly declared interruption through its context does.
     return not any(window.context_start < gap['after_sample'] < window.context_end for gap in run.gaps)
@@ -213,6 +216,27 @@ def transcript_json(db, lecture, settings=None):
         'mode':'live' if any(r.state == 'recording' for r in runs) else 'saved_audio', 'notes_available':db.scalar(select(NoteRevision.id).where(NoteRevision.lecture_id == lecture.id).limit(1)) is not None}
 
 
+def released_limit(run):
+    """Audio ending at or before this sample was deleted after transcription."""
+    return max(0, run.released_through - CONTEXT_SECONDS*run.sample_rate)
+
+
+def release_frontier(db, lecture, run):
+    """End of the contiguous completed live cores from the run start.
+
+    Any later window reads context no earlier than this frontier less CONTEXT_SECONDS,
+    so audio before that point is never needed again.
+    """
+    frontier = 0
+    for window, job, _ in windows_for(db, lecture):
+        if window.run_id != run.id or window.core_end <= frontier:
+            continue
+        if not window.live or job.status != 'completed' or window.core_start != frontier:
+            break
+        frontier = window.core_end
+    return frontier
+
+
 def read_audio(db, store, run, start, end):
     """Read a bounded source range across transport chunks, preserving original sample rate."""
     if start < 0 or end <= start or end-start > 32*run.sample_rate:
@@ -225,6 +249,7 @@ def read_audio(db, store, run, start, end):
         a = row.identity['start_sample']; b = a+row.identity['sample_count']
         if b <= cursor or a >= end: continue
         if a > cursor: raise ValueError('audio_gap')
+        if b <= released_limit(run): raise LookupError('audio_released')
         raw = store.read(row.object_key)
         validate_wav(raw, Identity.model_validate(row.identity))
         stop = min(b, end)
@@ -303,6 +328,7 @@ def install_transcription(app, current, db_session, owned_lecture, receipt):
         start, end = version.start_sample, version.end_sample
         db.expunge(run); db.rollback()
         try: audio = read_audio(db, app.state.audio_store, run, start, end)
+        except LookupError: error(410, 'audio_released', 'This passage was transcribed and its audio was not kept.')
         except Exception: error(503, 'audio_unavailable', 'This audio could not be verified. Try again.')
         db.rollback()
         from .security import authenticate

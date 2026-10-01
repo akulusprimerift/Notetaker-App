@@ -80,6 +80,7 @@ def test_shared_host_startup_and_partial_failure_cleanup(monkeypatch, tmp_path, 
         assert statuses[-1]['status'] == 'ready'
         assert len(launched) == 6  # Includes speech reconciliation without a selected model.
         assert launched[1][0][0].endswith('weed.exe' if target == 'win32' else 'weed')
+        assert '-volume.max=0' in launched[1][0]  # The default 8-volume cap refused uploads once full.
         assert launched[3][0][0].endswith('ollama.exe' if target == 'win32' else 'ollama')
     assert launched[0][0][0].endswith('postgres.exe' if target == 'win32' else 'postgres')
     assert stopped[-1] is launched[0][2]  # Database stops after the workers.

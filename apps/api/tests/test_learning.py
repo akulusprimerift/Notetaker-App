@@ -109,11 +109,8 @@ def test_learning_migration_preserves_existing_library(tmp_path):
         with engine.begin() as connection:
             config.attributes['connection'] = connection
             migration.upgrade(config, '0015')
-        with Session(engine) as db:
-            owner = m.Owner(); db.add(owner); db.flush()
-            course_row = m.Course(owner_id=owner.id, name='Retained course'); db.add(course_row); db.flush()
-            row = m.Lecture(course_id=course_row.id, title='Retained lecture'); db.add(row); db.commit()
-            lecture_id = row.id
+        from test_audio_retention import legacy_lecture
+        lecture_id = legacy_lecture(engine)
         with engine.begin() as connection:
             config.attributes['connection'] = connection
             migration.upgrade(config, 'head')

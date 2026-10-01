@@ -15,7 +15,7 @@ services:
       retries: 20
   seaweed:
     image: chrislusf/seaweedfs:latest@sha256:fc9f76fa993ad69966ffeb2f65d0318fcae39c6f8e20cf68ef7b3a5cb97769e5
-    command: ["server", "-ip=seaweed", "-ip.bind=0.0.0.0", "-dir=/data", "-filer", "-s3", "-s3.config=/etc/seaweedfs/s3.json", "-master.volumeSizeLimitMB=1024"]
+    command: ["server", "-ip=seaweed", "-ip.bind=0.0.0.0", "-dir=/data", "-filer", "-s3", "-s3.config=/etc/seaweedfs/s3.json", "-master.volumeSizeLimitMB=1024", "-volume.max=0"]
     ports: ["127.0.0.1:8333:8333"]
     volumes:
       - seaweed-data:/data
