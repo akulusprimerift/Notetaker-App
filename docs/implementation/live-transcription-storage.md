@@ -29,3 +29,9 @@ Migration **0018** adds `lectures.keep_audio` (existing rows true), `capture_run
 ## Limits and next work
 
 No physical microphone, real lecture, installed-app upgrade or packaged-runtime run was performed. The installed library's existing full volume becomes usable only after the updated host starts SeaweedFS with the new flag; audio still waiting in that browser's journal then uploads and is transcribed. SeaweedFS reclaims space from deleted objects through its own garbage vacuum, so disk usage falls after compaction rather than immediately. A failed object delete during release leaves an orphan until audio or lecture removal reconciles the prefix. Speech accuracy with 4-second cores on real lectures is unqualified.
+
+## Cloud-processing confirmation — 2026-09-30
+
+The Study notes confirmation for sending lecture content to a connected provider was component state, so it reset to unchecked and reappeared whenever the panel remounted (changing lecture sections, reopening the lecture, or resuming paused notes). Confirming now closes the prompt into "Cloud processing confirmed for *provider*" with a **Withdraw** action. The confirmation is remembered per provider on this device (`localStorage`, read defensively), and every note-preference request still sends `cloud_consent` explicitly; the server requirement is unchanged. Generated-question consent is a separate per-request prompt and is unchanged.
+
+Executed: production renderer in real Chrome with synthetic API — confirm, start notes with `cloud_consent: true`, leave and return to Study notes, reload, then withdraw restores the prompt. Frontend typecheck/lint/production build, 63 JavaScript contracts and the retention UI check were rerun. No live provider call.

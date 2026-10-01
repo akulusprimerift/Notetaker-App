@@ -6,7 +6,9 @@ Active phase: **6.8 / M08 â€” priority repair before macOS**; 6.9.3 stays paused
 
 Executed: full backend **266 passed, 2 existing skips**; **63 JavaScript contracts**, **39 desktop tests**; typecheck/lint/production build, Python lint, whitespace; real bundled SeaweedFS cap reproduction; real Chrome 16 kHz capture/recovery/restart; production-renderer retention UI. No microphone, student-library change, download, packaging or push.
 
-**Next:** fix the cloud-consent prompt resetting on navigation, then add Claude subscription models; package and qualify the Windows update afterwards.
+Cloud-processing confirmation now closes once confirmed and is remembered per provider on this device; Withdraw restores it (production-renderer check in real Chrome). Commits: `70af3aa` (audio), consent in the following commit.
+
+**Next:** add Claude subscription models; package and qualify the Windows update afterwards.
 
 ## Performance/restart Windows update delivered — 2026-09-30
 
