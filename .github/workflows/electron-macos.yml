@@ -13,7 +13,11 @@ jobs:
   package:
     runs-on: macos-15
     timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash scripts/ci-step.sh {0}
     env:
+      MACOSX_DEPLOYMENT_TARGET: '14.0'
       PG_VERSION: '17.11'
       PG_SHA256: dd27f2b3c59e73ed14aa3324901242bf69a032a6347805f274e6260322d42979
       WEED_VERSION: '4.47'
