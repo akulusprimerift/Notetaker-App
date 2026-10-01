@@ -35,3 +35,13 @@ No physical microphone, real lecture, installed-app upgrade or packaged-runtime 
 The Study notes confirmation for sending lecture content to a connected provider was component state, so it reset to unchecked and reappeared whenever the panel remounted (changing lecture sections, reopening the lecture, or resuming paused notes). Confirming now closes the prompt into "Cloud processing confirmed for *provider*" with a **Withdraw** action. The confirmation is remembered per provider on this device (`localStorage`, read defensively), and every note-preference request still sends `cloud_consent` explicitly; the server requirement is unchanged. Generated-question consent is a separate per-request prompt and is unchanged.
 
 Executed: production renderer in real Chrome with synthetic API — confirm, start notes with `cloud_consent: true`, leave and return to Study notes, reload, then withdraw restores the prompt. Frontend typecheck/lint/production build, 63 JavaScript contracts and the retention UI check were rerun. No live provider call.
+
+## Windows installer delivered — 2026-09-30
+
+Unsigned x64 installer: `.local/audio-retention/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe`, **407,220,688 bytes**, SHA-256 `A942955F172BA2899822D33B7F0AE16A2AFB84A494DF18F816641E71897F867C`. Source commits `70af3aa` (audio), `3ad5b86` (consent). It has not been installed automatically.
+
+Fresh web component `.local/desktop-web/387e947c-1052-45eb-867e-261840867ce3` (build `6cxmnnESDzx-CO4iq3Lgh`) and a fresh frozen service were staged in `.local/audio-retention/runtime` (6,481 inventoried files). All 1,806 reused PostgreSQL/SeaweedFS/Ollama/notice files matched the previous runtime manifest before and after copying. The packaged service executable matches the fresh build and contains `-volume.max=0` and the release logic; the packaged web contains the 16 kHz recorder and remembered consent. Electron-builder fetched its NSIS build resources; no model weights were downloaded or bundled.
+
+Actual packaged Electron passed isolated startup and PostgreSQL migrations, synthetic verified audio, three recorder stop/restart cycles against the real API/storage, Quit/reopen with identical audio readback, renderer isolation, theme persistence, native window controls and snapshot exports. Profile: `.local/standalone-smoke-532415e8-2e9c-4125-8ead-8d0504ef45a2`. Logs: `.local/audio-retention-packaged-smoke.log`, `.local/audio-retention-installer-build.log`.
+
+Not yet qualified: installed upgrade over the existing library, recording with the real microphone, and live transcription with the selected speech model in the installed app.

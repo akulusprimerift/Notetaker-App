@@ -10,7 +10,9 @@ Cloud-processing confirmation now closes once confirmed and is remembered per pr
 
 Claude subscription models were requested but not built: Anthropic's Agent SDK documentation (checked 2026-09-30) still states that, unless previously approved, third-party developers may not offer claude.ai login or subscription rate limits. Claude models remain available through a Claude API key in Accounts & API keys; subscription linking needs Anthropic approval for this app.
 
-**Next:** package the Windows update with the audio and consent fixes, install it retaining the existing library, and confirm recording now uploads and transcribes. Then resume macOS 6.9.3.
+Installer delivered: `.local/audio-retention/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe` (407,220,688 bytes, SHA-256 `A942955F172BA2899822D33B7F0AE16A2AFB84A494DF18F816641E71897F867C`), unsigned, not installed automatically. Packaged synthetic smoke passed; see the linked report.
+
+**Next:** close Notetaker normally, install this build retaining the existing library, and confirm recording now uploads and transcribes. Then resume macOS 6.9.3.
 
 ## Performance/restart Windows update delivered — 2026-09-30
 
