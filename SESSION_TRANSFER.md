@@ -8,7 +8,9 @@ Executed: full backend **266 passed, 2 existing skips**; **63 JavaScript contrac
 
 Cloud-processing confirmation now closes once confirmed and is remembered per provider on this device; Withdraw restores it (production-renderer check in real Chrome). Commits: `70af3aa` (audio), consent in the following commit.
 
-**Next:** add Claude subscription models; package and qualify the Windows update afterwards.
+Claude subscription models were requested but not built: Anthropic's Agent SDK documentation (checked 2026-09-30) still states that, unless previously approved, third-party developers may not offer claude.ai login or subscription rate limits. Claude models remain available through a Claude API key in Accounts & API keys; subscription linking needs Anthropic approval for this app.
+
+**Next:** package the Windows update with the audio and consent fixes, install it retaining the existing library, and confirm recording now uploads and transcribes. Then resume macOS 6.9.3.
 
 ## Performance/restart Windows update delivered — 2026-09-30
 
