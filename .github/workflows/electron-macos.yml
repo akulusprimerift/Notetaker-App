@@ -84,7 +84,7 @@ jobs:
           find "$C/ollama" -type f | while read -r f; do
             if file -b "$f" | grep -q Mach-O && ! lipo -archs "$f" | grep -qw arm64; then echo "Dropping Intel-only ${f#$C/}"; rm "$f"; fi
           done
-          find -L "$C/ollama" -type l -delete
+          find "$C/ollama" -type l ! -exec test -e {} ; -delete
           cp "$GITHUB_WORKSPACE/apps/desktop/third-party/native/OLLAMA-LICENSE" "$C/ollama/LICENSE"
           # Pinned Codex helper from the frozen Bun lock.
           cp -R "$GITHUB_WORKSPACE/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin" "$C/account-client"
