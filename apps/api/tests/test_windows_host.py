@@ -45,6 +45,8 @@ def test_shared_host_startup_and_partial_failure_cleanup(monkeypatch, tmp_path, 
     fake_sys = SimpleNamespace(platform=target, executable=sys.executable)
     monkeypatch.setattr(host, 'sys', fake_sys)
     monkeypatch.setattr(runtime_platform, 'sys', fake_sys)
+    # Simulating Windows on a Mac host: the Windows-only flag must still exist.
+    monkeypatch.setattr(runtime_platform.subprocess, 'CREATE_NO_WINDOW', 0x08000000, raising=False)
     monkeypatch.setattr(host, 'own_process_tree', lambda: 1)
     monkeypatch.setattr(host, 'protect_library', lambda _: None)
     monkeypatch.setattr(host, 'require_free_ports', lambda _: None)
