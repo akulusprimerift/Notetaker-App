@@ -24,6 +24,7 @@ async function resolvedTarget(target) {
 }
 async function copyTree(source, destination, root=source, ancestors=[]) {
   const real=await fs.realpath(source);
+  if(!ancestors.length)root=real;
   if(!ancestors.length&&inside(real,await resolvedTarget(path.resolve(destination))))throw new Error('Runtime output must be outside its source component.');
   if(!inside(root,real))throw new Error('Runtime symbolic link escapes its component: '+source);
   if(ancestors.includes(real))throw new Error('Runtime symbolic link cycle: '+source);
