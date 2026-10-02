@@ -1,6 +1,7 @@
 'use strict';
 const fs = require('node:fs/promises');
-const path = require('node:path');
+// Candidates are Windows paths even when tests run on another host.
+const path = require('node:path').win32;
 
 function powerShellCandidates({env = process.env, platform = process.platform} = {}) {
   if (platform !== 'win32') return ['pwsh'];

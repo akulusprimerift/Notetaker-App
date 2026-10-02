@@ -51,6 +51,8 @@ test('Mac build entrypoints reject Windows and Rosetta before writing or spawnin
 test('Mac stage produces a verified target manifest and retains every source byte',async()=>temporary(async root=>{
   const input=await fixture(root),before=await inventory(path.join(root,'inputs'));
   const generated=await lockComponents({root,descriptorPath:input.lockPath});
+  // Locks record resolved directories (macOS /var is /private/var).
+  for(const component of Object.values(input.lock.components))component.directory=await fs.realpath(component.directory);
   assert.deepEqual(JSON.parse(await fs.readFile(generated,'utf8')),input.lock);
   const destination=await stage(input),manifest=await verifyBundle(destination);
   validateRuntimeTarget(manifest,desktopPlatform('darwin','arm64'));

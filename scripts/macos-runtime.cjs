@@ -18,16 +18,21 @@ function inside(root, candidate) {
   const relative=path.relative(root,candidate);
   return relative===''||(!path.isAbsolute(relative)&&relative!=='..'&&!relative.startsWith('..'+path.sep));
 }
+async function resolvedTarget(target) {
+  // Compare real paths: macOS links /var to /private/var, and the target may not exist yet.
+  try { return await fs.realpath(target); } catch { return path.join(await resolvedTarget(path.dirname(target)),path.basename(target)); }
+}
 async function copyTree(source, destination, root=source, ancestors=[]) {
   const real=await fs.realpath(source);
-  if(!ancestors.length&&inside(real,path.resolve(destination)))throw new Error('Runtime output must be outside its source component.');
+  if(!ancestors.length&&inside(real,await resolvedTarget(path.resolve(destination))))throw new Error('Runtime output must be outside its source component.');
   if(!inside(root,real))throw new Error('Runtime symbolic link escapes its component: '+source);
   if(ancestors.includes(real))throw new Error('Runtime symbolic link cycle: '+source);
   const stat=await fs.stat(real);
   if(stat.isDirectory()) {
     await fs.mkdir(destination,{recursive:true});
     for(const name of await fs.readdir(real)) {
-      if(name.startsWith('.env')||['.git','.local','PG_VERSION','models','standalone-library'].includes(name))
+      // Model/library folders matter at a component's top level; nested code packages may use these names.
+      if(name.startsWith('.env')||['.git','.local','PG_VERSION'].includes(name)||(!ancestors.length&&['models','standalone-library'].includes(name)))
         throw new Error('Private data or model directory cannot be bundled: '+name);
       await copyTree(path.join(real,name),path.join(destination,name),root,[...ancestors,real]);
     }
