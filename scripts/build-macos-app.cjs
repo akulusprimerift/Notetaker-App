@@ -16,7 +16,8 @@ async function main() {
   if(!sameInventory((await inventory(resources)).filter(file=>file.path!=='runtime-manifest.json'),manifest.files))
     throw new Error('The staged Mac runtime inventory changed. Prepare a new verified bundle.');
   await auditNative(resources,manifest.files);
-  execFileSync(process.execPath,[require.resolve('electron-builder/cli.js'),'--config','electron-builder.macos.cjs','--mac','--dir','--arm64'],
-    {cwd:root,stdio:'inherit',env:{...process.env,NOTETAKER_NATIVE_RESOURCES:resources,CSC_IDENTITY_AUTO_DISCOVERY:'false'}});
+  const developerId=process.env.NOTETAKER_MAC_SIGN==='developer-id';
+  execFileSync(process.execPath,[require.resolve('electron-builder/cli.js'),'--config','electron-builder.macos.cjs','--mac','--arm64','--publish','never'],
+    {cwd:root,stdio:'inherit',env:{...process.env,NOTETAKER_NATIVE_RESOURCES:resources,CSC_IDENTITY_AUTO_DISCOVERY:developerId?'true':'false'}});
 }
 main().catch(error=>{console.error(error.message);process.exitCode=1;});

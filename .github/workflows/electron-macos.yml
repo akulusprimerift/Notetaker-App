@@ -1,6 +1,8 @@
 name: Electron macOS package
 
-# Unsigned, un-notarized Apple Silicon development build (6.9.5 owns signing/DMG).
+# Apple Silicon DMG. Developer ID signing and notarization run when the repository holds the
+# MACOS_CERTIFICATE_P12 (base64), MACOS_CERTIFICATE_PASSWORD, APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD
+# and APPLE_TEAM_ID secrets; otherwise the build is ad-hoc signed and labelled unsigned.
 on:
   workflow_dispatch:
   push:
@@ -24,6 +26,11 @@ jobs:
       WEED_MD5: 1a005a70ed013b3503a54b7c7833423f
       OLLAMA_VERSION: '0.33.3'
       OLLAMA_SHA256: 342db03df80bb9db84ff64246031bd5f70c09b59ff52fa5cc9aaae3476cc4a9d
+      MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+      MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -38,6 +45,24 @@ jobs:
           bun install --frozen-lockfile --ignore-scripts
           uv venv --python 3.12
           uv pip sync apps/api/requirements-windows.lock apps/api/requirements-dev.lock
+      - name: Import Developer ID certificate when configured
+        run: |
+          if [ -z "$MACOS_CERTIFICATE_P12" ]; then echo "No signing secrets: building an ad-hoc signed, un-notarized DMG."; exit 0; fi
+          for v in MACOS_CERTIFICATE_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            [ -n "${!v}" ] || { echo "$v is required with MACOS_CERTIFICATE_P12"; exit 1; }
+          done
+          KC="$RUNNER_TEMP/signing.keychain-db"; KP="$(uuidgen)"
+          echo "$MACOS_CERTIFICATE_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$KP" "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p "$KP" "$KC"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KC" -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/cert.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KP" "$KC" >/dev/null
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          IDENTITY="$(security find-identity -v -p codesigning "$KC" | sed -n 's/.*"\(Developer ID Application: .*\)"/\1/p' | head -1)"
+          [ -n "$IDENTITY" ] || { echo "No Developer ID Application identity in the certificate"; exit 1; }
+          { echo "NOTETAKER_MAC_SIGN=developer-id"; echo "MAC_SIGN_IDENTITY=$IDENTITY"; } >> "$GITHUB_ENV"
       - name: Shared checks
         run: |
           bun run test
@@ -91,6 +116,14 @@ jobs:
           cp "$GITHUB_WORKSPACE"/apps/desktop/third-party/codex/{LICENSE,NOTICE} "$C/account-client/"
           SERVICE="$(ls -td "$GITHUB_WORKSPACE"/.local/macos-service/*/dist/NotetakerService | head -1)"
           cp "$GITHUB_WORKSPACE/apps/desktop/third-party/native/python/PYTHON-LICENSE.txt" "$SERVICE/PYTHON-LICENSE.txt"
+          # Developer ID: sign every native Mach-O now, because the runtime manifest locks these bytes.
+          if [ "${NOTETAKER_MAC_SIGN:-}" = developer-id ]; then
+            find "$C" "$SERVICE" -type f | while read -r f; do
+              file -b "$f" | grep -q Mach-O || continue
+              codesign --force --timestamp --options runtime \
+                --entitlements "$GITHUB_WORKSPACE/apps/desktop/entitlements.mac.plist" --sign "$MAC_SIGN_IDENTITY" "$f"
+            done
+          fi
           SOURCE="GitHub Actions $GITHUB_REPOSITORY@$GITHUB_SHA run $GITHUB_RUN_ID"
           cat > "$C/sources.json" <<EOF
           {"components": {
@@ -109,19 +142,31 @@ jobs:
           RUNTIME="$(bun run prepare:macos-runtime "$WEB" "$LOCK" | sed -n 's/^Prepared Mac runtime: //p')"
           bun run build:macos-app "$RUNTIME"
           APP=.local/macos-standalone-dist/mac-arm64/Notetaker.app
-          # Ad-hoc signature so Apple Silicon will launch it; not a Developer ID signature.
-          codesign --force --deep --sign - "$APP"
-          ditto -c -k --keepParent "$APP" "Notetaker-0.1.0-macOS-arm64-unsigned.zip"
-          shasum -a 256 Notetaker-0.1.0-macOS-arm64-unsigned.zip
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          DMG="$(ls .local/macos-standalone-dist/Notetaker-*.dmg)"
+          hdiutil verify "$DMG"
+          if [ "${NOTETAKER_MAC_SIGN:-}" = developer-id ]; then
+            xcrun stapler validate "$APP"
+            spctl --assess --type execute --verbose=2 "$APP"
+          fi
+          mv "$DMG" .
+          shasum -a 256 Notetaker-*.dmg
       - uses: actions/upload-artifact@v4
         with:
           name: Notetaker-macOS-arm64
-          path: Notetaker-0.1.0-macOS-arm64-unsigned.zip
+          path: Notetaker-*.dmg
       - name: Publish GitHub pre-release on macOS tags
         if: startsWith(github.ref, 'refs/tags/macos-v')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" Notetaker-0.1.0-macOS-arm64-unsigned.zip --prerelease \
-            --title "Notetaker $GITHUB_REF_NAME (macOS Apple Silicon, unsigned test build)" \
-            --notes "Unsigned, un-notarized development build for testing. After unzipping and moving to Applications, run: xattr -dr com.apple.quarantine /Applications/Notetaker.app — then open it. Select your own local speech/note models; nothing is downloaded. Use a new standalone library."
+          if [ "${NOTETAKER_MAC_SIGN:-}" = developer-id ]; then
+            KIND="Developer ID signed and notarized"
+            OPEN="Open the DMG, drag Notetaker to Applications and open it."
+          else
+            KIND="unsigned test build"
+            OPEN="Open the DMG and drag Notetaker to Applications. Then run: xattr -dr com.apple.quarantine /Applications/Notetaker.app — and open it."
+          fi
+          gh release create "$GITHUB_REF_NAME" Notetaker-*.dmg --prerelease \
+            --title "Notetaker $GITHUB_REF_NAME (macOS Apple Silicon, $KIND)" \
+            --notes "$OPEN Replacing an older Notetaker keeps your library, which lives outside the app. Select your own local speech/note models; nothing is downloaded."
