@@ -1,5 +1,13 @@
 # Session transfer
 
+## Phase 6.9.5 DMG published — 2026-10-02
+
+Active phase: **6.9.5 — Mac installer and distribution**. The user reported the 6.9.4 test build works on their Mac. Tagged CI now builds a drag-to-Applications DMG with a Mac icon and run-number build version. Developer ID signing (hardened runtime, entitlements), notarization and stapling run only when the `MACOS_CERTIFICATE_P12`, `MACOS_CERTIFICATE_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` secrets exist; native components are signed before the runtime hash lock because the launcher verifies them. [Details](docs/implementation/macos-distribution.md).
+
+Executed: Windows `bun run test`, `bun run test:desktop`, docs and whitespace checks. Run 37075163831 (tag `macos-v0.1.0-beta.1`) passed and published pre-release `Notetaker-0.1.0-macOS-arm64-unsigned.dmg` (711,945,751 bytes, SHA-256 `63a6f0edbf1d44f1bbcf4a3613851a68c40468a1bfd56946b7746d3382d2b0b0`); no signing secrets were present, so it is ad-hoc signed and un-notarized.
+
+**Exact next work:** the user installs the DMG over the existing app and confirms the library is retained. To complete 6.9.5, add a Developer ID Application certificate and the secrets above, push a new `macos-v*` tag, and verify the notarized DMG opens on a clean Mac without `xattr`. Then 6.9.6.
+
 ## First downloadable Mac test build — 2026-10-02
 
 Active phase remains **6.9.4**. At the user's request, `.github/workflows/electron-macos.yml` builds an unsigned Apple Silicon app on GitHub's macos-15 runner when a `macos-v*` tag is pushed, and publishes it as a pre-release. PostgreSQL 17.11 is built from the publisher source (SHA-256 checked) with loader paths relocated and ad-hoc signed; SeaweedFS 4.47 (publisher MD5) and Ollama 0.33.3 (publisher SHA-256) are verified; Intel-only Ollama libraries are dropped and the arm64 dependency audit still gates packaging. No models are bundled. `scripts/ci-step.sh` posts failure logs as public annotations.
