@@ -1,5 +1,13 @@
 # Session transfer
 
+## First downloadable Mac test build — 2026-10-02
+
+Active phase remains **6.9.4**. At the user's request, `.github/workflows/electron-macos.yml` builds an unsigned Apple Silicon app on GitHub's macos-15 runner when a `macos-v*` tag is pushed, and publishes it as a pre-release. PostgreSQL 17.11 is built from the publisher source (SHA-256 checked) with loader paths relocated and ad-hoc signed; SeaweedFS 4.47 (publisher MD5) and Ollama 0.33.3 (publisher SHA-256) are verified; Intel-only Ollama libraries are dropped and the arm64 dependency audit still gates packaging. No models are bundled. `scripts/ci-step.sh` posts failure logs as public annotations.
+
+First successful run: tag `macos-v0.1.0-test.10`, run 37069067692, pre-release asset `Notetaker-0.1.0-macOS-arm64-unsigned.zip` (714,175,868 bytes). Shared JavaScript/desktop tests and focused backend host tests passed on the runner before packaging. Real-Mac fixes found by CI: resolved-path containment for runtime copies (`/var` → `/private/var`), top-level-only `models`/`standalone-library` refusal, Windows path rules in PowerShell discovery, a simulated Windows flag in host tests, and dylib install names no longer treated as missing dependencies. A brief non-blocking-test change was reverted; that run did not publish.
+
+**Not yet verified:** the app has not been launched on a Mac. Next: the user installs it (unzip, move to Applications, `xattr -dr com.apple.quarantine /Applications/Notetaker.app`), creates a new standalone library, and runs the packaged smoke and [workflow harness](docs/implementation/macos-workflow.md). Signing/notarization/DMG remain 6.9.5.
+
 ## Phase 6.9.4 workflow harness and Windows baseline — 2026-10-01
 
 Active phase: **6.9.4 — complete Mac lecture workflow**, at the user's request; the Windows priority repair is delivered and macOS resumes. 6.9.1–6.9.3 native Mac qualification remains open because no Mac app has been built. `scripts/test-windows-host.py` now runs on Windows or Mac and drives one synthetic lecture through the frozen host: material, speech readiness, missing-note-model refusal, paced verified capture, live passages/streamed notes, citations/source audio, protected edit → regeneration → merge → undo, recall/self-assessment/catch-up, exports, finalization and byte-identical audio. Without a speech model it checks the missing-model path. [Behavior, baseline and Mac commands](docs/implementation/macos-workflow.md).
