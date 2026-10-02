@@ -90,7 +90,9 @@ async function auditNative(root, files, run=(command,args)=>execFileSync(command
       throw new Error('Runtime binary lacks arm64: '+file.path);
     const dependencies=run('/usr/bin/otool',['-arch','arm64','-L',filename]);
     auditLoadPaths(dependencies);
-    auditBundledReferences(dependencies,file.path,files);
+    // A dylib lists its own install name first; that is an identity, not a dependency to bundle.
+    const id=run('/usr/bin/otool',['-arch','arm64','-D',filename]).split('\n').slice(1).map(line=>line.trim()).find(Boolean);
+    auditBundledReferences(dependencies.split('\n').filter(line=>!id||!line.trim().startsWith(id+' (')).join('\n'),file.path,files);
     const commands=run('/usr/bin/otool',['-arch','arm64','-l',filename]);
     for(const block of commands.split(/Load command \d+/)) {
       if(/cmd LC_RPATH\s/.test(block)) {

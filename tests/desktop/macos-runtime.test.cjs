@@ -110,6 +110,11 @@ test('Mach-O audit rejects x64-only binaries and build-machine dependencies',asy
   await assert.rejects(auditNative(root,files,command=>command.endsWith('lipo')?'arm64':'\t/opt/homebrew/lib/libfoo.dylib (compatibility version 1.0.0, current version 1.0.0)'),/Non-portable/);
   await assert.rejects(auditNative(root,files,(command,args)=>command.endsWith('lipo')?'arm64':args.includes('-l')?'Load command 1\n cmd LC_RPATH\n path /Users/build/lib (offset 12)':''),/Non-portable/);
   assert.equal(sameInventory(files,[...files,{path:'extra'}]),false);
+  // A dylib's own @rpath install name is not a missing dependency.
+  const self=path.join(root,'self');
+  await write(self,'service/libself.1.2.dylib',Buffer.from('cffaedfe00000000','hex'));
+  await assert.rejects(auditNative(self,await inventory(self),(command,args)=>command.endsWith('lipo')?'arm64':
+    args.includes('-D')?'libself.1.2.dylib:\n@rpath/libself.1.dylib':args.includes('-L')?'libself.1.2.dylib:\n\t@rpath/libself.1.dylib (compatibility version 1.0.0, current version 1.2.0)':''),/Required executable/);
 }));
 test('Mac audit rejects foreign native web modules and corrupt native libraries',async()=>temporary(async root=>{
   for(const [name,header] of [['windows.node','4d5a0000'],['linux.node','7f454c46'],['broken.dylib','00000000']]) {
