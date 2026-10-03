@@ -47,7 +47,7 @@ const assert=require('node:assert/strict');
     await page.getByRole('region',{name:'Speech being transcribed'}).waitFor({state:'detached'});
     notes.revision={id:'notes1',revision:1,created_at:lecture.created_at,profile:notes.profile,metadata:{model:'synthetic'},source_issues:['synthetic warning'],content:{blocks:[{id:'b1',topic:'A key concept',kind:'emphasis',passages:[{id:'p1',text:'Context matters, including exceptions.',evidence_kind:'lecture_paraphrase',sources:[]}]}],issues:[],coverage:[]}};
     await page.locator('.capture-panel').evaluate(el=>el.dataset.retained='yes');
-    await page.getByRole('tab',{name:/Study notes/}).click();
+    await page.getByRole('link',{name:'Notes',exact:true}).click();
     await page.locator('.study-emphasis strong').filter({hasText:'Context matters'}).waitFor();
     await page.getByLabel('Note model',{exact:true}).selectOption('qwen3:4b');
     await page.getByRole('button',{name:'Start automatic notes',exact:true}).click();

@@ -1,5 +1,11 @@
 # Session transfer
 
+## Persistent recording and lecture layout - 2026-10-03
+
+Active phase remains **6.9.5 - Mac installer and distribution**. The accepted `notetaker-layout` increment moves Notes and Finish to the prominent lecture navigation, places Transcript, Capture, Materials, Visual notes and Study tools in quieter side navigation, and keeps a real recording controller and save status in a sticky workspace header. The Record picker requires an explicit course and lecture before starting. One recorder controller survives library, course and lecture-section hash navigation; Capture opens the same controller's recovery and saved-segment details. Data-removal progress sits in the library sidebar while removal and finalization remain accessible under Finish. Settings relocation and broad theme changes remain with the follow-on settings work; flashcard and catch-up changes remain separate.
+
+See [workspace layout and recording evidence](docs/implementation/workspace-layout-recording.md) for exact checks, limits and delivery pointer. Synthetic browser verification does not qualify physical-device recording or Mac lifecycle behavior.
+
 ## Phase 6.9.5 DMG published — 2026-10-02
 
 Active phase: **6.9.5 — Mac installer and distribution**. The user reported the 6.9.4 test build works on their Mac. Tagged CI now builds a drag-to-Applications DMG with a Mac icon and run-number build version. Developer ID signing (hardened runtime, entitlements), notarization and stapling run only when the `MACOS_CERTIFICATE_P12`, `MACOS_CERTIFICATE_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` secrets exist; native components are signed before the runtime hash lock because the launcher verifies them. [Details](docs/implementation/macos-distribution.md).

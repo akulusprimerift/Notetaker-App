@@ -37,8 +37,8 @@ export default function DataRemoval({owner,csrf,onRemoved}:{owner:string;csrf:st
     return()=>{stopped=true;clearInterval(timer);window.removeEventListener('online',refresh);window.removeEventListener('deletion-started',refresh)};
   },[owner,csrf]);
   if(!rows.length&&!error)return null;
-  return <section className="capture-panel" aria-label="Deletion progress"><h2>Data removal</h2>{error&&<p className="error" role="alert">{error}</p>}
+  return <details className="sidebar-data-status"><summary>Data &amp; deletion {rows.length?`· ${rows.length} active`:''}</summary><section aria-label="Deletion progress"><h2>Data removal</h2>{error&&<p className="error" role="alert">{error}</p>}
     {rows.map(row=><div key={row.id}><p role="status"><strong>{row.kind==='audio'?'Audio removal':'Lecture deletion'} · {row.status==='complete'?'Server cleanup complete':row.status==='retrying'?'Waiting to retry':'Removing data'}</strong> · {row.objects_removed} of {row.objects_total} audio objects removed</p><p className="small muted">{purged.includes(row.id)?'Copies in this browser have been removed.':'Removing copies from this browser…'} {row.error}</p></div>)}
-    <p className="small muted">Other browsers remove their copies when they reconnect to this workspace. Disconnected copies and exported files cannot be erased remotely. Storage is checked again for late uploads.</p>
-  </section>;
+    <p className="small muted">Manage audio removal and lecture deletion from the lecture’s Finish section. Other browsers remove local copies when they reconnect. Disconnected copies and exports cannot be erased remotely.</p>
+  </section></details>;
 }

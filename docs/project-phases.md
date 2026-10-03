@@ -2,6 +2,8 @@
 
 Current phase (2026-10-02): **6.9.5 — Mac installer and distribution** is the single active phase; the user reported the 6.9.4 test build working on their Apple Silicon Mac. Tagged CI builds publish a DMG with optional Developer ID signing/notarization ([distribution](implementation/macos-distribution.md)). Earlier current-phase entries below are historical.
 
+Independent workspace increment (2026-10-03): the accepted layout task keeps 6.9.5 as the single active phase. Its scope is the persistent recording header, lecture navigation hierarchy and secondary placement of data-removal status. Synthetic browser evidence and the scoped PR are tracked in [workspace layout and recording](implementation/workspace-layout-recording.md); this does not qualify native Mac capture or the broader release gates.
+
 Current phase (2026-10-01): **6.9.4 — complete Mac lecture workflow** is the single active phase; the 6.8 priority repair is delivered. A cross-platform [workflow/performance harness](implementation/macos-workflow.md) passes on the Windows standalone runtime as a reference baseline. Native Mac runs, and the open 6.9.1–6.9.3 qualification, remain required. Earlier current-phase entries below are historical.
 
 Priority repair (2026-09-30, latest): **6.8 / M08** remains active with macOS paused. [Live transcription and audio storage](implementation/live-transcription-storage.md) fixes refused audio uploads, captures at 16 kHz, shortens live cores and adds audio retention with a finalize keep/delete choice. Cloud-consent persistence and Claude subscription models follow. Earlier qualification gaps remain open.

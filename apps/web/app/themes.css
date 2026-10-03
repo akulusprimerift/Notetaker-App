@@ -243,3 +243,102 @@ h1,.brand{font-family:var(--display-font);font-weight:600;letter-spacing:-.045em
   :root[data-desktop=true] .topbar{height:auto;flex-wrap:wrap;padding-block:14px;gap:12px}
   :root[data-desktop=true] .topbar-actions{flex-wrap:wrap;gap:10px}
 }
+
+/* A quiet persistent recorder anchors every workspace route. */
+.workspace-body{min-width:0}
+.workspace-header{position:sticky;top:0;z-index:20;border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent);background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(18px) saturate(115%)}
+.workspace-header .topbar{height:auto;min-height:52px;padding:7px 28px;border:0;background:transparent;gap:12px}
+.workspace-header .topbar-actions{gap:9px;flex-wrap:wrap}
+.recording-bar{display:flex;align-items:center;gap:16px;min-width:0;padding:8px 28px;border-top:1px solid color-mix(in srgb,var(--line) 42%,transparent)}
+.recording-context{display:flex;align-items:center;gap:8px;min-width:0;flex:0 1 auto}
+.recording-context-dot{width:8px;height:8px;flex:0 0 auto;border-radius:50%;background:var(--accent)}
+.recording-context-title{max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.78rem;font-weight:700}
+.recording-return,.recording-change>summary{font-size:.72rem;color:var(--muted);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.recording-picker,.recording-change{position:relative;flex:0 0 auto}
+.recording-picker>summary{min-height:38px;padding:8px 16px;list-style:none;cursor:pointer}
+.recording-picker>summary::-webkit-details-marker,.recording-change>summary::-webkit-details-marker{display:none}
+.recording-change>summary{display:block;cursor:pointer}
+.recording-picker-panel{position:absolute;z-index:24;top:calc(100% + 10px);left:0;width:min(360px,calc(100vw - 28px));padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);box-shadow:0 16px 50px #101a2633}
+.recording-picker-panel p{margin:0 0 12px;font-size:.77rem;color:var(--muted)}
+.recording-picker-panel label{display:block;margin:12px 0;font-size:.75rem}
+.recording-picker-panel select{display:block;width:100%;margin:5px 0 0;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.recording-picker-panel .secondary{margin-top:9px}
+.capture-panel-compact{flex:1 1 auto;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;backdrop-filter:none;animation:none}
+.capture-panel-compact .capture-controls{display:flex;align-items:center;gap:10px;min-width:0;margin:0;flex-wrap:wrap}
+.capture-panel-compact .capture-device{width:auto;justify-content:flex-start;font-size:.72rem;white-space:nowrap}
+.capture-panel-compact .capture-device select{width:155px;max-width:30vw;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.recording-ready,.recording-bar .recording-badge{flex:0 0 auto;font-size:.71rem}
+.capture-panel-compact .capture-clock{font-variant-numeric:tabular-nums;font-size:.78rem}
+.recording-bar .capture-panel-compact .primary,.recording-bar .capture-panel-compact .secondary{padding:8px 12px;font-size:.74rem;gap:8px}
+.recording-save-state{flex:1 1 180px;min-width:0;max-width:340px;color:var(--muted);font-size:.7rem;line-height:1.35;overflow-wrap:anywhere}
+.recording-bar .recovery-hint{display:block;flex:0 0 auto;color:var(--muted);font-size:.68rem;text-underline-offset:3px}
+.recording-takeover{flex-basis:100%;margin:4px 0 0;padding:12px}
+.recording-takeover p{margin-bottom:8px;font-size:.76rem}
+.capture-detail-panel{margin-top:12px}
+.capture-details-slot{min-width:0}
+.lecture-layout{display:grid;grid-template-columns:142px minmax(0,1fr);gap:26px;align-items:start}
+.lecture-auxiliary{position:sticky;top:142px;min-width:0}
+.lecture-secondary-nav{display:flex;flex-direction:column;gap:3px;padding:4px 0}
+.lecture-secondary-nav a{display:block;padding:8px 10px;border-radius:9px;color:var(--muted);font-size:.74rem;line-height:1.35}
+.lecture-secondary-nav a:hover{background:color-mix(in srgb,var(--soft) 55%,transparent);color:var(--ink)}
+.lecture-secondary-nav a.active{background:var(--soft);color:var(--ink);font-weight:650}
+.lecture-main{min-width:0}
+.lecture-primary-nav{display:flex;align-items:center;gap:6px;margin:0 0 20px;padding-bottom:10px;border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent)}
+.lecture-primary-nav a{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 17px;border:1px solid transparent;border-radius:10px;color:var(--muted);font-size:.84rem;font-weight:650}
+.lecture-primary-nav a:hover{background:color-mix(in srgb,var(--soft) 55%,transparent);color:var(--ink)}
+.lecture-primary-nav a.active{border-color:var(--line);background:var(--surface);color:var(--ink);box-shadow:0 2px 8px #1720330b}
+.lecture-panel{min-width:0}
+.sidebar-data-status{margin:0 0 14px;padding:10px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--surface) 70%,transparent);font-size:.74rem}
+.sidebar-data-status>summary{cursor:pointer;color:var(--muted);font-weight:650}
+.sidebar-data-status section{margin-top:12px}
+.sidebar-data-status h2{font-size:.84rem;margin-bottom:8px}
+.sidebar-data-status p{font-size:.7rem;line-height:1.45;margin-bottom:9px}
+.sidebar-data-status .error{font-size:.72rem}
+.skip{z-index:30}
+@media(min-width:701px){
+  :root[data-desktop=true] .workspace-header .topbar{position:static;top:auto;z-index:auto;min-height:64px;padding-right:160px;-webkit-app-region:drag}
+  :root[data-desktop=true] .workspace-header .topbar :is(button,a,select,label,summary){-webkit-app-region:no-drag}
+}
+@media(max-width:1100px){
+  .recording-bar{align-items:flex-start;flex-wrap:wrap;gap:7px 14px}
+  .recording-context{width:100%}
+  .capture-panel-compact{flex-basis:100%}
+  .recording-save-state{max-width:none}
+  .lecture-layout{grid-template-columns:124px minmax(0,1fr);gap:18px}
+  .lecture-auxiliary{top:142px}
+}
+@media(max-width:700px){
+  .workspace-header .topbar{padding:7px 14px;flex-wrap:wrap}
+  .workspace-header .topbar-actions{justify-content:flex-start;width:100%;gap:6px}
+  .recording-bar{padding:8px 14px;align-items:flex-start}
+  .recording-context{flex-wrap:wrap;gap:6px}
+  .recording-context-title{max-width:45vw}
+  .recording-return{font-size:.67rem}
+  .capture-panel-compact .capture-controls{display:grid;grid-template-columns:auto minmax(112px,1fr) auto;gap:7px}
+  .capture-panel-compact .capture-device{grid-column:2;grid-row:1;justify-content:space-between;min-width:0}
+  .capture-panel-compact .capture-device select{width:auto;max-width:58%;min-width:88px}
+  .recording-bar .capture-panel-compact .primary{grid-column:3;grid-row:1;padding:8px 10px}
+  .capture-panel-compact .recording-ready,.capture-panel-compact .recording-badge{grid-column:1;grid-row:1}
+  .capture-panel-compact .capture-clock{grid-column:1;grid-row:2}
+  .recording-save-state{grid-column:1/-1;grid-row:3;font-size:.68rem}
+  .recording-bar .recovery-hint{grid-column:1/-1}
+  .recording-picker-panel{left:auto;right:0}
+  .lecture-layout{display:flex;flex-direction:column;gap:10px}
+  .lecture-auxiliary{position:static;width:100%;order:2}
+  .lecture-secondary-nav{flex-direction:row;overflow-x:auto;overscroll-behavior-inline:contain;gap:3px;padding:0 0 8px}
+  .lecture-secondary-nav a{flex:0 0 auto;padding:7px 9px;white-space:nowrap;font-size:.7rem}
+  .lecture-main{width:100%;order:1}
+  .lecture-primary-nav{margin-bottom:15px}
+  .lecture-primary-nav a{flex:1}
+  .sidebar-bottom{display:block;padding:8px 0 0}
+  .sidebar-bottom>:not(.sidebar-data-status){display:none}
+  .sidebar-data-status{margin:0;padding:7px 9px}
+}
+@media(max-width:420px){
+  .recording-context-title{max-width:38vw}
+  .capture-panel-compact .capture-controls{grid-template-columns:auto minmax(84px,1fr) auto}
+  .capture-panel-compact .capture-device select{min-width:78px}
+  .recording-bar .capture-panel-compact .primary{font-size:.68rem;padding-inline:7px}
+  .workspace-header .topbar-actions>.privacy-badge{display:none}
+  .lecture-secondary-nav a{font-size:.66rem;padding-inline:7px}
+}
