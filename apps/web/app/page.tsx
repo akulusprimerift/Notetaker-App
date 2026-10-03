@@ -47,7 +47,7 @@ const initial=(name:string)=>name.trim().slice(0,1).toUpperCase();
 
 export default function Workspace(){
   const [sidebarHidden,setSidebarHidden]=useState(false);
-  useEffect(()=>{try{setSidebarHidden(localStorage.getItem('notetaker:sidebar-hidden')==='true');}catch{}},[]);
+  useEffect(()=>{try{const preference=localStorage.getItem('notetaker:sidebar-hidden');setSidebarHidden(preference===null?window.matchMedia('(max-width:700px)').matches&&location.hash.slice(1).startsWith('lecture/'):preference==='true');}catch{}},[]);
   function toggleSidebar(){setSidebarHidden(value=>{try{localStorage.setItem('notetaker:sidebar-hidden',String(!value));}catch{}return !value;});}
   const [session,setSession]=useState<Session|null>(null);
   const [loading,setLoading]=useState(true);
@@ -219,11 +219,11 @@ export default function Workspace(){
           </div>
         </details>}
       </div></header>
-    <main id="main-content" tabIndex={-1}>
+    <main id="main-content" className={snapshot?'lecture-content':''} tabIndex={-1}>
       {error&&!form&&<div className="error" role="alert">{error} <a href="#">Return to library</a></div>}
       {viewLoading?<p role="status" className="page-loading">Opening lecture library…</p>:snapshot?<>
         <a className="back-link" href={`#course/${snapshot.lecture.course_id}`}>← {snapshot.course_name}</a>
-        <div className="page-heading"><div><p className="eyebrow">LECTURE WORKSPACE</p><h1>{snapshot.lecture.title}</h1><p className="muted">Created {date(snapshot.lecture.created_at)} <span className="separator">/</span> Saved to your course</p></div><button className="text-button" disabled={captureBusy||transcriptBusy} onClick={()=>{setDeleteLecture(true);openLectureTab('finalize')}}>Delete lecture</button></div>
+        <div className="page-heading lecture-heading"><div><p className="eyebrow" aria-hidden="true">LECTURE WORKSPACE</p><h1>{snapshot.lecture.title}</h1><p className="muted">Created {date(snapshot.lecture.created_at)} <span className="separator">/</span> Saved to your course</p></div><button className="text-button" disabled={captureBusy||transcriptBusy} onClick={()=>{setDeleteLecture(true);openLectureTab('finalize')}}>Delete lecture</button></div>
         {snapshot.lecture.audio_removed||removedAudio.includes(snapshot.lecture.id)?<p className="inline-notice">Audio has been removed. Transcript, notes and saved revisions remain available.</p>:null}
         <LiveUpdates key={snapshot.lecture.id+'-live'} lecture={snapshot.lecture.id} onSessionExpired={sessionExpired}/>
         <div className="lecture-layout">

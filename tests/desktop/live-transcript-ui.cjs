@@ -1,5 +1,5 @@
 // Real React rendering with synthetic network responses; microphone use is forbidden.
-const {chromium}=require('../../.venv/Lib/site-packages/playwright/driver/package');
+const {chromium}=require(process.env.NOTETAKER_PLAYWRIGHT_DRIVER||'../../.venv/Lib/site-packages/playwright/driver/package');
 const assert=require('node:assert/strict');
 const {setTheme}=require('./settings-test-helpers.cjs');
 (async()=>{
@@ -36,6 +36,9 @@ const {setTheme}=require('./settings-test-helpers.cjs');
       await route.fulfill({json:body});
     });
     await page.goto((process.env.NOTETAKER_UI_ORIGIN||'http://127.0.0.1:3015')+'/#lecture/lecture/transcript');
+    const processing=page.locator('.processing-details');
+    await processing.locator('summary').filter({hasText:'Transcription needs attention'}).waitFor();
+    await processing.locator('summary').click();
     await page.locator('.live-progress').filter({hasText:'waiting for a speech model'}).waitFor();
     await page.locator('.transcript-panel').filter({hasText:'Choose a local speech model folder'}).waitFor();
     transcript.errors=[];transcript.status='processing';transcript.preview='Partial recognized words <script> are safe text.';
@@ -50,6 +53,7 @@ const {setTheme}=require('./settings-test-helpers.cjs');
     await page.locator('.capture-panel').evaluate(el=>el.dataset.retained='yes');
     await page.getByRole('link',{name:'Notes',exact:true}).click();
     await page.locator('.study-emphasis strong').filter({hasText:'Context matters'}).waitFor();
+    await page.locator('.note-preferences > summary').click();
     await page.getByLabel('Note model',{exact:true}).selectOption('qwen3:4b');
     await page.getByRole('button',{name:'Start automatic notes',exact:true}).click();
     for(let cycle=0;cycle<3;cycle++){
@@ -58,6 +62,7 @@ const {setTheme}=require('./settings-test-helpers.cjs');
       await resume.waitFor();assert.equal(await resume.isEnabled(),true);await resume.click();
       await page.getByRole('button',{name:'Pause automatic notes',exact:true}).waitFor();
     }
+    await page.locator('.note-preferences > summary').click();
     const exportButton=page.getByRole('link',{name:'Export Markdown',exact:false});
     assert.match(await exportButton.getAttribute('href'),/revisions\/notes1\/export$/);
     await page.getByRole('button',{name:'How to use your notes'}).click();
@@ -68,7 +73,8 @@ const {setTheme}=require('./settings-test-helpers.cjs');
     assert.match(await page.getByRole('link',{name:'Word (.docx)',exact:true}).getAttribute('href'),/format=docx$/);
     assert.match(await page.getByRole('link',{name:'Study slides (.pptx)',exact:true}).getAttribute('href'),/format=pptx$/);
     await page.setViewportSize({width:400,height:850});
-    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    const mobileWidth=await page.evaluate(()=>({viewport:innerWidth,scroll:document.documentElement.scrollWidth}));
+    assert.ok(mobileWidth.scroll<=mobileWidth.viewport,`open export formats fit the ${mobileWidth.viewport}px viewport (document is ${mobileWidth.scroll}px wide)`);
     await page.screenshot({path:'.local/export-mobile.png',fullPage:true});
     await page.setViewportSize({width:1440,height:1000});
 
@@ -89,6 +95,8 @@ const {setTheme}=require('./settings-test-helpers.cjs');
     await page.keyboard.press('Escape');
     await page.getByRole('dialog',{name:'Set up speech recognition'}).waitFor({state:'hidden'});
     assert.equal(await page.getByRole('button',{name:'How to get a model'}).evaluate(el=>el===document.activeElement),true);
+    await processing.locator('summary').click();
+    assert.equal(await processing.evaluate(el=>el.open),false,'processing details close back to the compact status row');
     await setTheme(page,'dark');
     await page.setViewportSize({width:400,height:850});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
