@@ -40,7 +40,10 @@ function contrastRatio(foreground,background){
     assert.equal(await trigger.getAttribute('title'),'Settings');
     assert.match(await trigger.innerText(),/^\s*⚙\s*$/);
     await page.keyboard.press('Tab');
-    assert.equal(await trigger.evaluate(element=>document.activeElement===element),true,'Settings trigger is first keyboard stop');
+    const skipLink=page.getByRole('link',{name:'Skip to content',exact:true});
+    assert.equal(await skipLink.evaluate(element=>document.activeElement===element),true,'Skip to content remains the first keyboard stop');
+    await page.keyboard.press('Tab');
+    assert.equal(await trigger.evaluate(element=>document.activeElement===element),true,'Settings trigger follows Skip to content in keyboard order');
     await page.keyboard.press('Enter');
     const settings=page.getByRole('dialog',{name:'Settings'});
     await settings.waitFor();
