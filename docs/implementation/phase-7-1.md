@@ -1,5 +1,7 @@
 # Phase 7.1 — Note usefulness
 
+> **Product direction update (2026-10-03):** Catch Me Up was removed from the active UI and its `/study/catch-up` route was retired. This document records the earlier feature and its original synthetic checks. No notes, transcript passages, recordings or bookmark records were removed. The current study surface is [Flash Cards](flash-cards.md).
+
 Implemented increment, 2026-09-15; active work moved to Phase 7.3 on 2026-09-16. Mark Important, Catch Me Up and course terminology are implemented. Engineering checks below do not establish educational usefulness or release readiness. Earlier M08 hardware, install/upgrade, accessibility, endurance and restore gates remain open while this independent work proceeds.
 
 ## Student workflow

@@ -2,11 +2,13 @@
 import json
 import re
 from pathlib import Path
+from copy import deepcopy
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Literal
 from .note_contract import compact, ROOT
 
 PROMPT = (Path(ROOT) / 'prompts/question-generation-v1.txt').read_text(encoding='utf-8')
+FLASHCARD_PROMPT = (Path(ROOT) / 'prompts/flash-card-generation-v1.txt').read_text(encoding='utf-8')
 
 
 class Citation(BaseModel):
@@ -32,25 +34,45 @@ class Output(BaseModel):
 SCHEMA = Output.model_json_schema()
 
 
-def provider_grammar(node):
+def schema_for(evidence):
+    schema = deepcopy(SCHEMA)
+    if evidence.get('contract_version') == 'flashcards-v1':
+        schema['$defs']['Question']['properties']['kind']['enum'] = ['flashcard']
+    return schema
+
+
+def provider_grammar(node, schema=SCHEMA):
     """Inline references and omit constraints unsupported by Ollama's grammar compiler.
 
     The complete Pydantic contract is still enforced after generation and at publish.
     """
-    if isinstance(node, list): return [provider_grammar(value) for value in node]
+    if isinstance(node, list): return [provider_grammar(value, schema) for value in node]
     if not isinstance(node, dict): return node
     if '$ref' in node:
-        return provider_grammar(SCHEMA['$defs'][node['$ref'].removeprefix('#/$defs/')])
+        return provider_grammar(schema['$defs'][node['$ref'].removeprefix('#/$defs/')], schema)
     omit = {'$defs', 'title', 'minLength', 'maxLength', 'minItems', 'maxItems', 'default'}
-    return {key: provider_grammar(value) for key, value in node.items() if key not in omit}
+    return {key: provider_grammar(value, schema) for key, value in node.items() if key not in omit}
 
 
 GRAMMAR = provider_grammar(SCHEMA)
 
 
+def grammar_for(evidence):
+    schema = schema_for(evidence)
+    return provider_grammar(schema, schema)
+
+
+def prompt_for(evidence):
+    return FLASHCARD_PROMPT if evidence.get('contract_version') == 'flashcards-v1' else PROMPT
+
+
 def messages(evidence):
-    return [{'role': 'system', 'content': PROMPT + '\nOUTPUT_SCHEMA:\n' + compact(SCHEMA)},
-        {'role': 'user', 'content': 'STUDY_EVIDENCE_JSON:\n' + compact(evidence)}]
+    if evidence.get('contract_version') == 'flashcards-v1':
+        label = 'FLASHCARD_REQUEST_JSON'
+    else:
+        label = 'STUDY_EVIDENCE_JSON'
+    return [{'role': 'system', 'content': prompt_for(evidence) + '\nOUTPUT_SCHEMA:\n' + compact(schema_for(evidence))},
+        {'role': 'user', 'content': label + ':\n' + compact(evidence)}]
 
 
 def validate_questions(output, evidence):
