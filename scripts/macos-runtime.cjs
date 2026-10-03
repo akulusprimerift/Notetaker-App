@@ -8,7 +8,6 @@ const {inventory} = require('./prepare-desktop-web.cjs');
 
 const required = {
   service:['NotetakerService'],
-  postgres:['bin/postgres','bin/initdb','bin/pg_ctl','share/postgresql/postgres.bki'],
   seaweed:['weed'], ollama:['ollama'], 'account-client':['bin/codex'],
 };
 function requireMac(platform=process.platform, arch=process.arch) {
@@ -119,7 +118,6 @@ async function stage({root,web,lockPath,audit=auditNative}) {
       typeof source.source!=='string'||!source.source.trim()||!Array.isArray(source.files)||!source.files.length)
       throw new Error('Missing component provenance/inventory: '+component);
   }
-  if(!/^17\.\d+$/.test(lock.components.postgres.version))throw new Error('The standalone library requires PostgreSQL 17.');
   if(lock.components['account-client'].version!==require('../package.json').devDependencies['@openai/codex'])
     throw new Error('Account helper version must match the pinned desktop dependency.');
   const destination=path.join(root,'.local/macos-runtime',randomUUID());
@@ -151,7 +149,7 @@ async function stage({root,web,lockPath,audit=auditNative}) {
     throw new Error('Desktop web build identity mismatch.');
   const files=await inventory(destination);
   const native=await audit(destination,files);
-  const manifest={schema_version:1,platform:'darwin',arch:'arm64',profile:'macos-postgresql-seaweed-reconciliation',
+  const manifest={schema_version:1,platform:'darwin',arch:'arm64',profile:'macos-sqlite-seaweed-reconciliation',
     web_build_id:webManifest.build_id,user_models_bundled:false,speech_compute:'CPU',
     native_audit:{arm64_files:native,external_absolute_load_paths:false,native_startup_verified:false},sources,files};
   await fs.writeFile(path.join(destination,'runtime-manifest.json'),JSON.stringify(manifest,null,2)+'\n',{flag:'wx'});

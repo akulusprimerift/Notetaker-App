@@ -4,7 +4,7 @@ Version: 0.1
 
 Date: 2026-09-05
 
-Status: Selected design for implementation; no services deployed, database migrated, or recording pipeline implemented.
+Status: The original September 2026 architecture baseline is implemented and its PostgreSQL choice has been superseded. The current application database is file-backed SQLite; see the [conversion and recovery runbook](../implementation/sqlite-database.md).
 
 This baseline implements the priorities in the [product brief](../product/phase-1-product-brief.md) and [student experience](../product/phase-2-student-experience.md). It supersedes conflicting first-release stack recommendations in the original source documents. Full editorial consolidation remains Phase 5.
 
@@ -14,10 +14,10 @@ This baseline implements the priorities in the [product brief](../product/phase-
 | --- | --- | --- |
 | Backend boundaries | One FastAPI application owns REST and WebSocket endpoints; one Python codebase also runs separate worker processes. | Separate API/realtime microservices would add coordination before scale is demonstrated. |
 | Frontend | Next.js and TypeScript, with capture/persistence work outside the rendering loop. | Native desktop packaging may offer stronger OS integration but is outside the first browser release. |
-| System of record | PostgreSQL for metadata, versions, job ledger, outbox, ownership, and deletion state. | Kafka and browser storage cannot replace authoritative transactional state. |
+| System of record | SQLite for metadata, versions, job ledger, outbox, ownership, and deletion state. | Kafka and browser storage cannot replace authoritative transactional state. Use a local filesystem and one-writer serialization. |
 | Audio objects | SeaweedFS through a server-only S3 adapter, with persistent data and metadata volumes. | Local filesystem storage is simpler, but retaining the original object-storage choice supports a real upload/reconciliation workflow. A fake adapter is limited to tests. |
-| Asynchronous execution | Kafka for durable work notification/replay; PostgreSQL job ledger for claims, retries, and recovery. | Direct in-request inference would tie capture to model latency. The ledger adds state but makes lost notifications and broker downtime recoverable. |
-| State cache | No Valkey dependency in the initial deployment. | PostgreSQL and bounded process-local caches cover initial needs; add Valkey only after a measured hot path. |
+| Asynchronous execution | Kafka for durable work notification/replay; SQLite job ledger for claims, retries, and recovery. | Direct in-request inference would tie capture to model latency. The ledger adds state but makes lost notifications and broker downtime recoverable. |
+| State cache | No Valkey dependency in the initial deployment. | SQLite and bounded process-local caches cover initial needs; add Valkey only after a measured hot path. |
 | Speech and notes | faster-whisper speech adapter and Ollama note adapter. | Cloud adapters remain an extension, with no automatic external fallback. Model IDs and inference windows are selected in Phase 4. |
 | Retrieval and vision | No embeddings, pgvector index, image worker, or document ingestion in the initial capture-to-notes path. | Retain relational source IDs suitable for later extensions; unavailable visuals remain explicit limitations. |
 | Event contracts | Versioned JSON envelopes validated at boundaries initially. | Protobuf and Apicurio remain a later schema-evolution milestone; avoid maintaining both formats before consumers exist. |
@@ -31,7 +31,7 @@ flowchart LR
     Capture --> Local[IndexedDB audio journal]
     Local --> API[FastAPI REST and WebSocket]
     API --> Objects[SeaweedFS audio objects]
-    API --> DB[(PostgreSQL)]
+    API --> DB[(SQLite library file)]
     DB --> Outbox[Outbox dispatcher]
     Outbox --> Kafka[Kafka work topics]
     Kafka --> Workers[Speech and note workers]
@@ -57,7 +57,7 @@ Admission requires microphone permission, a functioning capture worker, a succes
 
 Hold a nonqueued exclusive Web Lock keyed by lecture ID while capturing; a second tab monitors instead of waiting to start automatically. Web Locks coordinate same-origin contexts, not different browser profiles or devices. [MDN Web Locks](https://developer.mozilla.org/en-US/docs/Web/API/Web_Locks_API)
 
-PostgreSQL separately stores `capture_owner_id` and monotonically increasing `capture_epoch`. A heartbeat indicates liveness only; expiration does not silently grant a second owner. Explicit takeover locks the lecture row, advances the epoch, and creates a new run. Old-owner live writes are fenced. A disconnected old owner may still have physical local audio; it must stop on discovering the takeover, and recoverable fragments enter a separate recovery request, never a second active stream. Web Locks plus fencing do not promise remote control of an offline microphone.
+SQLite separately stores `capture_owner_id` and monotonically increasing `capture_epoch`. A heartbeat indicates liveness only; expiration does not silently grant a second owner. Explicit takeover serializes through the SQLite writer transaction, advances the epoch, and creates a new run. Old-owner live writes are fenced. A disconnected old owner may still have physical local audio; it must stop on discovering the takeover, and recoverable fragments enter a separate recovery request, never a second active stream. Web Locks plus fencing do not promise remote control of an offline microphone.
 
 ## ARC-02: Capture, persistence, and honest save status
 
@@ -71,9 +71,9 @@ Initial configurable limits: 1 GiB journal ceiling, 8 MiB in-flight worker buffe
 
 Acknowledgement protocol:
 
-1. Authenticate and validate lecture state, capture epoch/run, declared size, sample range, format, and checksum. Reserve an upload identity in PostgreSQL before writing an object.
+1. Authenticate and validate lecture state, capture epoch/run, declared size, sample range, format, and checksum. Reserve an upload identity in SQLite before writing an object.
 2. Write to an opaque, immutable server-assigned object key. Verify stored length and checksum by readback; do not assume an S3 ETag is the application's checksum.
-3. In one short database transaction, recheck liveness/epoch, mark the chunk verified, record metadata, create the STT job, and append its outbox event. Commit with normal PostgreSQL durability settings enabled.
+3. In one short database transaction, recheck liveness/epoch, mark the chunk verified, record metadata, create the STT job, and append its outbox event. SQLite foreign keys, WAL and full synchronous commits are enabled.
 4. Only then acknowledge application storage with the stable chunk ID/checksum and contiguous saved coverage. Kafka publication is not part of this response's success condition.
 5. Delete the browser copy only after recording the matching acknowledgement in the journal. If the response was lost, retry the same identity or reconcile by manifest; do not create a new chunk identity.
 
@@ -97,9 +97,9 @@ The finalization coordinator schedules a final speech pass through the audio-job
 
 ## ARC-04: Jobs, events, retries, and model scheduling
 
-PostgreSQL `jobs` is authoritative for due/running/completed/failed work. Creating work and its outbox entry is atomic with the triggering state change. The dispatcher publishes after commit. If it crashes after publish but before marking published, delivery repeats safely.
+SQLite `jobs` is authoritative for due/running/completed/failed work. Creating work and its outbox entry is atomic with the triggering state change. The dispatcher publishes after commit. If it crashes after publish but before marking published, delivery repeats safely.
 
-Kafka consumers and the periodic due-job reconciler both claim jobs using a database lease and a new attempt token. Commit a Kafka offset only after the message is validated and its effect is durable in the job ledger; model completion may happen later. A restart reclaims expired attempts. This avoids holding a Kafka poll loop inside long inference. PostgreSQL row locks provide transaction coordination; they should not span model calls. [PostgreSQL locking](https://www.postgresql.org/docs/current/explicit-locking.html)
+Kafka consumers and the periodic due-job reconciler both claim jobs using a database lease and a new attempt token. Commit a Kafka offset only after the message is validated and its effect is durable in the job ledger; model completion may happen later. A restart reclaims expired attempts. This avoids holding a Kafka poll loop inside long inference. SQLite's single-writer transaction serializes claims; OS lock files prevent overlapping inference after a lease expires. Neither lock is held as a database transaction during model calls. API and workers must share a local filesystem; network filesystems are unsupported.
 
 Process STT context sequentially per lecture and coalesce obsolete live-note requests. Do not skip audio jobs. Limit each local model role to one active inference initially, with a shared configurable memory/concurrency budget. Capture and storage have priority, then STT, then live notes, then final/background work. Phase 4 determines whether models can remain loaded together or need serialized scheduling.
 
@@ -123,7 +123,7 @@ Undo appends a restoring revision. New preferences and overviews do not mutate t
 
 ## ARC-06: Synchronization and accessible presentation
 
-Serve a consistent lecture snapshot and `update_cursor` from one database snapshot. Commit each visible change with a monotonically increasing per-lecture update sequence under a lecture-row lock. The API can poll the durable update journal to notify its WebSocket clients; a dropped notification does not lose the underlying revision.
+Serve a consistent lecture snapshot and `update_cursor` from one database snapshot. Commit each visible change with a monotonically increasing per-lecture update sequence while holding SQLite's writer transaction. The API can poll the durable update journal to notify its WebSocket clients; a dropped notification does not lose the underlying revision.
 
 Reconnect with the last cursor. Replay newer updates in order, ignore duplicates, and request a fresh snapshot on a gap or a cursor outside retained history. Never use a WebSocket timestamp as a write version. Client edits retain their own expected revisions and survive snapshot refresh as local drafts/conflicts.
 
@@ -153,7 +153,7 @@ Browser audio/draft journals are part of the deletion scope: purge connected loc
 
 ## ARC-09: Backup, observability, and integrity boundaries
 
-Use persistent volumes for PostgreSQL and SeaweedFS data/metadata. Container or process restart is the initial recovery target; it is not high availability. No automatic backup exists in the initial configuration, and the UI must say so. A manual backup must quiesce writes and include both database and referenced object data plus a versioned manifest. A copied database alone is not a complete lecture backup.
+Use a protected SQLite library file and persistent SeaweedFS data/metadata. Container or process restart is the initial recovery target; it is not high availability. No automatic backup exists in the initial configuration, and the UI must say so. A complete manual backup must quiesce writes and include a SQLite online backup plus referenced object/filer data and a versioned manifest. A copied database alone is not a complete lecture backup.
 
 User-managed backups and exported files are not silently modified by app deletion. Keep a deletion journal separate from backup snapshots and apply it before serving restored data; if it is unavailable, restore into an isolated review state rather than declaring privacy-safe recovery. Never claim secure erasure from physical media or third-party backups.
 

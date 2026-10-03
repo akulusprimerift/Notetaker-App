@@ -20,7 +20,7 @@ import CourseTerminology from './course-terminology';
 type Course={id:string;name:string;code:string;created_at:string};
 type Lecture={id:string;course_id:string;title:string;status:string;audio_removed:boolean;created_at:string;update_cursor:number};
 type Snapshot={lecture:Lecture;course_name:string;settings:{depth:string;format:string};processing_location:string};
-type Session={csrf_token:string;preview:boolean;owner_id:string};
+type Session={csrf_token:string;owner_id:string};
 type LectureTab='notes'|'transcript'|'materials'|'capture'|'visuals'|'finalize'|'study';
 const lectureTabs:ReadonlyArray<{id:LectureTab;label:string;description:string}>=[
   {id:'notes',label:'Study notes',description:'Read and edit your saved notes'},
@@ -171,9 +171,9 @@ export default function Workspace(){
         {courses.length===0?<p className="sidebar-empty">Your courses will appear here.</p>:courses.map(course=><div className="sidebar-course" key={course.id}><a href={`#course/${course.id}`} className={`course-link ${selectedId===course.id?'active':''}`}><span className="course-initial">{initial(course.name)}</span><span>{course.name}</span><span className="course-count">{courseLectures[course.id]?.length??'—'}</span></a>{selectedId===course.id&&courseLectures[course.id]?.map(lecture=><a key={lecture.id} href={`#lecture/${lecture.id}`} className={`lecture-link ${selectedLectureId===lecture.id?'active':''}`}><span className="lecture-link-dot" aria-hidden="true"/><span>{lecture.title}</span></a>)}</div>)}
       </nav><div className="sidebar-bottom"><button type="button" className="secondary full" onClick={()=>window.dispatchEvent(new Event('open-accounts'))}>Accounts &amp; API keys</button><div className="local-note"><span className="status-dot"/>Local workspace</div><p>Saved on this device</p></div>
     </aside>
-    <div className="workspace-body"><div className="topbar"><button className="secondary sidebar-toggle" aria-controls="lecture-sidebar" aria-expanded={!sidebarHidden} onClick={toggleSidebar}>{sidebarHidden?'Show library':'Hide library'}</button><span className="topbar-tagline">YOUR SPACE TO LEARN</span><div className="topbar-actions"><button type="button" className="desktop-tools accounts-mobile" onClick={()=>window.dispatchEvent(new Event('open-accounts'))}>Accounts &amp; API keys</button><DesktopTools/><Theme/><span className="privacy-badge"><span className="status-dot"/>{session.preview?'Local preview':'Private library'}</span></div></div>
+    <div className="workspace-body"><div className="topbar"><button className="secondary sidebar-toggle" aria-controls="lecture-sidebar" aria-expanded={!sidebarHidden} onClick={toggleSidebar}>{sidebarHidden?'Show library':'Hide library'}</button><span className="topbar-tagline">YOUR SPACE TO LEARN</span><div className="topbar-actions"><button type="button" className="desktop-tools accounts-mobile" onClick={()=>window.dispatchEvent(new Event('open-accounts'))}>Accounts &amp; API keys</button><DesktopTools/><Theme/><span className="privacy-badge"><span className="status-dot"/>Private library</span></div></div>
     <main id="main-content" tabIndex={-1}>
-      <div className="preview-notice">{session.preview?'Local preview · ':''}Your model takes notes from the lecture. Review the ideas, check the sources, and keep learning.</div>
+      <div className="preview-notice">Your model takes notes from the lecture. Review the ideas, check the sources, and keep learning.</div>
       <DataRemoval owner={session.owner_id} csrf={session.csrf_token} onRemoved={dataRemoved}/>
       {error&&!form&&<div className="error" role="alert">{error} <a href="#">Return to library</a></div>}
       {viewLoading?<p role="status" className="page-loading">Opening lecture library…</p>:snapshot?<>

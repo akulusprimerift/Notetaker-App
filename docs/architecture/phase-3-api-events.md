@@ -67,7 +67,7 @@ The byte length is illustrative for a simple two-second mono PCM WAV header; the
 | lecture.events.v1 | capture state, transcript revision, note revision, deletion state references | lecture ID; diagnostic/reconciliation consumers as needed. UI correctness uses the DB update journal. |
 | work.failures.v1 | job.exhausted; contract.rejected | lecture ID when valid, otherwise event ID; inspection/retry tooling. |
 
-Start with one partition per work topic for one-student development. Increase partitions only with a migration/ordering plan and measured multi-lecture workloads. Initial local broker replication is one, so the broker is not a host-loss backup. PostgreSQL ledger reconciliation must recover pending work after broker loss/retention expiry.
+Start with one partition per work topic for one-student development. Increase partitions only with a migration/ordering plan and measured multi-lecture workloads. Initial local broker replication is one, so the broker is not a host-loss backup. SQLite ledger reconciliation must recover pending work after broker loss/retention expiry.
 
 Avoid a separate physical topic for every domain event. Producer acknowledgement and consumer offset settings must be explicitly configured and verified during deployment; do not infer end-to-end ordering or exactly-once effects from the topic key.
 

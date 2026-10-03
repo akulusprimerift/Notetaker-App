@@ -1,5 +1,7 @@
 # Phase 5: Implementation roadmap
 
+Database update (2026-10-03): SQLite is the supported application database across all runtimes; PostgreSQL is retained only as an explicit read-only conversion source. The dated phase selections below are historical. Current active phase and sequencing are maintained in [project-phases.md](../project-phases.md); conversion, backup and rollback steps are in the [SQLite runbook](sqlite-database.md).
+
 Priority override (2026-09-30): macOS work is paused at the user’s request. **6.8 / M08 — shared Windows performance and stop/restart repair** is the single active implementation phase. Speed improvements and recording/notes restart repairs are implemented and packaged, with isolated Windows synthetic verification. Installed-upgrade and real-lecture qualification remain open. Preserve all earlier qualification gaps. [Repair evidence and next work](live-speed-restart.md). Earlier current-phase entries below are historical.
 
 Current phase (2026-09-30): **6.9.3 — macOS integration** is the single active implementation phase, at the user’s request. Native menus, window/Dock behavior, microphone permission recovery and sleep/wake recorder handling are implemented in shared source with Windows and synthetic evidence. Keychain uses the existing protected-storage bridge. Native Mac qualification remains open, including earlier 6.9.1 containment and 6.9.2 runtime build/startup gates. See [integration behavior, evidence and exact next work](macos-integration.md). Earlier dated active-phase entries below are historical.

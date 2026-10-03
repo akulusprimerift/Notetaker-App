@@ -1,5 +1,7 @@
 # Phase 6 / M02: Recording and audio recovery
 
+Database update (2026-10-03): SQLite is now the application database for browser, Docker and desktop profiles. The PostgreSQL and SQLite-preview split below records the original M02 deployment and is historical; recording now runs against SQLite with the same private SeaweedFS audio store. See the [conversion, backup and rollback runbook](sqlite-database.md).
+
 Date: 2026-09-07. Status: implemented with synthetic browser/service verification. Real microphone and full device-failure qualification remain open. The user requested synthetic audio only; no microphone permission was granted and no personal audio was recorded.
 
 ## Student workflow
@@ -22,7 +24,7 @@ Saved audio excerpts can be played in the lecture workspace. This first playback
 - [Migration 0002](../../apps/api/migrations/versions/0002_reliable_capture.py) adds capture runs, reservations, verified chunks and immutable manifest revisions. Sealing and subsequent late recovery preserve revision membership. Ordinary live chunk saves advance a manifest counter; they do not copy an entire manifest into JSON every two seconds. Playback uses `/lectures/{id}/audio-chunks/{chunk_id}` with current authorization and object validation.
 - Recording status considers every segment: a completed new segment cannot conceal an older pending segment. An audio-complete manifest can still contain an explicitly reported unknown interruption. M07 must check those issues separately before finalization.
 
-The SQLite preview does not enable recording. PostgreSQL and private SeaweedFS storage are the application path. Kafka/model outages do not control durable audio acknowledgement; actual speech dispatch and job execution are M03 work. Deletion write fences are present, but full deletion/cleanup workflows remain M07 work.
+At the M02 checkpoint, its SQLite preview did not enable recording; PostgreSQL and private SeaweedFS were the production path. That database arrangement is historical. Kafka/model outages do not control durable audio acknowledgement; actual speech dispatch and job execution are M03 work. Deletion write fences are present, but full deletion/cleanup workflows remain M07 work.
 
 ## Run and verify
 
@@ -33,7 +35,7 @@ pwsh -File scripts/Start-App.ps1
 # Add -NewUnlockCode only when a new browser session is needed.
 ```
 
-Open `http://127.0.0.1:3000`. The launcher rebuilds changed code; omit `-NoBuild` after an update. A pre-M02 database snapshot exists locally at `.local/notetaker-before-m02.dump`; it predates the new audio and is not a backup of recordings. Existing courses and the separate SQLite preview were preserved.
+Open `http://127.0.0.1:3000`. The launcher rebuilds changed code; omit `-NoBuild` after an update. A pre-M02 database snapshot exists locally at `.local/notetaker-before-m02.dump`; it predates the new audio and is not a backup of recordings. Existing courses and the former SQLite preview were preserved.
 
 Developer checks:
 

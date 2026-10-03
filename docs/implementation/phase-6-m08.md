@@ -1,6 +1,8 @@
 # Phase 6.8 / M08 — Electron Windows application
 
-Latest increment (2026-09-18): [standalone Windows distribution](windows-standalone.md) bundles the Electron web server, Python workers, PostgreSQL, SeaweedFS and CPU Ollama. Users choose a separate native library or their existing Docker workspace. Native services use database reconciliation; Docker retains Kafka. Release gates remain open. Earlier delivery descriptions below are historical.
+Database update (2026-10-03): Docker and bundled Windows/macOS services now use SQLite; PostgreSQL server binaries are removed from normal runtime packages. Docker retains its prior PostgreSQL volume only in the explicit `migration` profile. New standalone startup preserves and refuses to open a legacy PostgreSQL-only library until the owner converts it. See the [conversion and backup runbook](sqlite-database.md).
+
+Historical Windows runtime baseline (2026-09-18): [standalone Windows distribution](windows-standalone.md) bundled the Electron web server, Python workers, PostgreSQL, SeaweedFS and CPU Ollama. Users chose a separate native library or their existing Docker workspace. Native services used database reconciliation; Docker retained Kafka. Release gates remain open. The 2026-10-03 SQLite database update above supersedes its database/runtime details.
 
 Updated 2026-09-11. M08 is the active implementation phase. The user superseded the earlier Qt direction and selected Electron as the only Windows desktop host. The Qt/native app, standalone native storage profile, native packaging workflow and native-only tests have been removed from the repository.
 
@@ -46,7 +48,7 @@ M08 remains active. Repaired nested materials, provider, model, transcript and v
 
 ## Account linking evidence — 2026-09-15
 
-Active phase: **6.8 / M08**. User sequencing is these usability repairs → Phase 7 → standalone Windows distribution → macOS. Existing Docker/PostgreSQL student data is unchanged; release gates remain open.
+At the historical M08 checkpoint, the active phase was **6.8 / M08**. The current active product phase is recorded in [project-phases.md](../project-phases.md). Existing PostgreSQL libraries remain untouched and require explicit conversion; release gates remain open.
 
 - Midnight contrast repair committed separately as `01251db`: nested materials/model/provider/transcript surfaces now follow the palette; selected sections are clearer.
 - Accounts & API keys opens from the sidebar, the narrow-window top bar, or Note preferences. It is a modal over the workspace, so opening it does not navigate away or unmount recording.

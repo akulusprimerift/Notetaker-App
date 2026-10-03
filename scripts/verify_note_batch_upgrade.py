@@ -39,7 +39,7 @@ def main():
     def migrate():
         if args.bundle:
             env = {**os.environ, 'NOTETAKER_DATABASE_URL':url, 'NOTETAKER_STANDALONE':'true',
-                   'NOTETAKER_PREVIEW':'false', 'NOTETAKER_AUDIO_DIRECTORY':str((args.directory/'audio').resolve())}
+                   'NOTETAKER_AUDIO_DIRECTORY':str((args.directory/'audio').resolve())}
             subprocess.run([str(args.bundle.resolve()/'NotetakerService.exe'), 'migrate'],
                            env=env, check=True, timeout=90, capture_output=True,
                            creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))

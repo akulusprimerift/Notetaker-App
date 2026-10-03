@@ -1,5 +1,7 @@
 # Phase 6.3 / M03: Local transcription and source inspection
 
+Database update (2026-10-03): the PostgreSQL runtime and service descriptions below record the original M03 deployment. Current transcription and job persistence use SQLite in every runtime; see the [conversion, backup and rollback runbook](sqlite-database.md).
+
 Date: 2026-09-07. Status: implemented and verified with synthetic speech, real services and browser walkthroughs. Representative recorded lectures, human accuracy review and full device qualification remain open. No microphone was used.
 
 ## Student result

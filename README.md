@@ -2,13 +2,13 @@
 
 Notetaker is an installable Windows lecture companion for any subject. It captures lecture audio, builds a timestamped transcript, and continuously writes detailed, source-linked study notes that preserve definitions, explanations, worked examples, qualifications, and instructor emphasis.
 
-The Windows deliverable is Electron-based. The React workspace runs inside a hardened Electron window, with FastAPI, speech, notes, PostgreSQL and SeaweedFS services. The standalone profile uses database reconciliation; the existing Docker development profile retains Kafka. The Qt application has been removed.
+The Windows deliverable is Electron-based. The React workspace runs inside a hardened Electron window with FastAPI, speech, notes, SQLite, and SeaweedFS services. SQLite is the primary database in Docker and standalone profiles; Docker retains Kafka notifications. Existing PostgreSQL libraries are available only as explicit conversion sources and remain untouched until the owner converts them.
 
 ![Notetaker logo](docs/assets/notetaker-logo.svg)
 
 ## Windows app
 
-The Electron app creates a normal Windows window and Start menu entry. The standalone build bundles its web server, Python services, PostgreSQL, audio storage and CPU Ollama runtime without requiring separate Docker, Python, Node or PowerShell 7 installations. Users still select existing local note and faster-whisper models. The existing Docker profile remains available. The app never downloads model weights or silently sends lecture audio to an external provider.
+The Electron app creates a normal Windows window and Start menu entry. The standalone build bundles its web server, Python services, SQLite, audio storage and CPU Ollama runtime without requiring separate Docker, Python, Node or PowerShell 7 installations. Users still select existing local note and faster-whisper models. The existing Docker profile remains available. The app never downloads model weights or silently sends lecture audio to an external provider.
 
 The workspace is organized around a course sidebar and lecture sections: Study notes, Transcript, Materials, Capture, Visual notes, Study tools, and Finish. Recording stays alive while moving between sections. Saved audio, transcript passages, source links, protected edits, regeneration proposals, final snapshots, recovery, deletion, exports, prompt profiles, and local/cloud model choices remain part of the same lecture workflow.
 
@@ -27,6 +27,8 @@ The Theme selector offers Slate, Midnight, Pink and Blue, with prominent glass s
 The installer is a development distribution, not a release-ready offline bundle. It retains app data on uninstall. Real-device recording, accessibility, long-duration endurance, coordinated backup/restore, upgrade testing, signing and human note-quality review remain open qualification work. Use synthetic audio for engineering checks unless physical microphone testing is explicitly authorized.
 
 The existing Docker profile still requires Docker Desktop's Linux engine and PowerShell 7. If that profile reports “PowerShell 7 was not found”, install PowerShell 7 and restart Notetaker.
+
+SQLite libraries, explicit PostgreSQL conversion, rollback and complete backup/restore steps are documented in the [database runbook](docs/implementation/sqlite-database.md). A library that contains only legacy PostgreSQL data is retained and refused by the new standalone host until explicit conversion creates its SQLite file.
 
 ## Current phase
 
@@ -50,6 +52,7 @@ Then open `http://127.0.0.1:3000`, or launch the desktop shell with `bun run dev
 - [Materials evidence](docs/implementation/course-materials.md)
 - [Visual notes and provider limitations](docs/implementation/visual-notes-providers.md)
 - [M07 finalization and data control](docs/implementation/phase-6-m07.md)
+- [SQLite conversion and recovery](docs/implementation/sqlite-database.md)
 - [M06 editing, streaming and regeneration](docs/implementation/phase-6-m06.md)
 - [Session transfer](SESSION_TRANSFER.md)
 - [Working instructions](AGENTS.md)
@@ -72,4 +75,4 @@ $env:PYTHONPATH='apps/api'; uv run --no-project python -m pytest apps/api/tests 
 git diff --check
 ```
 
-The backend defaults to isolated SQLite tests; service checks use temporary PostgreSQL schemas. Synthetic checks do not establish microphone quality, educational usefulness, live-provider compatibility, or release readiness. Keep student data, credentials, model weights and generated caches out of Git.
+The backend defaults to fresh synthetic SQLite files; service checks use uniquely named synthetic object/broker resources. Synthetic PostgreSQL conversion fixtures do not establish cross-dialect behavior against a live PostgreSQL server. Synthetic checks also do not establish microphone quality, educational usefulness, live-provider compatibility, or release readiness. Keep student data, credentials, model weights and generated caches out of Git.

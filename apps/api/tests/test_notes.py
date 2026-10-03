@@ -250,7 +250,7 @@ def test_long_unicode_transcript_sources_have_exact_resolvable_spans():
 
 
 def test_provider_excludes_remote_aliases_and_unknown_tokenizers():
-    provider = OllamaNotes(Settings(preview=True,database_url='sqlite://'))
+    provider = OllamaNotes(Settings(database_url='sqlite://'))
     base = {'name':'qwen3:4b','digest':DIGEST,'size':10000000,'details':{'format':'gguf','family':'qwen3'}}
     gemma = {**base,'name':'gemma4:e4b','details':{'format':'gguf','family':'gemma4'}}
     provider.request = lambda *args,**kwargs: {'models':[base,gemma,{**base,'name':'remote','remote_host':'https://ollama.com'},

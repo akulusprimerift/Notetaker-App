@@ -32,6 +32,32 @@ test('Mac library credential unlock failure never replaces the credential or lau
   }
 });
 
+test('existing SQLite library without its protected object credential is preserved',async()=>{
+  const directory=await fs.mkdtemp(path.join(os.tmpdir(),'notetaker-runtime-test-'));
+  try{
+    const resources=path.join(directory,'bundle'),dataPath=path.join(directory,'profile');
+    await fs.mkdir(path.join(resources,'service'),{recursive:true});await fs.mkdir(path.join(dataPath,'standalone-library'),{recursive:true});
+    const bytes=Buffer.from('synthetic Mac service');
+    await fs.writeFile(path.join(resources,'service','NotetakerService'),bytes);
+    await fs.writeFile(path.join(resources,'runtime-manifest.json'),JSON.stringify({schema_version:1,platform:'darwin',arch:'arm64',
+      files:[{path:'service/NotetakerService',sha256:createHash('sha256').update(bytes).digest('hex')}]}));
+    const libraryDatabase=path.join(dataPath,'standalone-library','notetaker.sqlite3');
+    await fs.writeFile(libraryDatabase,'synthetic SQLite library');
+    const runtime=new NativeRuntime({resources,dataPath,platform:require('../../apps/desktop/platform.cjs').desktopPlatform('darwin','arm64'),
+      safeStorage:{isEncryptionAvailable:()=>true,decryptString:()=>assert.fail('missing secret cannot be decrypted'),
+        encryptString:()=>assert.fail('must not create a replacement credential')},
+      utilityProcess:{fork:()=>assert.fail('must not launch services')}});
+    await assert.rejects(runtime.start(),/existing library credential is missing/);
+    assert.equal(await fs.readFile(libraryDatabase,'utf8'),'synthetic SQLite library');
+    await assert.rejects(fs.access(path.join(dataPath,'standalone-secret.bin')));
+    assert.equal(runtime.host,null);
+  }finally{
+    assert.equal(path.dirname(path.resolve(directory)),path.resolve(os.tmpdir()));
+    assert.ok(path.basename(directory).startsWith('notetaker-runtime-test-'));
+    await fs.rm(directory,{recursive:true,force:true});
+  }
+});
+
 test('native shutdown waits for parent-pipe cleanup and does not kill a cleanly exited host',async()=>{
   const runtime=new NativeRuntime({resources:'unused',dataPath:'unused',safeStorage:{},utilityProcess:{}});
   const host=new EventEmitter();host.exitCode=null;host.signalCode=null;

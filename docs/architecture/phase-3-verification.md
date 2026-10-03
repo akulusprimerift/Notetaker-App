@@ -2,7 +2,7 @@
 
 ## Scope of evidence
 
-Phase 3 defines architecture, data relationships, and API/event behavior. The [reference model](../../tests/architecture/reference-model.mjs) and [tests](../../tests/architecture/reference-model.test.mjs) are dependency-free executable design checks. They do not implement the application, nor do they prove PostgreSQL transactions, browser recovery, object durability, authorization enforcement, or model quality.
+Phase 3 defines architecture, data relationships, and API/event behavior. The [reference model](../../tests/architecture/reference-model.mjs) and [tests](../../tests/architecture/reference-model.test.mjs) are dependency-free executable design checks. They do not implement the application, nor do they prove SQLite concurrency/durability, browser recovery, object durability, authorization enforcement, or model quality.
 
 The model deliberately treats object verification/commits as boolean inputs, stores chunk/event identity in memory, and compares finite version values. Its finalization example covers one run with a bounded manifest; production must also reconcile multiple runs, sample gaps, failed transcription ranges, and immutable snapshots as specified in the architecture. Do not use the model as a production persistence adapter.
 

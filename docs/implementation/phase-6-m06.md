@@ -1,5 +1,7 @@
 # Phase 6.6 / M06 — Protected editing and regeneration
 
+Database update (2026-10-03): SQLite is now the supported database in every application profile. The PostgreSQL advisory-lock description below records the original M06 deployment; current claims use SQLite write serialization and per-library OS locks. See the [current database runbook](sqlite-database.md).
+
 Implemented 2026-09-08, together with the user's requested M05 improvements. The scope is prompt-driven note preferences, continuous segmented transcription, visible generation, durable student drafts and safe regeneration resolution. Finalization/deletion remains M07; Windows packaging remains M08. Synthetic engineering checks do not establish real-lecture quality or hardware performance.
 
 ## Live notes and custom preferences
@@ -12,7 +14,7 @@ The speech service loads its already-provisioned local model at startup so the f
 
 During recording, note generation waits for 24 seconds of recognized audio windows containing new transcript passages, or 100 new words. Short final tails flush after recording stops; corrections and preference changes bypass this initial accumulation rule. This is a context threshold, not a guarantee of an educationally complete topic. Coalescing retains the newest transcript while an append-only generation is running.
 
-Speech and notes each have one inference slot, protected by separate PostgreSQL advisory locks and per-kind claims. They can run concurrently; duplicate calls of the same kind remain fenced. This intentionally replaces M05's single shared inference slot so slow note writing cannot stop transcription. Actual combined RAM/VRAM use and sustained real-time factor remain qualification work.
+At the original M06 checkpoint, speech and notes each had one inference slot, protected by separate PostgreSQL advisory locks and per-kind claims. They could run concurrently; duplicate calls of the same kind remained fenced. Current workers use SQLite claims and per-library OS locks as described in the database update above. Actual combined RAM/VRAM use and sustained real-time factor remain qualification work.
 
 The note worker splits new input into batches of at most 16 sources and 8,000 source-text bytes, retaining up to two preceding passages (2,500 characters) as orientation. Unchanged source-backed notes are reused under unchanged preferences. Corrections rebuild the affected snapshot through bounded batches; changed model/preferences regenerate it. A single source exceeding the model's safe capacity still fails visibly rather than being truncated. Individual provider responses keep the original strict schema; the assembled lecture has a separate bounded aggregate validator (10,000 blocks/issues and 20,000 source entries). Batch metadata records source membership and provider provenance. This is chronological contextual batching, not a qualified semantic topic detector or human-reviewed cross-topic synthesis.
 

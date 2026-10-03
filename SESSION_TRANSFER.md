@@ -1,5 +1,16 @@
 # Session transfer
 
+## SQLite primary database increment — 2026-10-03
+
+Active product phase remains **6.9.5 — Mac installer and distribution**; this is the separately accepted database increment on `mx/notetaker-sqlite`, based on `187430f9131faa41805f429ce0d77c1cffeae78d`. SQLite is now the application database in browser, Docker, Windows and macOS profiles. Existing SQLite preview libraries retain their `.local/workspace.db` path. Existing PostgreSQL libraries and volumes remain untouched; conversion is an explicit read-only snapshot export into a new file. No frontend redesign or live student database was included.
+
+The increment updates SQLAlchemy/Alembic startup, SQLite write serialization and per-library process locks, Docker and desktop runtime packages, health/service probes, frozen Windows/Mac host behavior, and historic architecture guidance. The new [database runbook](docs/implementation/sqlite-database.md) covers explicit conversion, digest/integrity checks, rollback and coordinated audio/object backup/restore.
+
+Executed: focused converter/host/workspace/process-lock tests **32 passed, 1 service-only skip**; backend suite excluding Windows-protected provider storage **258 passed, 3 service-only skips**; Ruff passed; Compose app, app+speech and app+migration profile configurations passed; 63 JavaScript contracts, 40 desktop tests, TypeScript, frontend lint and production web build passed; `git diff --check` passed. The unfiltered backend suite had **259 passed, 3 skipped and 8 failures** in cloud credential tests because this macOS host lacks Windows protected storage; the failures are outside the database change. `verify:docs` and PowerShell service probes could not run because `pwsh` is absent. Docker CLI exists, but its daemon is unavailable, so live Compose/database service and PostgreSQL conversion integration were not run; no PostgreSQL server or source data was accessed. Synthetic converter/backup checks do not establish PostgreSQL cross-dialect integration or scale limits.
+
+Current delivery: implementation and checks complete; the exact commit, PR and typed delivery evidence are recorded below after publication. **Do not merge**; human review/merge remains outstanding.
+
+
 ## Phase 6.9.5 DMG published — 2026-10-02
 
 Active phase: **6.9.5 — Mac installer and distribution**. The user reported the 6.9.4 test build works on their Mac. Tagged CI now builds a drag-to-Applications DMG with a Mac icon and run-number build version. Developer ID signing (hardened runtime, entitlements), notarization and stapling run only when the `MACOS_CERTIFICATE_P12`, `MACOS_CERTIFICATE_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` secrets exist; native components are signed before the runtime hash lock because the launcher verifies them. [Details](docs/implementation/macos-distribution.md).

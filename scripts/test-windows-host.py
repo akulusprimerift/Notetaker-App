@@ -89,7 +89,7 @@ def main():
                 report['startup_seconds'] = startup_seconds
                 (profile / 'workflow-report.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
                 print(json.dumps(report, indent=2), flush=True)
-        print(json.dumps({'host': 'passed', 'postgres_api_write_read': 'passed', 'profile': str(profile)}), flush=True)
+        print(json.dumps({'host': 'passed', 'sqlite_migrations_and_api_write_read': 'passed', 'profile': str(profile)}), flush=True)
     finally:
         child.stdin.close()
         try:

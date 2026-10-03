@@ -1,4 +1,4 @@
-"""Shared standalone service tree for an explicitly separate PostgreSQL library."""
+"""Shared standalone service tree for an explicitly selected local library."""
 import ctypes
 from contextlib import contextmanager
 import json
@@ -64,7 +64,7 @@ def main(config):
     data = Path(config['data']).resolve()
     data.mkdir(parents=True, exist_ok=True)
     protect_library(data)
-    require_free_ports([3000, 8010, 55432, 19333, 29333, 18080, 28080, 18888, 28888, 18333, 28333, 11435])
+    require_free_ports([3000, 8010, 19333, 29333, 18080, 28080, 18888, 28888, 18333, 28333, 11435])
     stop = threading.Event()
     for sig in (signal.SIGTERM, signal.SIGINT):
         signal.signal(sig, lambda *_: stop.set())
@@ -74,11 +74,16 @@ def main(config):
             return
         stop.set()
     threading.Thread(target=watch_parent, daemon=True).start()
-    env = {key: value for key, value in os.environ.items() if not key.startswith(('NOTETAKER_', 'PG', 'OLLAMA_', 'PYTHON'))}
+    env = {key: value for key, value in os.environ.items() if not key.startswith(('NOTETAKER_', 'OLLAMA_', 'PYTHON'))}
     password = config['secret']
-    env.update(NOTETAKER_DATABASE_URL=f'postgresql+psycopg://notetaker:{password}@127.0.0.1:55432/postgres',
+    from sqlalchemy.engine import URL
+    library_database = data / 'notetaker.sqlite3'
+    legacy_postgres = data / 'postgres'
+    if not library_database.exists() and legacy_postgres.exists() and any(legacy_postgres.iterdir()):
+        raise RuntimeError('This library contains PostgreSQL data. Convert it explicitly using the PostgreSQL to SQLite guide before opening it.')
+    env.update(NOTETAKER_DATABASE_URL=URL.create('sqlite', database=str(library_database)).render_as_string(hide_password=False),
         PYINSTALLER_RESET_ENVIRONMENT='1',
-        NOTETAKER_PREVIEW='false', NOTETAKER_STANDALONE='false', NOTETAKER_BROKER_ENABLED='false',
+        NOTETAKER_STANDALONE='false', NOTETAKER_BROKER_ENABLED='false',
         NOTETAKER_S3_ENDPOINT='http://127.0.0.1:18333', NOTETAKER_S3_ACCESS_KEY='notetaker',
         NOTETAKER_S3_SECRET_KEY=password, NOTETAKER_OLLAMA_URL='http://127.0.0.1:11435',
         NOTETAKER_WEB_ORIGIN='http://127.0.0.1:3000', NOTETAKER_SPEECH_MODEL_PATH=config.get('speechPath', ''),
@@ -87,14 +92,12 @@ def main(config):
         OLLAMA_HOST='127.0.0.1:11435', OLLAMA_NO_CLOUD='1',
         OLLAMA_MODELS=str(Path.home() / '.ollama/models'))
     children, logs = [], []
-    pg = root / 'postgres/bin'
-    pgdata = data / 'postgres'
     def progress(message):
         print(json.dumps({'status': 'progress', 'message': message}), flush=True)
     @contextmanager
     def external_dll_path():
         # PyInstaller changes the process DLL directory; do not pass its Python
-        # dependency DLLs to PostgreSQL, Seaweed or Ollama executables.
+        # dependency DLLs to Seaweed or Ollama executables.
         if sys.platform == 'win32' and getattr(sys, 'frozen', False):
             ctypes.windll.kernel32.SetDllDirectoryW(None)
         try:
@@ -128,25 +131,7 @@ def main(config):
             stop.wait(.25)
         raise RuntimeError('Local service startup did not complete. Your library was retained.')
     try:
-        progress('Opening your private PostgreSQL library…')
-        if not (pgdata / 'PG_VERSION').exists():
-            if pgdata.exists() and any(pgdata.iterdir()):
-                raise RuntimeError('Incomplete database initialization; existing files were retained for recovery.')
-            pwfile = data / 'init-password'
-            try:
-                pwfile.write_text(password, encoding='utf-8')
-                run([executable(pg, 'initdb'), '-D', pgdata, '-U', 'notetaker', '--auth=scram-sha-256',
-                    '--encoding=UTF8', '--locale=C', '--pwfile', pwfile])
-            finally:
-                pwfile.unlink(missing_ok=True)
-        if (pgdata / 'PG_VERSION').read_text().strip() != '17':
-            raise RuntimeError('This database requires a supported upgrade. Existing data was retained.')
-        launch('postgres', [executable(pg, 'postgres'), '-D', pgdata, '-h', '127.0.0.1', '-p', '55432'])
-        import psycopg
-        def database_ready():
-            with psycopg.connect(host='127.0.0.1', port=55432, dbname='postgres', user='notetaker', password=password, connect_timeout=2):
-                return True
-        wait_for(database_ready)
+        progress('Opening your private SQLite library…')
         progress('Opening private audio storage…')
         objects = data / 'objects'
         objects.mkdir(exist_ok=True)
@@ -183,13 +168,7 @@ def main(config):
             if any(child.poll() is not None for child in children):
                 raise RuntimeError('A local service stopped. Close and reopen Notetaker to recover.')
     finally:
-        stop_children(children[1:])
-        if children and children[0].poll() is None:
-            try:
-                run([executable(pg, 'pg_ctl'), '-D', pgdata, 'stop', '-m', 'fast', '-w', '-t', '15'], timeout=20, shutting_down=True)
-            except Exception:
-                pass
-        stop_children(children[:1])
+        stop_children(children)
         for stream in logs:
             stream.close()
 
