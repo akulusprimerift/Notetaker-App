@@ -91,7 +91,7 @@ const {chromium}=require(playwrightDriver);
     const mainNavigation=page.getByRole('navigation',{name:'Main lecture sections'});
     const moreNavigation=page.getByRole('navigation',{name:'Other lecture sections'});
     assert.deepEqual(await mainNavigation.getByRole('link').allTextContents(),['Notes','Finish']);
-    assert.deepEqual(await moreNavigation.getByRole('link').allTextContents(),['Transcript','Materials','Capture','Visual notes','Study tools']);
+    assert.deepEqual(await moreNavigation.getByRole('link').allTextContents(),['Transcript','Materials','Capture','Visual notes','Flash Cards']);
     assert.equal(await page.getByText(/Ready when you are|Your Space to Learn/i).count(),0);
     assert.equal(await page.locator('#main-content > .capture-panel[aria-label="Deletion progress"]').count(),0);
 

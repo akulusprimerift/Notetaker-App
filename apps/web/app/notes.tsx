@@ -37,7 +37,7 @@ export default function Notes({lecture,csrf,onSessionExpired,onOpenTranscript}:{
   const consentTo=(provider:string,granted:boolean)=>{const next=granted?[...new Set([...consents,provider])]:consents.filter(item=>item!==provider);setConsents(next);try{localStorage.setItem(CONSENT_KEY,JSON.stringify(next))}catch{}};
   const [source,setSource]=useState<Source|null>(null),[quote,setQuote]=useState(''),[audio,setAudio]=useState(0);
   const alive=useRef(true),sourceRequest=useRef(0),sequence=useRef(0),command=useRef<{body:string;key:string}|null>(null);
-  const sourcePanel=useRef<HTMLElement|null>(null);
+  const sourcePanel=useRef<HTMLElement|null>(null),preferencesPanel=useRef<HTMLDetailsElement|null>(null);
   useEffect(()=>{if(source)sourcePanel.current?.focus()},[source]);
   const request=useCallback(async <T,>(path:string,init:RequestInit={}):Promise<T>=>{
     const response=await fetch('/api'+path,{signal:AbortSignal.timeout(20000),...init,cache:'no-store',headers:{'Content-Type':'application/json',...init.headers}});
@@ -104,18 +104,22 @@ export default function Notes({lecture,csrf,onSessionExpired,onOpenTranscript}:{
     try{const data=await request<Source>(`/lectures/${lecture}/sources/${citation.source_id}`);if(alive.current&&ticket===sourceRequest.current){setSource(data);setQuote(citation.quote);setAudio(0)}}
     catch(err){if(alive.current&&ticket===sourceRequest.current)setError(err instanceof Error?err.message:'Source unavailable.')}
   }
+  function openPreferences(){
+    if(!preferencesPanel.current)return;
+    preferencesPanel.current.open=true;
+    preferencesPanel.current.querySelector('summary')?.focus();
+  }
   const selectedRevision=state?.editing.selected??state?.revision;
   const revision=selectedRevision;
   const savedProfile=revision?.profile??state?.profile;
   const activeModel=selected||state?.preference?.model||'';
+  const showStatus=(!preview.text&&(!revision||state?.status!=='ready'))||!!state?.processing?.newer_transcript_pending||!!connectionError||!!error||!!state?.error_code||!!state?.stale;
   const activeConsent=consents.includes(providerOf(activeModel));
   const activeIsCloud=Boolean(models.find(row=>row.name===activeModel)?.provider)||/^(openai|anthropic|chatgpt|claude-subscription)\//.test(activeModel);
   const localModels=models.filter(model=>!model.provider),cloudModels=models.filter(model=>model.provider);
   return <div className="note-layout generated-notes">{revision&&<div className="export-toolbar"><ExportNotes url={`/api${path}/${revision.student?'edits':'revisions'}/${revision.id}/export`}/></div>}<section className="note-paper" aria-labelledby="notes-title">
-    <TranscriptPreview lecture={lecture} onSessionExpired={onSessionExpired} onOpen={onOpenTranscript}/>
     <div className="paper-heading"><h2 id="notes-title">Your lecture notes</h2><span>{savedProfile?.detail_prompt?.trim()?'CUSTOM DETAIL':(savedProfile?.depth??'detailed').toUpperCase()} · {savedProfile?.layout_prompt?.trim()?'CUSTOM LAYOUT':(savedProfile?.format??'topic_outline').replaceAll('_',' ').toUpperCase()}</span></div>
-    <div className="note-status">{!preview.text&&<p role="status">{state?labels[state.status]:'Opening your notes…'}</p>}
-      <p className="small muted">Your selected model turns the transcript into explanations, definitions and worked steps. You can check the evidence below.</p>
+    {showStatus&&<div className="note-status">{!preview.text&&(!revision||state?.status!=='ready')&&<p role="status">{state?labels[state.status]:'Opening your notes…'}</p>}
       {state?.processing?.newer_transcript_pending&&<p className="small muted">New transcript passages are waiting for the next note update.</p>}
       {state?.status==='generating'&&!preview.text&&<p className="small muted">Your model is writing from accumulated transcript passages. New speech continues to be transcribed.</p>}
       {connectionError&&<p role="status" className="error">{connectionError}</p>}
@@ -123,10 +127,9 @@ export default function Notes({lecture,csrf,onSessionExpired,onOpenTranscript}:{
       {state?.error_code&&<p className="error">{errors[state.error_code]??'The local note service needs attention.'}</p>}
       {state?.stale&&<p className="inline-notice">These saved notes use an earlier transcript or model choice. When automatic notes are enabled, a new result must pass checks before replacing them.</p>}
       {state&&(state.status==='needs_attention'||state.error_code)&&<button className="secondary" disabled={busy} onClick={()=>void retry()}>Retry notes</button>}
-    </div>
+    </div>}
     {(preview.active||preview.text)&&<section className="streaming-notes" aria-label="Notes being written"><h3>{preview.active?'Writing now…':'Reconnecting to the writing preview…'}</h3><p className="small muted">Live draft · source checks run before these notes are saved. Scroll up to pause following the newest text.</p><div ref={previewPanel} tabIndex={0} className="streaming-text" onScroll={event=>{const panel=event.currentTarget;followPreview.current=panel.scrollHeight-panel.scrollTop-panel.clientHeight<30}}>{preview.text||'Preparing the next note passages…'}</div></section>}
-    {revision?<div className="generated-content"><div className="note-revision"><span>{revision.student?'Student revision':'Revision'} {revision.revision} · {revision.metadata.model}</span></div>
-      <p className="small muted">{revision.student?'Your selected student revision. Student changes retain original source links for review.':'AI-generated notes. Source links verify where the evidence came from; review important claims for accuracy.'}</p>
+    {revision?<div className="generated-content"><div className="note-revision"><span>{revision.student?'Your revision':'AI revision'} {revision.revision} · {revision.metadata.model}</span></div>
       {state&&<NoteEditor lecture={lecture} revision={revision} editing={state.editing} csrf={csrf} onExpired={onSessionExpired} onSaved={saved=>{setState(current=>current?{...current,editing:{...current.editing,selected:saved}}:current);void refresh().catch(()=>{})}}/>}
       <NotePages key={`pages-${lecture}`}>{revision.content.blocks.map(block=><section className={`study-block ${block.kind==='emphasis'?'study-emphasis':''} ${revision.profile?.format==='cornell'&&!revision.profile.layout_prompt?'cornell-block':''}`} key={block.id}><div className="study-block-title"><p className="eyebrow">{block.kind==='emphasis'?'Important · AI identified':block.kind}</p><h3>{block.topic}</h3></div>{block.passages.map(passage=><div className="study-passage" key={passage.id}>
         <span className="evidence-label">{passage.student_edited?'Student revision · review against the original sources':passage.evidence_kind==='material_paraphrase'?'From uploaded material and cited evidence':passage.evidence_kind==='lecture_paraphrase'?'From the lecture':passage.evidence_kind==='exact_quote'?'Exact lecture quote':passage.evidence_kind==='ai_explanation'?'Additional AI explanation':'Uncertain'}</span>
@@ -138,8 +141,9 @@ export default function Notes({lecture,csrf,onSessionExpired,onOpenTranscript}:{
         {revision.content.issues.map((issue,index)=><p key={index}>{issue.detail}</p>)}
         {revision.content.coverage.filter(c=>c.disposition!=='used').map(item=><p key={item.source_id}>{item.disposition==='unclear'?'Unclear passage':'Omitted passage'}: {item.reason} <button className="text-button" onClick={()=>void openSource({source_id:item.source_id,quote:'',occurrence:0})}>Review source</button></p>)}
       </ReviewNotice>}
-    </div>:<div className="note-placeholder"><span className="paper-icon" aria-hidden="true">≡</span><h3>Listen to the lecture. Let your model take notes.</h3><p>{state?.preference?`Your selected model is ${state.preference.model}. Your notes will appear here when they are ready.`:'Choose a local model once for this lecture. Notes will be created when the saved transcript is ready, and refreshed after corrections.'}</p></div>}
-  </section><aside className="lecture-details note-controls"><h2>Your note-taking model</h2><p className="small muted">Choose an installed local model or connect a provider below. Your selected model is saved for this lecture and can be changed later.</p>
+  </div>:<div className="note-placeholder"><span className="paper-icon" aria-hidden="true">≡</span><h3>Listen to the lecture. Let your model take notes.</h3><p>{state?.preference?`Your selected model is ${state.preference.model}. Your notes will appear here when they are ready.`:'Choose a local model once for this lecture. Notes will be created when the saved transcript is ready, and refreshed after corrections.'}</p><button className="secondary" type="button" onClick={openPreferences}>Open notes settings</button></div>}
+  </section><aside className="lecture-details note-controls" aria-label="Transcript and note settings"><TranscriptPreview lecture={lecture} onSessionExpired={onSessionExpired} onOpen={onOpenTranscript}/>
+    <details ref={preferencesPanel} className="note-preferences" data-attention={!available||undefined}><summary><strong>Notes settings</strong><span>{!available?'Model service unavailable':activeModel||'Choose model'}</span></summary><div className="note-preferences-content"><h2>Your note-taking model</h2><p className="small muted">Choose an installed local model or connect a provider below. Your selected model is saved for this lecture and can be changed later.</p>
     <div className="model-picker-status"><span className={`status-dot ${available?'':'status-dot-warning'}`} aria-hidden="true"/><span>{models.length?`${models.length} model${models.length===1?'':'s'} available`:(modelMessage||'No models found yet.')}</span><button type="button" className="text-button" disabled={busy||refreshingModels} onClick={()=>void refreshModels().catch(()=>{})}>{refreshingModels?'Refreshing…':'Refresh list'}</button></div>
     <label htmlFor="note-model">Note model</label><select id="note-model" value={activeModel} disabled={busy} onChange={event=>{setSelected(event.target.value);setError('')}}><option value="">Choose a model</option>{localModels.length>0&&<optgroup label="On this computer">{localModels.map(model=><option key={model.name} value={model.name}>{model.name}{model.family?` · ${model.family}`:''}</option>)}</optgroup>}{cloudModels.length>0&&<optgroup label="Connected providers">{cloudModels.map(model=><option key={model.name} value={model.name}>{model.name}</option>)}</optgroup>}{state?.preference&&!models.some(m=>m.name===state.preference?.model)&&<option value={state.preference.model}>{state.preference.model} · unavailable</option>}</select>
     {!available&&<p className="small error">Ollama is not reachable. Start Ollama, then refresh the list. Connected providers remain available when configured.</p>}
@@ -152,7 +156,7 @@ export default function Notes({lecture,csrf,onSessionExpired,onOpenTranscript}:{
     <button className="primary full" disabled={busy||!state||!activeModel||(!activeIsCloud?false:!activeConsent)||(!selected&&!custom&&!!state.preference?.enabled)} onClick={()=>void choose()}>{busy?'Saving…':state?.preference?.enabled===false?'Resume automatic notes':state?.preference?'Apply note preferences':'Start automatic notes'}</button>
     {state?.revision&&<button className="secondary full" disabled={busy||!state.preference?.enabled} onClick={()=>void choose()}>Regenerate notes</button>}
     {state?.preference?.enabled&&<button className="text-button" disabled={busy} onClick={()=>void choose(false)}>Pause automatic notes</button>}
-    <p className="small muted">Automatic notes continue when this page is closed, while the app services are running.</p>
+    <p className="small muted">Automatic notes continue when this page is closed, while the app services are running.</p></div></details>
     {source&&<section ref={sourcePanel} tabIndex={-1} className="note-source" aria-label="Note source"><div className="section-row"><h3>{source.source_kind?'Uploaded evidence':'Lecture evidence'}</h3><button className="text-button" onClick={()=>{sourceRequest.current++;setSource(null)}}>Close source</button></div><p className="small">{source.source_kind?source.label:<>Recording {source.segment_number} · {(source.start_sample/source.sample_rate).toFixed(1)} seconds</>}</p>{quote&&<blockquote>{quote}</blockquote>}<p className="study-text">{source.text}</p>{!source.source_kind&&<button className="secondary" onClick={()=>setAudio(value=>value+1)}>Play source audio</button>}{audio>0&&<audio key={`${source.id}-${audio}`} controls autoPlay src={source.audio_url} onError={()=>setError('The saved source audio is unavailable. The transcript is still shown.')}/>}</section>}
   </aside></div>;
 }
