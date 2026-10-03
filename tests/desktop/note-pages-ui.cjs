@@ -26,7 +26,6 @@ const assert=require('node:assert/strict');
       else if(path.endsWith('/transcript'))body=transcript;
       else if(path.endsWith('/capture'))body={available:true,capture_epoch:1,runs:[]};
       else if(path.endsWith('/notes'))body=notes;
-      else if(path.endsWith('/study/learning'))body={revision_id:null,cards:[],omitted:0,issues:[]};
       else if(path.endsWith('/study/questions'))body={revision_id:null,blocks:[],preference_id:null,model:null,enabled:false,cloud:false,sets:[]};
       else if(path.endsWith('/provider-connections'))body={connections:[]};
       else if(path.endsWith('/terminology'))body={version:0,terms:[]};

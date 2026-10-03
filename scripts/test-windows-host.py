@@ -100,7 +100,7 @@ def main():
 
 
 def workflow(client, headers, course, args, profile):
-    """Saved audio → live transcript/notes → edits/regeneration → study → exports → finalize."""
+    """Saved audio → live transcript/notes → edits/regeneration → prompted flash cards → exports → finalize."""
     def ok(response):
         if response.is_error:
             raise RuntimeError(f'{response.request.method} {response.request.url.path}: {response.status_code} {response.text}')
@@ -292,14 +292,31 @@ def workflow(client, headers, course, args, profile):
     assert has_marker(undone['content']) and len(undone['content']['blocks']) == len(saved['content']['blocks'])
     report.update(protected_edit=True, merge=True, undo=True)
 
-    # Study tools read the selected student revision.
-    cards = ok(client.get(path + '/study/learning')).json()
-    assert cards['revision_id'] == undone['id'] and cards['cards'], cards
-    card = cards['cards'][0]
-    post(path + '/study/learning/reviews', {'revision_id': cards['revision_id'], 'block_id': card['id'],
-        'expected_version': card['review']['version'], 'rating': 'confident'})
-    ok(client.get(path + '/study/catch-up'))
-    report.update(recall_cards=len(cards['cards']), self_assessment=True, catch_up=True)
+    # One explicit instruction generates a persisted set from the current selected saved notes.
+    setup = ok(client.get(path + '/study/questions')).json()
+    assert setup['revision_id'] == undone['id'] and setup['has_notes'] and setup['enabled'], setup
+    prompt = 'Make concise flash cards for the key ideas. Keep every condition, exception and worked step.'
+    queued = post(path + '/study/questions', {'revision_id': setup['revision_id'],
+        'preference_id': setup['preference_id'], 'prompt': prompt})
+    assert queued['prompt'] == prompt and queued['model'] == args.note_model
+    def saved_flash_cards():
+        result = ok(client.get(path + '/study/questions/' + queued['id'])).json()
+        if result['status'] in ('failed', 'cancelled'):
+            raise RuntimeError('Flash card generation failed: ' + str(result['error_code']))
+        return result if result['status'] == 'completed' else None
+    deck = wait('Prompted flash card generation', saved_flash_cards)
+    assert deck['revision_id'] == setup['revision_id'] and deck['questions'], deck
+    sources = {source['id']: source['text'] for source in deck['sources']}
+    for card in deck['questions']:
+        assert card['kind'] == 'flashcard'
+        assert card['citations'] and all(citation['source_id'] in sources
+            and citation['quote'] in sources[citation['source_id']] for citation in card['citations']), card
+    card = deck['questions'][0]
+    reviewed = post(path + '/study/questions/' + queued['id'] + '/' + card['id'] + '/reviews', {
+        'question_revision': card['revision_id'], 'expected_version': card['review']['version'], 'rating': 'confident'})
+    assert reviewed['version'] == card['review']['version'] + 1
+    report.update(flash_card_prompt_submitted=True, flash_cards=len(deck['questions']),
+        flash_card_provenance=True, self_assessment=True)
 
     # Exports of the selected student revision and generated revision.
     for format in ('markdown', 'docx'):

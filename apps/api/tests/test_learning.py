@@ -1,91 +1,101 @@
-from uuid import uuid4
 from copy import deepcopy
 from sqlalchemy import select, func
-from test_workspace import setup, course, lecture
+from test_workspace import ROOT, setup
 from test_capture import capture
 from test_transcription import speech
 from test_notes import notes, correction
 from test_note_edits import generated, command
-from test_lifecycle import remove
-from notetaker import models as m
-from notetaker.lifecycle import reconcile_deletion
+from notetaker import models as m, question_worker as worker
+from notetaker.learning import saved_note_context
 
 
-def assess(client, headers, path, deck, version=0, rating='again', key=None):
-    return client.post(path + '/study/learning/reviews',
-        headers={**headers, 'idempotency-key': key or str(uuid4())},
-        json={'revision_id': deck['revision_id'], 'block_id': deck['cards'][0]['id'],
-            'expected_version': version, 'rating': rating})
-
-
-def test_learning_preserves_answers_and_idempotent_append_only_ratings(notes):
-    app, client, headers, path, _ = notes
-    assert client.get(path + '/study/learning').json()['cards'] == []
-    saved = generated(app, client, path)
-    deck = client.get(path + '/study/learning').json()
-    assert deck['revision_id'] == saved['id'] and deck['cards']
-    card = deck['cards'][0]
-    assert [p['text'] for p in card['passages']] == [p['text'] for p in saved['content']['blocks'][0]['passages']]
-    assert card['sources'] and card['review']['version'] == 0
-    assert assess(client, {}, path, deck).status_code == 403
-    key = str(uuid4())
-    first = assess(client, headers, path, deck, key=key)
-    assert first.status_code == 200, first.text
-    assert assess(client, headers, path, deck, key=key).json() == first.json()
-    assert assess(client, headers, path, deck, key=key, rating='confident').status_code == 409
-    assert assess(client, headers, path, deck).status_code == 409
-    assert assess(client, headers, path, deck, version=1, rating='confident').json()['version'] == 2
-    assert assess(client, headers, path, deck, version=2, rating='unreviewed').json()['version'] == 3
-    assert assess(client, headers, path, deck, version=3, rating='mastered').status_code == 422
-    assert client.get(path + '/study/learning').json()['cards'][0]['review']['rating'] == 'unreviewed'
+def context(app, path):
     with app.state.sessions() as db:
-        assert db.scalar(select(func.count()).select_from(m.LearningReview)) == 3
-        assert db.scalar(select(func.count()).select_from(m.NoteRevision)) == 1
+        return saved_note_context(db, db.get(m.Lecture, path.split('/')[-1]))
 
 
-def test_learning_fences_source_corrections_and_selected_edits(notes):
+def test_flashcard_context_uses_current_saved_notes_and_keeps_provenance(notes):
     app, client, headers, path, _ = notes
     saved = generated(app, client, path)
-    deck = client.get(path + '/study/learning').json()
-    assert assess(client, headers, path, deck, rating='confident').status_code == 200
+    result = context(app, path)
+    assert result['revision_id'] == saved['id'] and result['blocks']
+    block = result['blocks'][0]
+    assert [passage['text'] for passage in block['passages']] == [
+        passage['text'] for passage in saved['content']['blocks'][0]['passages']]
+    assert block['passages'][0]['sources'] and block['sources']
+
     passage = saved['content']['blocks'][0]['passages'][0]
     response = command(client, headers, path, {'action': 'save', 'expected_version': 0,
         'base_id': saved['id'], 'passages': [{'id': passage['id'], 'text': 'My revised explanation; preserve the qualification.'}]})
     assert response.status_code == 200, response.text
-    updated = client.get(path + '/study/learning').json()
-    assert updated['cards'][0]['passages'][0]['student_edited']
-    assert updated['cards'][0]['passages'][0]['text'].startswith('My revised')
-    assert updated['cards'][0]['review']['version'] == 0
-    assert assess(client, headers, path, deck, version=1).status_code == 409
+    edited = context(app, path)
+    assert edited['blocks'][0]['passages'][0]['student_edited']
+    assert edited['blocks'][0]['passages'][0]['text'].startswith('My revised')
+    assert edited['blocks'][0]['passages'][0]['sources'] == passage['sources']
+
     correction(client, headers, path)
-    changed = client.get(path + '/study/learning').json()
-    assert changed['omitted'] > 0 and not changed['cards']
-    assert assess(client, headers, path, updated).status_code == 409
+    changed = context(app, path)
+    assert changed['omitted'] > 0 and not changed['blocks']
 
 
-def test_learning_ownership_and_deletion(notes):
+def test_student_authored_notes_without_transcript_links_can_generate_cards(notes):
     app, client, headers, path, _ = notes
-    generated(app, client, path)
-    deck = client.get(path + '/study/learning').json()
-    another = lecture(client, headers, course(client, headers)['id'])
-    assert assess(client, headers, '/lectures/' + another['id'], deck).status_code == 409
-    assert client.get('/lectures/missing/study/learning').status_code == 404
-    key = str(uuid4())
-    assert assess(client, headers, path, deck, key=key).status_code == 200
-    deletion = remove(client, headers, path).json()
-    reconcile_deletion(app.state.sessions, app.state.audio_store, deletion['id'])
-    assert client.get(path + '/study/learning').status_code == 404
-    assert assess(client, headers, path, deck, key=key).status_code == 404
+    saved = generated(app, client, path)
+    personal_text = 'My personal reminder: compare both endpoints before accepting a local minimum.'
+    edited = command(client, headers, path, {'action': 'save', 'expected_version': 0,
+        'base_id': saved['id'], 'additional_text': personal_text})
+    assert edited.status_code == 200, edited.text
+
+    selected = context(app, path)
+    assert selected['revision_id'] == edited.json()['id']
+    personal_block = next(block for block in selected['blocks'] if block['topic'] == 'My additions')
+    personal_passage = personal_block['passages'][0]
+    assert personal_passage['evidence_kind'] == 'student_note'
+    assert personal_passage['note_source_id']
+    personal_source = next(source for source in personal_block['sources'] if source['id'] == personal_passage['note_source_id'])
+    assert personal_source == {'id': personal_passage['note_source_id'], 'text': personal_text,
+        'label': 'Student note · My additions', 'source_kind': 'student_note',
+        'revision_id': edited.json()['id'], 'passage_id': personal_passage['id']}
+
+    state = client.get(path + '/study/questions').json()
+    assert state['has_notes'] and state['revision_id'] == edited.json()['id']
+    body = {'revision_id': state['revision_id'], 'preference_id': state['preference_id'],
+        'prompt': 'Make one concise card from my personal reminder.', 'cloud_consent': False}
+    queued = client.post(path + '/study/questions', json=body,
+        headers={**headers, 'idempotency-key': 'student-note-flashcard'})
+    assert queued.status_code == 202, queued.text
     with app.state.sessions() as db:
-        assert db.scalar(select(func.count()).select_from(m.LearningReview)) == 0
-    client.cookies.clear()
-    assert client.get('/lectures/' + another['id'] + '/study/learning').status_code == 401
+        evidence = db.get(m.QuestionSet, queued.json()['id']).evidence
+    assert evidence['revision_id'] == edited.json()['id']
+    assert evidence['student_prompt'] == body['prompt']
+    note_source = next(source for source in evidence['sources'] if source.get('source_kind') == 'student_note')
+    assert note_source['text'] == personal_text
+    original_passages = [passage for block in evidence['notes'] for passage in block['passages'] if passage.get('sources')]
+    assert original_passages and all(passage['sources'] for passage in original_passages)
+    original_source_ids = {citation['source_id'] for passage in original_passages for citation in passage['sources']}
+    assert original_source_ids <= {source['id'] for source in evidence['sources']}
+
+    class PersonalNoteCards:
+        def generate_questions(self, evidence, preference, preview):
+            source = next(source for source in evidence['sources'] if source.get('source_kind') == 'student_note')
+            preview('Checking the saved personal note…')
+            return [{'kind': 'flashcard', 'objective': 'conditions',
+                'question': 'What should be compared before accepting a local minimum?',
+                'answer': source['text'], 'citations': [{'source_id': source['id'], 'quote': source['text']}]}], {
+                'model': preference.model, 'model_digest': preference.model_digest,
+                'semantic_support': 'not_evaluated'}
+
+    claimed = worker.claim(app.state.sessions)
+    assert claimed and worker.execute(app.state.sessions, PersonalNoteCards(), claimed, heartbeat=False)
+    detail = client.get(path + '/study/questions/' + queued.json()['id']).json()
+    assert detail['status'] == 'completed' and not detail['stale']
+    assert detail['questions'][0]['citations'][0]['source_id'] == note_source['id']
+    assert next(source for source in detail['sources'] if source['id'] == note_source['id'])['label'] == 'Student note · My additions'
 
 
-def test_learning_does_not_drop_unsupported_qualifiers_from_blocks(notes):
+def test_unsupported_passage_omits_whole_note_block(notes):
     app, client, _, path, _ = notes
     saved = generated(app, client, path)
-    # Synthetic mixed-evidence fixture: do not turn an incomplete section into an answer.
     with app.state.sessions() as db:
         row = db.get(m.NoteRevision, saved['id'])
         content = deepcopy(row.content)
@@ -93,8 +103,22 @@ def test_learning_does_not_drop_unsupported_qualifiers_from_blocks(notes):
             'evidence_kind': 'ai_explanation', 'sources': []})
         row.content = content
         db.commit()
-    result = client.get(path + '/study/learning').json()
-    assert result['cards'] == [] and result['omitted'] == 1
+    result = context(app, path)
+    assert result['blocks'] == [] and result['omitted'] == 1
+    inventory = client.get(path + '/study/questions').json()
+    assert not inventory['has_notes'] and inventory['omitted_blocks'] == 1
+    assert client.get(path + '/study/learning').status_code == 404
+    assert client.get(path + '/study/catch-up').status_code == 404
+
+
+def test_retired_study_routes_leave_existing_student_records_untouched(notes):
+    app, client, _, path, _ = notes
+    generated(app, client, path)
+    assert client.get(path + '/study/learning').status_code == 404
+    assert client.get(path + '/study/catch-up').status_code == 404
+    with app.state.sessions() as db:
+        assert db.scalar(select(func.count()).select_from(m.NoteRevision)) == 1
+        assert db.scalar(select(func.count()).select_from(m.LearningReview)) == 0
 
 
 def test_learning_migration_preserves_existing_library(tmp_path):
@@ -102,7 +126,7 @@ def test_learning_migration_preserves_existing_library(tmp_path):
     from alembic.config import Config
     from sqlalchemy import create_engine, inspect
     from sqlalchemy.orm import Session
-    from test_workspace import ROOT
+
     engine = create_engine('sqlite:///' + (tmp_path / 'upgrade.db').as_posix())
     config = Config(str(ROOT / 'alembic.ini'))
     try:

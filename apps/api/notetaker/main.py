@@ -300,8 +300,6 @@ def create_app(settings: Settings | None = None):
     install_materials(app, current, db_session, owned_course, owned_lecture, receipt)
     from .study import install_study
     install_study(app, current, db_session, owned_lecture, receipt)
-    from .learning import install_learning
-    install_learning(app, current, db_session, owned_lecture, receipt)
     from .questions import install_questions
     install_questions(app, current, db_session, owned_lecture, receipt)
     from .terminology import install_terminology

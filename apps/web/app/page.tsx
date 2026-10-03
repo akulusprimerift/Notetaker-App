@@ -14,7 +14,7 @@ import DataRemoval from './data-removal';
 import VisualNotes from './visual-notes';
 import DesktopTools from './desktop-tools';
 import AccountsDialog from './accounts-dialog';
-import StudyTools from './study-tools';
+import FlashCards from './flash-cards';
 import CourseTerminology from './course-terminology';
 
 type Course={id:string;name:string;code:string;created_at:string};
@@ -28,7 +28,7 @@ const lectureTabs:ReadonlyArray<{id:LectureTab;label:string;description:string}>
   {id:'materials',label:'Materials',description:'Review slides and course sources'},
   {id:'capture',label:'Capture',description:'Record and recover audio'},
   {id:'visuals',label:'Visual notes',description:'Review source-linked schematics'},
-  {id:'study',label:'Study tools',description:'Catch up and review important moments'},
+  {id:'study',label:'Flash Cards',description:'Create source-linked cards from saved notes'},
   {id:'finalize',label:'Finish',description:'Export or manage this lecture'},
 ];
 const isLectureTab=(value:string):value is LectureTab=>lectureTabs.some(tab=>tab.id===value);
@@ -191,7 +191,7 @@ export default function Workspace(){
           {lectureTab==='transcript'&&<Transcript key={snapshot.lecture.id} owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setTranscriptBusy} onSessionExpired={sessionExpired}/>}
           {lectureTab==='materials'&&<Materials key={snapshot.lecture.id+'-materials'} course={snapshot.lecture.course_id} lecture={snapshot.lecture.id} csrf={session.csrf_token}/>}
           {lectureTab==='visuals'&&<VisualNotes key={snapshot.lecture.id+'-visuals'} lecture={snapshot.lecture.id} onSessionExpired={sessionExpired}/>}
-          {lectureTab==='study'&&<StudyTools key={snapshot.lecture.id+'-study'} lecture={snapshot.lecture.id} course={snapshot.lecture.course_id} csrf={session.csrf_token}/>}
+          {lectureTab==='study'&&<FlashCards key={snapshot.lecture.id+'-flash-cards'} lecture={snapshot.lecture.id} csrf={session.csrf_token}/>}
           {lectureTab==='finalize'&&<Finalization key={snapshot.lecture.id+'-final'} lecture={snapshot.lecture.id} csrf={session.csrf_token} busy={captureBusy||transcriptBusy} onRemoved={dataRemoved} deleteRequested={deleteLecture} onDeleteHandled={()=>setDeleteLecture(false)}/>}
         </div>
       </>:route.startsWith('course/')&&selected?<>

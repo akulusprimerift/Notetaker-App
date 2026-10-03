@@ -1,5 +1,7 @@
 # Phase 7.3 — Learning tools
 
+> **Current product direction (2026-10-03):** the Study Tools surface has been replaced by a focused, explicitly prompted Flash Cards flow. The former Catch Me Up and extractive recall endpoints and UI are retired. Earlier sections in this document are historical implementation and qualification evidence; [current Flash Cards behavior and checks](flash-cards.md) describes the active surface. Existing saved sets, question edits, ratings and note/source history remain stored under their existing deletion and retention rules.
+
 Active implementation phase, updated 2026-09-17, at the user's request. Extractive recall practice and generated-question increments are implemented. Standalone Windows distribution is the follow-on priority; Phase 7.2 and 7.4 are not prerequisites. This is not educational qualification or completion of every Phase 7.3 quality gate. Earlier note-quality and M08 release gates remain open.
 
 ## Generated question increment — 2026-09-17

@@ -22,9 +22,8 @@ const assert=require('node:assert/strict');
       else if(path.endsWith('/deletion')){assert.equal(route.request().postDataJSON().kind,'lecture');assert.equal(route.request().postDataJSON().expected_cursor,7);deletionCalls++;body={id:'removal'};}
       else if(path.endsWith('/transcript'))body=transcript;
       else if(path.endsWith('/capture'))body={available:true,capture_epoch:1,runs:[]};
+      else if(path.endsWith('/study/questions'))body={revision_id:null,has_notes:false,preference_id:null,model:null,enabled:false,cloud:false,sets:[]};
       else if(path.endsWith('/notes'))body=notes;
-      else if(path.endsWith('/study/learning'))body={revision_id:null,cards:[],omitted:0,issues:[]};
-      else if(path.endsWith('/study/questions'))body={revision_id:null,blocks:[],preference_id:null,model:null,enabled:false,cloud:false,sets:[]};
       else if(path.endsWith('/provider-connections'))body={connections:[]};
       else if(path.endsWith('/terminology'))body={version:0,terms:[]};
       else if(path.endsWith('/note-models'))body={models:[],available:true};
@@ -118,7 +117,7 @@ const assert=require('node:assert/strict');
     await page.getByRole('tab',{name:'Study notes',exact:true}).waitFor();
     for(const width of [1440,400]){
       await page.setViewportSize({width,height:900});
-      for(const label of ['Study notes','Transcript','Materials','Capture','Visual notes','Study tools','Finish']){
+      for(const label of ['Study notes','Transcript','Materials','Capture','Visual notes','Flash Cards','Finish']){
         await page.getByRole('tab',{name:label,exact:true}).click();
         if(label==='Capture')await page.locator('.capture-panel:not(.capture-panel-compact)').waitFor();
         else await page.getByRole('tabpanel',{name:label,exact:true}).waitFor();
