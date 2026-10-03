@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta
+import os
 from uuid import uuid4
 
 import pytest
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import select, text
-from sqlalchemy.engine import URL
+from sqlalchemy import create_engine, inspect, select, text
+from sqlalchemy.engine import URL, make_url
 from sqlalchemy.orm import Session
 from notetaker.db import database
 from notetaker.backup_sqlite import backup_database
@@ -22,11 +23,26 @@ def _upgrade(engine, root, revision='head'):
         command.upgrade(config, revision)
 
 
-def test_staged_migration_preserves_ids_revisions_retention_and_recovery(tmp_path):
+@pytest.mark.parametrize('source_kind', ['sqlite', 'postgres'])
+def test_staged_migration_preserves_ids_revisions_retention_and_recovery(tmp_path, source_kind):
     root = __import__('pathlib').Path(__file__).resolve().parents[3]
-    source_path = tmp_path / 'source.sqlite3'
-    source_url = URL.create('sqlite', database=str(source_path)).render_as_string(hide_password=False)
-    source_engine, _ = database(source_url)
+    if source_kind == 'postgres':
+        source_url = os.environ.get('NOTETAKER_TEST_POSTGRES_URL', '')
+        if not source_url:
+            pytest.skip('Set NOTETAKER_TEST_POSTGRES_URL to a disposable local PostgreSQL database for the real conversion integration test.')
+        parsed_url = make_url(source_url)
+        if (parsed_url.get_backend_name() != 'postgresql'
+                or parsed_url.host not in {'localhost', '127.0.0.1', '::1'}
+                or parsed_url.database != 'notetaker_test'):
+            pytest.fail('The integration URL must target the local, disposable notetaker_test database.')
+        source_engine = create_engine(parsed_url, pool_pre_ping=True, connect_args={'connect_timeout': 5})
+        if inspect(source_engine).get_table_names():
+            source_engine.dispose()
+            pytest.fail('The local notetaker_test database must be empty before the integration test runs.')
+    else:
+        source_path = tmp_path / 'source.sqlite3'
+        source_url = URL.create('sqlite', database=str(source_path)).render_as_string(hide_password=False)
+        source_engine, _ = database(source_url)
     _upgrade(source_engine, root)
     stamp = datetime(2026, 4, 5, 6, 7, 8, 90123)
     owner_id, course_id, lecture_id = str(uuid4()), str(uuid4()), str(uuid4())
@@ -36,6 +52,7 @@ def test_staged_migration_preserves_ids_revisions_retention_and_recovery(tmp_pat
     final_snapshot_id, deletion_id = str(uuid4()), str(uuid4())
     job_id, outbox_id, receipt_id = str(uuid4()), str(uuid4()), str(uuid4())
     attempt_token = str(uuid4())
+    edit_id = str(uuid4())
     with Session(source_engine) as db:
         db.add(Owner(id=owner_id, singleton=1, created_at=stamp))
         db.commit()
@@ -87,7 +104,7 @@ def test_staged_migration_preserves_ids_revisions_retention_and_recovery(tmp_pat
         ])
         db.commit()
         db.add_all([
-            NoteEdit(id=str(uuid4()), lecture_id=lecture_id, version=1, generated_id=note_id,
+            NoteEdit(id=edit_id, lecture_id=lecture_id, version=1, generated_id=note_id,
                 reviewed_id=note_id, content={'blocks':[{'id':'student-1','text':'My saved correction.'}]},
                 provenance=[{'author':'student'}], action='save', created_at=stamp),
             FinalSnapshot(id=final_snapshot_id, lecture_id=lecture_id, finalization_id=finalization_id,
@@ -108,8 +125,20 @@ def test_staged_migration_preserves_ids_revisions_retention_and_recovery(tmp_pat
     with Session(target_engine) as migrated:
         assert migrated.execute(select(NoteRevision.id, NoteRevision.content, NoteRevision.created_at)).one() == (
             note_id, {'blocks':[{'id':'immutable-1','text':'A retained fact.'}]}, stamp)
+        assert migrated.get(Owner, owner_id).created_at == stamp
+        assert migrated.get(Course, course_id).owner_id == owner_id
         lecture = migrated.get(Lecture, lecture_id)
         assert lecture.audio_removed and not lecture.keep_audio and lecture.audio_epoch == 3
+        assert lecture.course_id == course_id and lecture.created_at == stamp
+        assert migrated.get(NoteRequest, request_id).snapshot_id == snapshot_id
+        assert migrated.get(NoteRequest, request_id).settings_id == settings_id
+        edit = migrated.get(NoteEdit, edit_id)
+        assert edit.generated_id == note_id and edit.reviewed_id == note_id
+        assert edit.content == {'blocks':[{'id':'student-1','text':'My saved correction.'}]}
+        assert edit.provenance == [{'author':'student'}] and edit.created_at == stamp
+        final_snapshot = migrated.get(FinalSnapshot, final_snapshot_id)
+        assert final_snapshot.content == {'revision_id':note_id}
+        assert final_snapshot.markdown == '# Retained final snapshot' and final_snapshot.created_at == stamp
         finalization = migrated.get(Finalization, finalization_id)
         assert finalization.discard_audio and finalization.expected_edit_version == 1
         deletion = migrated.get(Deletion, deletion_id)
