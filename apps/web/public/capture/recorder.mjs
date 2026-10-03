@@ -23,7 +23,11 @@ export class Recorder {
     };
     this.beforeUnload=event=>{if(this.active||this.local.some(run=>run.pending_bytes)||this.volatile.length){event.preventDefault();event.returnValue='';}};
     this.navigate=event=>{
-      if((this.active||this.working||this.volatile.length)&&event.target.closest?.('a[href]:not([download])')) {
+      const link=event.target.closest?.('a[href]:not([download])');
+      if((this.active||this.working||this.volatile.length)&&link) {
+        const target=new URL(link.href,location.href);
+        const sameWorkspacePage=target.origin===location.origin&&target.pathname===location.pathname&&target.search===location.search;
+        if(sameWorkspacePage)return;
         event.preventDefault();this.message='Stop recording and preserve any unsaved audio before leaving this lecture.';this.emit();
       }
     };
