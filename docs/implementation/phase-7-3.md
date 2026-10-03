@@ -2,6 +2,10 @@
 
 > **Current product direction (2026-10-03):** the Study Tools surface has been replaced by a focused, explicitly prompted Flash Cards flow. The former Catch Me Up and extractive recall endpoints and UI are retired. Earlier sections in this document are historical implementation and qualification evidence; [current Flash Cards behavior and checks](flash-cards.md) describes the active surface. Existing saved sets, question edits, ratings and note/source history remain stored under their existing deletion and retention rules.
 
+## Prompted Flash Cards integration — 2026-10-03
+
+The active learning surface uses the selected current saved note revision and the student's explicit prompt. Manually added or edited passages without transcript citations remain eligible with revision-bound student-note provenance; existing source citations and stale-source/ownership checks remain intact. Integration commit `c03904bf6ec0f003de3ffef7377a9778c49b6cf7` combines the Flash Cards feature with Settings and the SQLite conversion for compatibility validation. Combined UI, Settings accessibility and focused SQLite persistence checks pass. Eight unrelated Windows protected-storage provider tests fail on this macOS host; the Mac custom-font assertion reports Helvetica, as recorded in [the implementation evidence](flash-cards.md). Exact checks, screenshots and remaining platform qualifications are in the task artifact report. Phase 7.3 educational usefulness and release qualification remain open.
+
 Active implementation phase, updated 2026-09-17, at the user's request. Extractive recall practice and generated-question increments are implemented. Standalone Windows distribution is the follow-on priority; Phase 7.2 and 7.4 are not prerequisites. This is not educational qualification or completion of every Phase 7.3 quality gate. Earlier note-quality and M08 release gates remain open.
 
 ## Generated question increment — 2026-09-17
