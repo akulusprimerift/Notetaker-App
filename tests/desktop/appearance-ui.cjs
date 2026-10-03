@@ -119,7 +119,7 @@ const {setTheme}=require('./settings-test-helpers.cjs');
     await page.getByRole('link',{name:'Notes',exact:true}).waitFor();
     for(const width of [1440,400]){
       await page.setViewportSize({width,height:900});
-      for(const label of ['Notes','Finish','Transcript','Materials','Capture','Visual notes','Study tools']){
+      for(const label of ['Notes','Finish','Transcript','Materials','Capture','Visual notes','Flash Cards']){
         await page.getByRole('link',{name:label,exact:true}).click();
         if(label==='Capture')await page.locator('.capture-detail-panel').waitFor();
         else await page.locator('.lecture-panel').waitFor();

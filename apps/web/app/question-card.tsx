@@ -35,7 +35,7 @@ export default function QuestionCard({initial,endpoint,csrf,stale,sources,onSave
     catch(e){setError(e instanceof Error?e.message:'Could not load saved versions.');}finally{setBusy(false);}
   }
   function useSaved(saved:Question){setQuestion(saved.question);setAnswer(saved.answer);setQuality(saved.quality);setFeedback(saved.feedback);setBase(comparison?.version??card.version);setBlocked(false);setNotice('Version loaded into the editor. Save to append a new revision.');}
-  return <article className="catchup-item learning-card"><p className="eyebrow">{card.kind} · {card.objective.replaceAll('_',' ')}</p><h4 className="study-text">{card.question}</h4>
+  return <article className="flash-card learning-card"><p className="eyebrow">{card.kind==='flashcard'?'Flash card':'Earlier saved question'} · {card.objective.replaceAll('_',' ')}</p><h4 className="study-text">{card.question}</h4>
     {card.student_edited&&<p className="small muted">Student-edited question or answer; citations are retained, not automatically revalidated for meaning.</p>}
     {needsWork&&<p className="inline-notice">Your quality review flags this question for improvement. Self-assessment is paused until the concerns are resolved.</p>}
     <label>Your practice answer (not saved)<textarea value={scratch} onChange={e=>setScratch(e.target.value)} rows={3}/></label>

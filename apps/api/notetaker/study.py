@@ -1,11 +1,10 @@
-"""Source-linked study views. Bookmarks never change transcript or note history."""
-from fastapi import Depends, Request, Query, HTTPException
+"""Student bookmarks; they never change transcript or note history."""
+from fastapi import Depends, Request
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select, func
 from . import models as m
 from .security import error
-from .transcription import lock_lecture, snapshot_json, saved_through
-from .notes import latest
+from .transcription import lock_lecture, saved_through
 
 
 class MarkInput(BaseModel):
@@ -27,79 +26,6 @@ def mark_json(db, row):
     return {'id': row.id, 'run_id': row.run_id, 'sample': row.sample, 'label': row.label,
         'version': row.version, 'removed': row.removed, 'sample_rate': run.sample_rate,
         'recording_number': run.capture_epoch, 'awaiting_audio': row.sample > through or through == 0}
-
-
-def catch_up(db, lecture, seconds, run_id=None, end_sample=None):
-    snapshot = latest(db, m.TranscriptSnapshot, lecture.id, m.TranscriptSnapshot.sequence)
-    response = {'snapshot_id': snapshot.id if snapshot else None, 'revision_id': None,
-        'seconds': seconds, 'items': [], 'sources': [], 'issues': [], 'omitted_stale': 0,
-        'message': 'No saved transcript yet. Recording and transcription can continue independently.'}
-    if not snapshot:
-        return response
-    sources = snapshot_json(db, snapshot)['segments']
-    # version_json provides a stable run/recording identity and original sample range.
-    runs = list(db.scalars(select(m.CaptureRun).where(m.CaptureRun.lecture_id == lecture.id).order_by(m.CaptureRun.capture_epoch)))
-    if run_id:
-        run = next((run for run in runs if run.id == run_id), None)
-        if not run:
-            error(404, 'unavailable', 'This recording is unavailable.')
-    else:
-        run = next((run for run in reversed(runs) if any(s['segment_number'] == run.capture_epoch for s in sources)), None)
-    if not run:
-        return response
-    available = [s for s in sources if s['segment_number'] == run.capture_epoch]
-    last = max((s['end_sample'] for s in available), default=0)
-    end = min(end_sample, last) if end_sample is not None else last
-    start = max(0, end - seconds * run.sample_rate)
-    recent = [s for s in available if s['start_sample'] < end and s['end_sample'] > start]
-    response.update(run_id=run.id, recording_number=run.capture_epoch,
-        start_seconds=start / run.sample_rate, end_seconds=end / run.sample_rate,
-        issues=snapshot.issues, message='Excerpts from saved notes for this interval. Detailed notes are unchanged.')
-    if not recent:
-        response['message'] = 'No saved transcript covers this moment yet. Refresh after transcription catches up.'
-        return response
-    from .note_edits import head
-    selected = head(db, lecture.id) or latest(db, m.NoteRevision, lecture.id, m.NoteRevision.revision)
-    current = {s['id'] for s in sources}
-    recent_ids = {s['id'] for s in recent}
-    candidates = []
-    material_sources = {}
-    if selected:
-        response['revision_id'] = selected.id
-        for block in selected.content['blocks']:
-            for passage in block['passages']:
-                citations = {c['source_id'] for c in passage['sources']}
-                if not citations.intersection(recent_ids):
-                    continue
-                # Never present a passage linked to a corrected transcript as current.
-                if any(c not in current and not c.startswith('material:') for c in citations):
-                    response['omitted_stale'] += 1
-                    continue
-                try:
-                    from .materials import source_for_lecture
-                    for ident in citations:
-                        if ident.startswith('material:'):
-                            material_sources[ident] = source_for_lecture(db, lecture, ident)
-                except (HTTPException, ValueError):
-                    response['omitted_stale'] += 1
-                    continue
-                candidates.append({'topic': block['topic'], 'text': passage['text'],
-                    'student_edited': bool(passage.get('student_edited')), 'source_ids': sorted(citations),
-                    'passage_id': passage['id'], 'kind': 'saved_note'})
-    # Use complete passages, never remove a qualification by cutting mid-sentence.
-    positions = {s['id']: (s['segment_number'], s['end_sample']) for s in sources}
-    candidates.sort(key=lambda item: max(positions[ident] for ident in item['source_ids'] if ident in positions))
-    response['items'] = candidates[-4:]
-    if not response['items']:
-        response['message'] = 'Recent saved transcript excerpts; source-linked notes are not available for this interval yet.'
-        response['items'] = [{'topic': 'Recent lecture', 'text': s['text'], 'source_ids': [s['id']],
-            'kind': 'transcript', 'student_edited': False, 'passage_id': s['id']} for s in recent[-3:]]
-    ids = {ident for item in response['items'] for ident in item['source_ids']}
-    response['sources'] = [s for s in sources if s['id'] in ids] + [s for ident, s in material_sources.items() if ident in ids]
-    response['awaiting_transcript'] = end_sample is not None and end_sample > last
-    response['audio_removed'] = lecture.audio_removed
-    response['more_available'] = len(candidates) > 4 or (not candidates and len(recent) > 3)
-    return response
 
 
 def install_study(app, current, db_session, owned_lecture, receipt):
@@ -148,12 +74,3 @@ def install_study(app, current, db_session, owned_lecture, receipt):
             db.add(m.CommandReceipt(owner_id=session.owner_id, action=action, key=key, fingerprint=fingerprint, result_id=row.id))
             db.commit()
         return mark_json(db, row)
-
-    @app.get('/lectures/{lecture_id}/study/catch-up')
-    def catchup(lecture_id: str, seconds: int = Query(default=180, ge=30, le=600),
-                run_id: str | None = Query(default=None, max_length=36), end_sample: int | None = Query(default=None, ge=0),
-                session=Depends(current), db=Depends(db_session)):
-        lecture = lock_lecture(db, owned_lecture(db, session.owner_id, lecture_id).id)
-        if lecture.tombstoned:
-            error(404, 'unavailable', 'This lecture is unavailable.')
-        return catch_up(db, lecture, seconds, run_id, end_sample)
