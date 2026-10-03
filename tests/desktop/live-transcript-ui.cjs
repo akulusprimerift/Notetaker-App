@@ -1,6 +1,7 @@
 // Real React rendering with synthetic network responses; microphone use is forbidden.
 const {chromium}=require('../../.venv/Lib/site-packages/playwright/driver/package');
 const assert=require('node:assert/strict');
+const {setTheme}=require('./settings-test-helpers.cjs');
 (async()=>{
   const browser=await chromium.launch({headless:true});
   try{
@@ -88,7 +89,7 @@ const assert=require('node:assert/strict');
     await page.keyboard.press('Escape');
     await page.getByRole('dialog',{name:'Set up speech recognition'}).waitFor({state:'hidden'});
     assert.equal(await page.getByRole('button',{name:'How to get a model'}).evaluate(el=>el===document.activeElement),true);
-    await page.getByLabel('App theme').selectOption('dark');
+    await setTheme(page,'dark');
     await page.setViewportSize({width:400,height:850});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     await page.screenshot({path:'.local/speech-ux-narrow.png',fullPage:true});

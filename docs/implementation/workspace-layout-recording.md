@@ -14,7 +14,7 @@ This is the focused `notetaker-layout` UI and recording-navigation increment. It
 
 ## Follow-on boundaries
 
-Settings relocation and broad palette/theme work remain with the accepted settings task. Flashcard and catch-up changes remain outside this increment. These boundaries preserve the shared header and lecture layout as extension points without changing those separate behaviors here.
+Settings relocation and the focused palette/theme refresh are delivered separately in [workspace appearance](workspace-appearance.md#settings-and-theme-follow-up--2026-10-03). Flashcard and catch-up changes remain outside both increments. These boundaries preserve the shared header and lecture layout without changing those separate behaviors.
 
 ## Verification
 

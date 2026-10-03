@@ -4,6 +4,7 @@ const fs=require('node:fs/promises');
 const assert=require('node:assert/strict');
 const {randomUUID}=require('node:crypto');
 const {execFileSync}=require('node:child_process');
+const {setTheme}=require('./settings-test-helpers.cjs');
 const playwrightDriver=process.platform==='win32'?path.resolve(__dirname,'../../.venv/Lib/site-packages/playwright/driver/package'):
   execFileSync('uv',['run','--no-project','python','-c',
     'import pathlib, playwright; print(pathlib.Path(playwright.__file__).parent / "driver" / "package")'],
@@ -58,7 +59,7 @@ const {_electron:electron}=require(playwrightDriver);
     assert.ok(chrome.width>0);
     if(process.platform==='win32')assert.equal(await page.evaluate(()=>navigator.windowControlsOverlay?.visible),true);
     assert.equal(await page.locator('.topbar').evaluate(el=>getComputedStyle(el).webkitAppRegion),'drag');
-    await page.getByLabel('App theme').selectOption('blue');
+    await setTheme(page,'blue');
     assert.equal(await page.locator('html').getAttribute('data-theme'),'blue');
     assert.equal(await page.locator('h1').evaluate(element=>getComputedStyle(element).fontFamily.includes('Workspace Sans')),true);
     await page.screenshot({path:path.join(profile,'blue-packaged.png')});
@@ -144,7 +145,7 @@ const {_electron:electron}=require(playwrightDriver);
     await close();
     page=await launch();
     await page.waitForFunction(()=>document.documentElement.dataset.theme==='blue');
-    await page.getByLabel('App theme').selectOption('pink');
+    await setTheme(page,'pink');
     assert.equal(await page.locator('html').getAttribute('data-theme'),'pink');
     await page.screenshot({path:path.join(profile,'pink-packaged.png')});
     const preserved=await page.evaluate(async saved=>{
