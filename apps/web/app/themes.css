@@ -1,12 +1,12 @@
-:root{--ink:#1b263b;--muted:#415a77;--green:#415a77;--bg:#e0e1dd;--line:#8e9aaf;--white:#f2f3f1;--soft:#cdd5df;--surface:#f2f3f1;--sidebar:#d0d6df;--accent:#415a77;--focus:#415a77;--warning-bg:#ede3d2;--warning-ink:#654013;color-scheme:light}
-:root[data-theme=dark]{--ink:#f2f2f5;--muted:#b9c3da;--green:#bd9df4;--bg:#090d17;--line:#3e4b67;--white:#121b2d;--soft:#232643;--surface:#121b2d;--sidebar:#101421;--accent:#c3a5fb;--focus:#ffa45c;--warning-bg:#322336;--warning-ink:#ffc58f;color-scheme:dark}
-:root[data-theme=pink]{--ink:#4b1830;--muted:#79334e;--green:#92294e;--bg:#ffe5ec;--line:#cb7892;--white:#fff5f8;--soft:#ffc2d1;--surface:#fff5f8;--sidebar:#ffb3c6;--accent:#92294e;--focus:#92294e;--warning-bg:#ffe5ec;--warning-ink:#79334e;--glow:#fb6f92;--glow-secondary:#ff8fab;color-scheme:light}
-:root[data-theme=blue]{--ink:#03045e;--muted:#17516f;--green:#0077b6;--bg:#caf0f8;--line:#559bb7;--white:#f1fcff;--soft:#90e0ef;--surface:#f1fcff;--sidebar:#90e0ef;--accent:#0077b6;--focus:#03045e;--warning-bg:#caf0f8;--warning-ink:#03045e;--glow:#00b4d8;--glow-secondary:#0077b6;color-scheme:light}
+:root{--ink:#24313a;--muted:#4f606a;--green:#425f6e;--bg:#f2f4f3;--line:#8797a1;--white:#fff;--soft:#e5ebec;--surface:#fff;--sidebar:#e8eeef;--accent:#425f6e;--accent-ink:#fff;--focus:#17596f;--warning-bg:#fff3db;--warning-ink:#684714;color-scheme:light}
+:root[data-theme=dark]{--ink:#f0f4f6;--muted:#bac8d0;--green:#b9d4df;--bg:#101820;--line:#657886;--white:#1a2630;--soft:#273843;--surface:#1a2630;--sidebar:#18232c;--accent:#b9d4df;--accent-ink:#16212a;--focus:#ffd18d;--warning-bg:#352e24;--warning-ink:#ffe0aa;color-scheme:dark}
+:root[data-theme=pink]{--ink:#472536;--muted:#684a58;--green:#78344f;--bg:#faeef2;--line:#aa788b;--white:#fffafc;--soft:#f2dee5;--surface:#fffafc;--sidebar:#f2e1e7;--accent:#78344f;--accent-ink:#fff;--focus:#7a2f4e;--warning-bg:#fff4e5;--warning-ink:#694509;color-scheme:light}
+:root[data-theme=blue]{--ink:#213541;--muted:#4d6570;--green:#235f77;--bg:#edf5f8;--line:#718f9a;--white:#fcfeff;--soft:#dceaf0;--surface:#fcfeff;--sidebar:#deebf0;--accent:#235f77;--accent-ink:#fff;--focus:#1c6278;--warning-bg:#eff4df;--warning-ink:#485229;color-scheme:light}
 body,.workspace,.modal{background:var(--bg);color:var(--ink)}
 .sidebar{background:var(--sidebar)}
 .empty-state,.course-card,.lecture-row,.note-paper,.capture-panel,.notes-panel,.note-source,.note-draft,.note-placeholder,.secondary,input,textarea,select{background:var(--surface);color:var(--ink);border-color:var(--line)}
 .active,.preview-notice,.prepared-badge,.count,.card-icon,.lecture-icon,.empty-art,.add-card:hover,.streaming-notes,.prompt-profiles{background:var(--soft);color:var(--ink);border-color:var(--line)}
-.primary,.brand-icon{background:var(--accent);border-color:var(--accent);color:#fff}:root[data-theme=dark] .primary,:root[data-theme=dark] .brand-icon{color:#111626}
+.primary,.brand-icon{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .primary:hover{filter:brightness(1.12);background:var(--accent)}.secondary:hover{background:var(--soft)}
 /* Keep white button labels readable in Blue, including the hover state. */
 :root[data-theme=blue] .primary:hover{filter:none;background:#00689f;border-color:#00689f}
@@ -341,4 +341,87 @@ h1,.brand{font-family:var(--display-font);font-weight:600;letter-spacing:-.045em
   .recording-bar .capture-panel-compact .primary{font-size:.68rem;padding-inline:7px}
   .workspace-header .topbar-actions>.privacy-badge{display:none}
   .lecture-secondary-nav a{font-size:.66rem;padding-inline:7px}
+}
+
+/* Keep the four palettes calm and the workspace surfaces easy to scan. */
+.workspace{background:var(--bg);background-image:none}
+.sidebar,.topbar{background:var(--sidebar);backdrop-filter:none;box-shadow:none;border-color:var(--line)}
+.workspace-header{background:var(--surface);backdrop-filter:none;box-shadow:none;border-color:var(--line)}
+.generated-notes>.note-paper,.capture-panel,.transcript-panel,.course-card,.lecture-row,.modal,.export-toolbar,
+.empty-state,.study-tools,.course-terminology,.account-card,.note-reader,.lecture-tabs{
+  background:var(--surface);backdrop-filter:none;box-shadow:none;border-color:var(--line)
+}
+.lecture-tabs{background:var(--sidebar)}
+.lecture-tabs .tab-highlight{background:var(--soft);border-color:var(--line);box-shadow:none}
+.note-reader{background:var(--surface)}
+.secondary{background:var(--surface);box-shadow:none}
+.secondary:hover{background:var(--soft);box-shadow:none}
+.primary:hover{filter:none;background:color-mix(in srgb,var(--accent) 88%,var(--ink))}
+.materials-step-number,.note-page-nav [aria-current=page]{color:var(--accent-ink)}
+:root[data-theme=dark] .note-page-nav [aria-current=page]{color:var(--accent-ink)}
+.loading{background:var(--bg)}
+.loading .brand-icon{background:var(--accent);color:var(--accent-ink);box-shadow:none}
+.liquid-progress{background:var(--surface);box-shadow:none}
+.liquid-progress>span{background:var(--accent)}
+
+.settings-trigger{
+  position:fixed;z-index:40;left:16px;bottom:16px;display:grid;place-items:center;
+  width:42px;height:42px;padding:0;border:1px solid var(--line);border-radius:50%;
+  background:var(--surface);color:var(--accent);font-size:1.1rem;line-height:1;
+  box-shadow:0 2px 8px #16212a18
+}
+.settings-trigger:hover{background:var(--soft);border-color:var(--accent);color:var(--ink)}
+.settings-dialog{
+  width:min(560px,calc(100vw - 32px));max-width:none;max-height:min(86vh,760px);margin:auto;
+  overflow:auto;padding:0;border:1px solid var(--line);border-radius:16px;
+  background:var(--surface);color:var(--ink);box-shadow:0 20px 64px #10182035
+}
+.settings-dialog::backdrop{background:#10182088}
+.settings-content{padding:clamp(20px,4vw,30px)}
+.settings-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.settings-heading h2{margin:0;font-size:1.45rem;letter-spacing:-.035em}
+.settings-heading p{margin:5px 0 0;font-size:.86rem}
+.settings-heading .secondary{padding:8px 13px}
+.settings-section{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+.settings-section h3{margin:0 0 12px;font-size:.95rem}
+.theme-choice{display:grid;gap:7px;margin:0;font-size:.82rem}
+.theme-choice select{width:100%;min-height:44px;margin:0;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit}
+.settings-dialog .theme-choice select,.settings-dialog .settings-action,.settings-dialog .settings-heading .secondary{background-color:var(--surface);color:var(--ink)}
+.settings-dialog .settings-action,.settings-dialog .settings-heading .secondary{background:var(--surface)}
+.settings-dialog .settings-action:hover{background-color:var(--soft)}
+.settings-dialog select,.settings-dialog button{-webkit-appearance:none;appearance:none;transition:none}
+.settings-dialog :focus-visible,.settings-trigger:focus-visible{outline:3px solid var(--focus)!important;outline-offset:3px}
+.settings-dialog .theme-choice select{padding-right:34px;background:var(--surface);background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-repeat:no-repeat;background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px}
+.settings-help{margin:7px 0 0;line-height:1.5}
+.settings-action{display:flex;width:100%;justify-content:flex-start;min-height:42px;margin-top:8px;padding:9px 12px;white-space:normal}
+.settings-action:first-of-type{margin-top:0}
+.data-removal-status{margin:0;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--soft);color:var(--ink)}
+.data-removal-status h4{margin:0 0 8px;font-size:.82rem}
+.data-removal-status p{margin:8px 0 0;line-height:1.5}
+.data-removal-status .error{background:var(--warning-bg);color:var(--warning-ink);border-color:var(--line)}
+.removal-empty{margin:0;line-height:1.5}
+@media(max-width:600px){
+  .settings-trigger{left:12px;bottom:12px;width:42px;height:42px}
+  .settings-dialog{width:calc(100vw - 24px);max-height:90dvh;border-radius:14px}
+  .settings-content{padding:20px}
+  .settings-heading{gap:12px}
+}
+@media(forced-colors:active){
+  .settings-trigger,.settings-dialog{border:1px solid ButtonText}
+  .settings-trigger{color:ButtonText;background:Canvas}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+
+/* Subtle native scrollbars remain visible and keep a usable hover/active cue. */
+*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--accent) 58%,transparent) transparent}
+@supports selector(::-webkit-scrollbar){
+  *{scrollbar-width:auto;scrollbar-color:auto}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}
+  ::-webkit-scrollbar-thumb{border:2px solid transparent;border-radius:999px;background-clip:padding-box;background-color:color-mix(in srgb,var(--accent) 42%,transparent)}
+  ::-webkit-scrollbar-thumb:hover{background-color:color-mix(in srgb,var(--accent) 68%,transparent)}
+  ::-webkit-scrollbar-thumb:active{background-color:var(--accent)}
+  ::-webkit-scrollbar-button{display:none;width:0;height:0}
 }

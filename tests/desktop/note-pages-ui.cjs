@@ -1,6 +1,7 @@
 // Real React rendering with synthetic network responses; microphone use is forbidden.
 const {chromium}=require('../../.venv/Lib/site-packages/playwright/driver/package');
 const assert=require('node:assert/strict');
+const {setTheme}=require('./settings-test-helpers.cjs');
 (async()=>{
   const browser=await chromium.launch({headless:true});
   try{
@@ -68,7 +69,7 @@ const assert=require('node:assert/strict');
     await page.emulateMedia({reducedMotion:'reduce'});
     await page.getByRole('button',{name:'Note section 1',exact:true}).click();
     await page.waitForFunction(()=>document.querySelector('.note-pages-viewport').scrollLeft===0);
-    await page.getByLabel('App theme').selectOption('dark');
+    await setTheme(page,'dark');
     await reader.scrollIntoViewIfNeeded();
     await page.screenshot({path:'.local/note-pages.png'});
     assert.deepEqual(errors,[]);

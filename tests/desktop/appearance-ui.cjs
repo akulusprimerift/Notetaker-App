@@ -1,6 +1,7 @@
 // Real React rendering with synthetic network responses; microphone use is forbidden.
 const {chromium}=require('../../.venv/Lib/site-packages/playwright/driver/package');
 const assert=require('node:assert/strict');
+const {setTheme}=require('./settings-test-helpers.cjs');
 (async()=>{
   const browser=await chromium.launch({headless:true});
   try{
@@ -38,7 +39,7 @@ const assert=require('node:assert/strict');
     const {mkdir}=require('node:fs/promises');
     await mkdir('.local/appearance-review',{recursive:true});
     for(const theme of ['pink','blue','dark','light']){
-      await page.getByLabel('App theme').selectOption(theme);
+      await setTheme(page,theme);
       assert.equal(await page.locator('html').getAttribute('data-theme'),theme);
       await page.reload();
       await page.locator(`html[data-theme=${theme}]`).waitFor();
@@ -86,14 +87,14 @@ const assert=require('node:assert/strict');
     assert.equal(await page.locator('.capture-panel').getAttribute('data-retained'),'yes');
     await page.evaluate(()=>{location.hash='';});
     await page.locator('.course-card').waitFor();
-    assert.equal(await page.locator('.course-card').evaluate(el=>getComputedStyle(el).backdropFilter.includes('blur')),true);
+    assert.equal(await page.locator('.course-card').evaluate(el=>getComputedStyle(el).backdropFilter.includes('blur')),false);
     for(const theme of ['pink','blue','dark']){
-      await page.getByLabel('App theme').selectOption(theme);
+      await setTheme(page,theme);
       await page.evaluate(()=>Promise.all(document.getAnimations().map(animation=>animation.finished.catch(()=>{}))));
       await page.screenshot({path:`.local/appearance-review/${theme}-dashboard.png`,fullPage:true});
     }
     // Blue qualification covers the full navigation and dialogs before packaging.
-    await page.getByLabel('App theme').selectOption('blue');
+    await setTheme(page,'blue');
     const newCourse=page.getByRole('button',{name:'+ New course',exact:true});
     await newCourse.hover();
     const hoverContrast=await newCourse.evaluate(element=>{
@@ -107,10 +108,13 @@ const assert=require('node:assert/strict');
     await page.getByRole('dialog').waitFor();
     await page.screenshot({path:'.local/appearance-review/blue-course-form.png',fullPage:true});
     await page.getByRole('button',{name:'Close form'}).click();
-    await page.getByRole('button',{name:'Accounts & API keys',exact:true}).filter({visible:true}).click();
+    await page.getByRole('button',{name:'Settings',exact:true}).click();
+    const settings=page.getByRole('dialog',{name:'Settings'});await settings.waitFor();
+    await settings.getByRole('button',{name:'Accounts & API keys',exact:true}).click();
     await page.getByRole('dialog',{name:'Accounts & API keys'}).waitFor();
     await page.screenshot({path:'.local/appearance-review/blue-accounts.png',fullPage:true});
     await page.getByRole('button',{name:'Close',exact:true}).click();
+    await page.keyboard.press('Escape');
     await page.evaluate(()=>{location.hash='lecture/lecture/notes';});
     await page.getByRole('link',{name:'Notes',exact:true}).waitFor();
     for(const width of [1440,400]){

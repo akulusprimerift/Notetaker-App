@@ -2,6 +2,7 @@
 const {chromium}=require('../../.venv/Lib/site-packages/playwright/driver/package');
 const assert=require('node:assert/strict');
 const {mkdir}=require('node:fs/promises');
+const {setTheme}=require('./settings-test-helpers.cjs');
 (async()=>{
   const browser=await chromium.launch({headless:true});
   try{
@@ -43,7 +44,7 @@ const {mkdir}=require('node:fs/promises');
     });
     await page.routeWebSocket('**/updates*',socket=>socket.onMessage(()=>{}));
     await page.goto((process.env.NOTETAKER_UI_ORIGIN||'http://127.0.0.1:3015')+'/#lecture/lecture/study');
-    await page.getByLabel('App theme').selectOption('dark');
+    await setTheme(page,'dark');
     const region=page.getByRole('region',{name:'Generated questions',exact:true});
     await region.getByText('Model: openai/synthetic',{exact:true}).waitFor();
     assert.ok(await region.getByRole('button',{name:'Generate new question set',exact:true}).isDisabled());

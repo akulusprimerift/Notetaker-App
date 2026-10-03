@@ -1,7 +1,6 @@
 'use client';
 import LiveUpdates from './live';
 import Materials from './materials';
-import Theme from './theme';
 import LectureNavigation from './lecture-navigation';
 import CourseDelete from './course-delete';
 
@@ -10,10 +9,9 @@ import Recording from './recording';
 import Transcript from './transcript';
 import Notes from './notes';
 import Finalization from './finalization';
-import DataRemoval from './data-removal';
 import VisualNotes from './visual-notes';
-import DesktopTools from './desktop-tools';
 import AccountsDialog from './accounts-dialog';
+import SettingsDialog from './settings-dialog';
 import StudyTools from './study-tools';
 import CourseTerminology from './course-terminology';
 
@@ -196,13 +194,16 @@ export default function Workspace(){
   if(!session)return <main className="welcome"><section className="unlock-card"><h1>Open your workspace</h1><p>Your library is saved on this device.</p>{error&&<p role="alert" className="error">{error}</p>}<button className="primary" onClick={()=>void load()}>Open workspace</button></section></main>;
 
   return <div className={`workspace ${sidebarHidden?'sidebar-hidden':''}`}>
-    <AccountsDialog csrf={session.csrf_token} onSessionExpired={sessionExpired}/><a className="skip" href="#main-content" onClick={event=>{event.preventDefault();document.getElementById('main-content')?.focus()}}>Skip to content</a>
+    <AccountsDialog csrf={session.csrf_token} onSessionExpired={sessionExpired}/>
+    <SettingsDialog owner={session.owner_id} csrf={session.csrf_token} onRemoved={dataRemoved}/>
+    <button type="button" className="settings-trigger" aria-label="Settings" title="Settings" onClick={()=>window.dispatchEvent(new Event('open-settings'))}><span aria-hidden="true">⚙</span></button>
+    <a className="skip" href="#main-content" onClick={event=>{event.preventDefault();document.getElementById('main-content')?.focus()}}>Skip to content</a>
     <aside id="lecture-sidebar" className="sidebar" inert={sidebarHidden} aria-hidden={sidebarHidden}><a className="brand" href="#"><span className="brand-icon">n</span>notetaker<span className="brand-dot">.</span></a>
       <nav aria-label="Workspace"><a href="#" className={`nav-library ${!route?'active':''}`}><span aria-hidden="true">▦</span> Your library</a><div className="nav-title"><span>YOUR COURSES</span><button aria-label="Add a course" onClick={()=>openForm('course')}>+</button></div>
         {courses.length===0?<p className="sidebar-empty">Your courses will appear here.</p>:courses.map(course=><div className="sidebar-course" key={course.id}><a href={`#course/${course.id}`} className={`course-link ${selectedId===course.id?'active':''}`}><span className="course-initial">{initial(course.name)}</span><span>{course.name}</span><span className="course-count">{courseLectures[course.id]?.length??'—'}</span></a>{selectedId===course.id&&courseLectures[course.id]?.map(lecture=><a key={lecture.id} href={`#lecture/${lecture.id}`} className={`lecture-link ${selectedLectureId===lecture.id?'active':''}`}><span className="lecture-link-dot" aria-hidden="true"/><span>{lecture.title}</span></a>)}</div>)}
-      </nav><div className="sidebar-bottom"><DataRemoval owner={session.owner_id} csrf={session.csrf_token} onRemoved={dataRemoved}/><button type="button" className="secondary full" onClick={()=>window.dispatchEvent(new Event('open-accounts'))}>Accounts &amp; API keys</button><div className="local-note"><span className="status-dot"/>Local workspace</div><p>Saved on this device</p></div>
+      </nav><div className="sidebar-bottom"><div className="local-note"><span className="status-dot"/>Local workspace</div><p>Saved on this device</p></div>
     </aside>
-    <div className="workspace-body"><header className="workspace-header"><div className="topbar"><button className="secondary sidebar-toggle" aria-controls="lecture-sidebar" aria-expanded={!sidebarHidden} onClick={toggleSidebar}>{sidebarHidden?'Show library':'Hide library'}</button><div className="topbar-actions"><button type="button" className="desktop-tools accounts-mobile" onClick={()=>window.dispatchEvent(new Event('open-accounts'))}>Accounts &amp; API keys</button><DesktopTools/><Theme/><span className="privacy-badge"><span className="status-dot"/>{session.preview?'Local preview':'Private library'}</span></div></div>
+    <div className="workspace-body"><header className="workspace-header"><div className="topbar"><button className="secondary sidebar-toggle" aria-controls="lecture-sidebar" aria-expanded={!sidebarHidden} onClick={toggleSidebar}>{sidebarHidden?'Show library':'Hide library'}</button><div className="topbar-actions"><span className="privacy-badge"><span className="status-dot"/>{session.preview?'Local preview':'Private library'}</span></div></div>
       <div className="recording-bar" role="region" aria-label="Persistent recording controls">
         {captureLecture&&!captureLecture.audio_removed&&!removedAudio.includes(captureLecture.id)?<>
           <div className="recording-context"><span className="recording-context-dot" aria-hidden="true"/><span className="recording-context-title">{captureLecture.title}</span><span className="small muted">{courses.find(course=>course.id===captureLecture.course_id)?.name??'Course'}</span>{selectedLectureId!==captureLecture.id&&<a className="recording-return" href={`#lecture/${captureLecture.id}/notes`}>Open recording lecture</a>}{!captureBusy&&<details className="recording-change" ref={recorderPicker} onToggle={event=>{if(event.currentTarget.open){setRecordCourseId(captureLecture.course_id);setRecordLectureId(captureLecture.audio_removed?'':captureLecture.id);}}}><summary className="text-button">Change lecture</summary><div className="recording-picker-panel" role="group" aria-label="Change recording lecture"><p>Choose the course and lecture that should receive a new recording.</p><label htmlFor="record-course">Course<select id="record-course" value={recordCourseId} onChange={event=>{setRecordCourseId(event.target.value);setRecordLectureId('');}}><option value="">Select a course</option>{courses.map(course=><option key={course.id} value={course.id}>{course.name}</option>)}</select></label><label htmlFor="record-lecture">Lecture<select id="record-lecture" value={recordLectureId} disabled={!recordCourseId} onChange={event=>setRecordLectureId(event.target.value)}><option value="">Select a lecture</option>{(courseLectures[recordCourseId]??[]).filter(lecture=>!lecture.audio_removed).map(lecture=><option key={lecture.id} value={lecture.id}>{lecture.title}</option>)}</select></label><button className="secondary" disabled={!recordCourseId||!recordLectureId} onClick={chooseRecordingLecture}>Use this lecture</button></div></details>}</div>
