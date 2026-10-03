@@ -1,5 +1,5 @@
 // Real React rendering with synthetic network responses; microphone use is forbidden.
-const {chromium}=require('../../.venv/Lib/site-packages/playwright/driver/package');
+const {chromium}=require(process.env.NOTETAKER_PLAYWRIGHT_DRIVER||'../../.venv/Lib/site-packages/playwright/driver/package');
 const assert=require('node:assert/strict');
 const {setTheme}=require('./settings-test-helpers.cjs');
 (async()=>{
@@ -73,7 +73,8 @@ const {setTheme}=require('./settings-test-helpers.cjs');
     assert.match(await page.getByRole('link',{name:'Word (.docx)',exact:true}).getAttribute('href'),/format=docx$/);
     assert.match(await page.getByRole('link',{name:'Study slides (.pptx)',exact:true}).getAttribute('href'),/format=pptx$/);
     await page.setViewportSize({width:400,height:850});
-    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    const mobileWidth=await page.evaluate(()=>({viewport:innerWidth,scroll:document.documentElement.scrollWidth}));
+    assert.ok(mobileWidth.scroll<=mobileWidth.viewport,`open export formats fit the ${mobileWidth.viewport}px viewport (document is ${mobileWidth.scroll}px wide)`);
     await page.screenshot({path:'.local/export-mobile.png',fullPage:true});
     await page.setViewportSize({width:1440,height:1000});
 

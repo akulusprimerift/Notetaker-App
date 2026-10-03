@@ -466,7 +466,10 @@ summary:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
   .lecture-primary-nav a{min-height:34px;padding:5px 10px}
   .lecture-heading .muted{display:none}
   .generated-notes{row-gap:5px}
-  .generated-notes:has(>.export-toolbar) .export-actions{display:grid;grid-template-columns:max-content max-content max-content;gap:5px;align-items:center}
+  .generated-notes:has(>.export-toolbar) .export-actions{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+  .generated-notes:has(>.export-toolbar) .export-actions>details[open]{display:grid;flex:1 1 100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;min-width:0}
+  .generated-notes:has(>.export-toolbar) .export-actions>details[open]>summary{grid-column:1/-1}
+  .generated-notes:has(>.export-toolbar) .export-actions>details a.secondary{min-width:0;margin:0;padding:5px 6px;font-size:.64rem;white-space:normal;text-align:center}
   .generated-notes .export-actions>.primary,.generated-notes .export-actions>.secondary{min-height:29px;padding:4px 6px;font-size:.64rem;gap:4px}
   .generated-notes .export-actions>span{display:none}
   .generated-notes .note-paper>.paper-heading{padding:9px 12px}
