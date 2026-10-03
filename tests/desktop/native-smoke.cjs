@@ -155,7 +155,7 @@ const {_electron:electron}=require(playwrightDriver);
       return {course:courses.some(course=>course.id===saved.course),hash,status:response.status};
     },saved);
     assert.equal(preserved.status,200);assert.equal(preserved.course,true);assert.equal(preserved.hash,saved.hash);
-    console.log(JSON.stringify({standalone_launch:true,postgres_migrations:true,synthetic_audio_verified:true,
+    console.log(JSON.stringify({standalone_launch:true,sqlite_migrations:true,synthetic_audio_verified:true,
       close_reopen_readback:true,recording_restart_cycles:3,electron_isolation:true,appearance_and_theme_persistence:true,portable_snapshot_exports:true,
       platform:process.platform,arch:process.arch,window_controls_overlay:process.platform==='win32'?true:null,
       profile,limitations:'No microphone, human quality, clean-machine or long-duration qualification. Mac native chrome belongs to 6.9.3.'},null,2));

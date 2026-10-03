@@ -13,7 +13,7 @@ class AudioStore:
         return super().__new__(cls)
 
     def __init__(self, settings):
-        self.available = bool(settings.s3_access_key and settings.s3_secret_key and not settings.preview)
+        self.available = bool(settings.s3_access_key and settings.s3_secret_key)
         self.bucket = settings.audio_bucket
         self.client = boto3.client('s3', endpoint_url=settings.s3_endpoint,
             aws_access_key_id=settings.s3_access_key, aws_secret_access_key=settings.s3_secret_key,

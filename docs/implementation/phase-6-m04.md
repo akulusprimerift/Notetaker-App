@@ -1,5 +1,7 @@
 # Phase 6.4 / M04: Automatic study notes
 
+Database update (2026-10-03): the PostgreSQL worker/reconciliation descriptions below record the original M04 deployment. Current notes and outbox persistence use SQLite in every runtime; see the [conversion, backup and rollback runbook](sqlite-database.md).
+
 Updated: 2026-09-08. Status: bounded automatic notes repaired and verified with real local-model output; course-neutral writing preferences implemented. This first increment implements notes from a bounded saved transcript; it does not close the full M04 qualification gates.
 
 ## Product direction

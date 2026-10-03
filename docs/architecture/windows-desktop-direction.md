@@ -1,8 +1,10 @@
 # Windows desktop direction
 
+Database update (2026-10-03): current Windows and macOS hosts use SQLite. The PostgreSQL-based standalone details in the 2026-09 entries below are historical and superseded; the old library is retained for explicit conversion using the [database runbook](../implementation/sqlite-database.md).
+
 Update (2026-09-18): [standalone runtime packaging](../implementation/windows-standalone.md) now bundles the Electron web server, Python workers, PostgreSQL, SeaweedFS and CPU Ollama. Native services use database reconciliation without Kafka; the existing Docker profile remains available. New native libraries require explicit selection and never migrate the Docker library. Clean-install and release qualification remain open. Earlier entries below are historical.
 
-Current increment (2026-09-17): standalone Windows distribution resumes as the active M08 delivery work. [Prebuilt web component packaging](../implementation/windows-standalone.md) is implemented separately from the current installer. Runtime supervision, Windows service packaging and clean-install qualification remain next work. PostgreSQL remains authoritative; existing Docker libraries are not silently converted to SQLite or deleted.
+Historical increment (2026-09-17): standalone Windows distribution resumed as the active M08 delivery work. [Prebuilt web component packaging](../implementation/windows-standalone.md) was implemented separately from the then-current installer. Runtime supervision, Windows service packaging and clean-install qualification remained next work. PostgreSQL was authoritative at that point; the 2026-10-03 SQLite database update at the top of this document supersedes that database decision. Existing Docker libraries are retained and never converted or deleted automatically.
 
 Date: 2026-09-11. The user selected Electron as the only Windows host. The hardened Electron shell reuses the Next.js/React workspace, authenticated FastAPI contracts, Docker service lifecycle and Chromium audio-capture implementation. Models remain user-selected local files; no model weights are downloaded by the app. The previous Qt/native standalone profile has been removed from the repository. See [M08](../implementation/phase-6-m08.md).
 
@@ -18,7 +20,7 @@ The current increment turns the host experiment into the primary Windows path. K
 2. Detect the local services, show their startup progress, and offer clear recovery when Docker or Ollama is unavailable. For the first experiment, disclose these prerequisites; do not silently install them or bundle model weights.
 3. Manage only processes/services started by this app. Closing a window must not discard recording buffers or kill unrelated Docker workloads. Define background note processing and explicit Quit behavior.
 4. Test saved notes, model/style preferences, source playback, close/reopen, offline recovery and synthetic audio in the actual desktop renderer. Physical microphone testing still requires the user's approval.
-5. Before shipping an installer, decide how Python, PostgreSQL, audio storage, Kafka and Ollama are distributed and upgraded. Keep writable data and model caches in a documented per-user Windows location outside the install directory. Qualify migration and coordinated restore with existing data.
+5. Before shipping an installer, qualify how Python, SQLite, audio storage, Kafka and Ollama are packaged and upgraded. Keep writable data and model caches in a documented per-user Windows location outside the install directory. Qualify explicit legacy conversion and coordinated restore with synthetic and owner-approved data.
 
 ## Desktop boundary
 

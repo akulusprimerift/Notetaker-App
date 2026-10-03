@@ -296,7 +296,6 @@ def main():
     parser.add_argument('--once',action='store_true',help='Plan and execute at most one due window without Kafka.')
     args=parser.parse_args()
     settings=Settings()
-    if settings.preview:raise SystemExit('Speech workers require PostgreSQL application storage.')
     engine,sessions=database(settings.database_url);store=AudioStore(settings);provider=WhisperProvider(settings)
     from .speech_status import start_status
     status_stopped = start_status(settings, provider)
