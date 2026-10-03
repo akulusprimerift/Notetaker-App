@@ -21,6 +21,9 @@ def main():
         config = Config()
         config.set_main_option('script_location', str(root / 'apps/api/migrations'))
         command.upgrade(config, 'head')
+    elif role == 'migrate-postgres':
+        from notetaker.postgres_migration import main as migrate_postgres
+        return migrate_postgres(sys.argv[2:])
     elif role == 'api':
         import uvicorn
         from notetaker.main import create_app

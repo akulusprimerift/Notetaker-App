@@ -30,7 +30,7 @@ Initial focused runs exposed test-harness assumptions: the VM loader did not res
 ### Remaining evidence and exact next work
 
 1. On the Apple Silicon Mac, prepare Bun/uv and the platform dependencies, run the shared regression suites and the real POSIX process-tree test. Native binaries are deliberately not downloaded or built on this Windows host.
-2. In 6.9.2, build the arm64 frozen service and verified PostgreSQL 17, SeaweedFS, Ollama and account-helper bundle. Match the platform manifest and service paths above. Adapt packaging and notices for Mac; the existing builder still describes Windows installer artifacts.
+2. In 6.9.2, build the arm64 frozen service and verified SeaweedFS, Ollama and account-helper bundle. SQLite is the library database; the service includes only the PostgreSQL client used by explicit conversion. Match the platform manifest and service paths above. Adapt packaging and notices for Mac; the existing builder still describes Windows installer artifacts.
 3. Run isolated Mac startup → synthetic audio save → Quit → reopen → byte-identical audio readback. Check partial startup, parent disconnect, signals, database restart and leftover descendants on actual macOS before closing foundation qualification.
 4. Sudden supervisor SIGKILL and descendants that create their own sessions are not covered by POSIX group cleanup. Qualify those cases and add a Mac watchdog/containment mechanism if needed. Windows retains kernel Job Object cleanup. No abrupt-Mac-crash equivalence is claimed.
 5. Native menus/window controls, microphone permission/denial handling, Keychain verification, Dock and sleep/wake behavior belong to 6.9.3. Complete workflow/performance, DMG/signing/notarization and release gates follow as 6.9.4–6.9.6.

@@ -17,12 +17,12 @@ Audio preservation is independent of inference. Never silently discard sources, 
 
 ## Stack and boundaries
 
-The user selected an Electron-based Windows rebuild on 2026-09-11. For the Windows deliverable, use the existing Next.js/React workspace inside the hardened Electron shell, with the Docker/FastAPI services and explicit local model selection. The Qt native application and its standalone profile have been removed from the delivery path. Preserve the existing PostgreSQL/Docker/React workspace and its student data; do not silently migrate or delete it. Model weights remain user-selected local files.
+The user selected an Electron-based Windows rebuild on 2026-09-11. For Windows and macOS, use the existing Next.js/React workspace inside the hardened Electron shell with FastAPI services and explicit local model selection. SQLite is the supported application database in every profile. Existing PostgreSQL volumes are legacy conversion sources: retain them and never migrate or delete them automatically. Model weights remain user-selected local files.
 
 - Next.js, React and strict TypeScript; accessible semantic HTML and existing CSS patterns.
 - Browser AudioWorklet/worker capture, IndexedDB audio recovery and durable local edit drafts.
 - Python/FastAPI modular backend; separate faster-whisper speech and Ollama note worker processes.
-- SQLAlchemy/Alembic with PostgreSQL as authority. SQLite is an explicitly selected development/test preview.
+- SQLAlchemy/Alembic with a file-backed SQLite authority. Configure foreign keys, WAL, a bounded busy timeout and durable commits. All API/worker processes for one library must share its local filesystem; network filesystems and multi-host access are unsupported.
 - Private SeaweedFS audio objects; Kafka notifications plus database reconciliation/outbox. Docker Compose for local services.
 - Windows desktop host and installer in M08, reusing UI/backend. Optional cloud providers belong to later Phase 7, with explicit user choice.
 
@@ -33,11 +33,11 @@ Follow nearby conventions; prefer small domain-focused modules, explicit types a
 ## Testing and linting
 
 - JavaScript contracts: `bun run test`.
-- Backend: `uv run --no-project python -m pytest -q` with `PYTHONPATH=apps/api` (add `apps/api/tests` for browser tests; Windows separates entries with `;`).
+- Backend: `uv run --no-project python -m pytest -q` with `PYTHONPATH=apps/api`; tests always create synthetic SQLite files. Never point tests or probes at a student database. Run the synthetic PostgreSQL-to-SQLite converter test and report separately whether a PostgreSQL server integration environment was available.
 - Frontend: `bun run typecheck`, `bun run lint`, `bun run build:web`.
 - Python lint: `uv run --no-project ruff check apps/api` using the project configuration.
 - Documentation: `bun run verify:docs`; whitespace: `git diff --check`.
-- Exercise actual affected user flows and relevant failures; no tests that merely mirror trivial edits. Synthetic tests do not qualify microphone quality, educational usefulness, live hardware latency or release readiness.
+- Exercise affected API, worker, outbox, idempotency, version-fencing, backup and conversion flows with synthetic data; no tests that merely mirror trivial edits. Synthetic tests do not qualify microphone quality, educational usefulness, live hardware latency or release readiness.
 
 ## Phases
 

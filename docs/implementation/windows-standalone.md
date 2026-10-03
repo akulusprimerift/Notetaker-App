@@ -1,18 +1,20 @@
 # Standalone Windows distribution
 
+Database update (2026-10-03): new Windows libraries use a SQLite file at `standalone-library/notetaker.sqlite3`. The host no longer starts or packages a PostgreSQL server. Existing PostgreSQL-only libraries are left intact and startup stops with conversion guidance; the bundled `migrate-postgres` command is opt-in. Keep the original library and audio objects until the converted copy is inspected. See [SQLite conversion, backup and rollback](sqlite-database.md). Details below that describe PostgreSQL startup and ports are historical 2026-09-18 evidence.
+
 Latest UI update (2026-09-24): [paged notes and glass installer](paged-notes-and-motion.md#installer-delivery--2026-09-24) is available under .local/paged-ui-update/installer with packaged startup, synthetic save/reopen/readback and export checks. Installed-upgrade qualification remains open.
 
 Latest installer (2026-09-24): the [appearance delivery](workspace-appearance.md#installer-delivery--2026-09-24) packages Pink/Blue themes, glass surfaces and animated navigation under `.local/appearance-package/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe`. It reuses the hash-verified unchanged native services and passes packaged synthetic audio save/reopen/readback and theme-persistence checks. See the linked evidence for size/checksum and qualification limits.
 
 Upload repair (2026-09-22): the frozen service now dispatches the document-reader command used by material uploads. See [cause and regression coverage](course-materials.md#windows-upload-repair--2026-09-22) and the latest [installer evidence](../../SESSION_TRANSFER.md). To exercise a future packaged reader, set `NOTETAKER_TEST_SERVICE_EXECUTABLE` to its absolute `NotetakerService.exe` path and run `uv run --no-project python -m pytest apps/api/tests/test_windows_material_parser.py -q` with `PYTHONPATH=apps/api`. This checks all supported formats and rejects unreadable inputs without opening a student library.
 
-## Native services increment — 2026-09-18
+## Historical native services increment — 2026-09-18
 
-Active phase: **6.8 / M08**. The standalone x64 installer combines Electron/React with frozen Python/FastAPI, speech and note workers, PostgreSQL 17.11, SeaweedFS 4.47 and Ollama 0.33.3 CPU libraries. Electron runs the prebuilt Next server through its utility-process runtime. This profile needs no separate Node, Python, Docker or PowerShell 7 installation. Models remain user-selected local files; the app never downloads weights. Faster-whisper's upstream auxiliary VAD asset accompanies the speech runtime. Earlier entries below describe the preceding web-only increment.
+At that checkpoint, the standalone x64 installer combined Electron/React with frozen Python/FastAPI, speech and note workers, PostgreSQL 17.11, SeaweedFS 4.47 and Ollama 0.33.3 CPU libraries. Electron ran the prebuilt Next server through its utility-process runtime. This profile needed no separate Node, Python, Docker or PowerShell 7 installation. Models remained user-selected local files; the app did not download weights. Faster-whisper's upstream auxiliary VAD asset accompanied the speech runtime. The SQLite database update at the top of this document supersedes the database and runtime details here.
 
-First launch requires an explicit choice: **Create or open standalone library**, or select an existing Docker workspace folder. Once services are ready, select **Open workspace**. Later launches reopen the selected library. Standalone creates a separate PostgreSQL library; it never imports, converts, deletes or modifies the existing Docker library. This remains a development distribution.
+First launch required an explicit choice: **Create or open standalone library**, or select an existing Docker workspace folder. Once services were ready, select **Open workspace**. Later launches reopened the selected library. Standalone created a separate PostgreSQL library; it did not import, convert, delete or modify the existing Docker library. This remains a development distribution.
 
-The native profile uses existing database reconciliation without Kafka (`NOTETAKER_BROKER_ENABLED=false`). Transactions, leases, outbox rows and retry fencing remain intact; notifications are not falsely marked published. Retained outbox growth and broker-free throughput require endurance qualification. Docker retains Kafka. SQLite remains a test/development preview, not the Windows production authority.
+The original native profile used database reconciliation without Kafka (`NOTETAKER_BROKER_ENABLED=false`). Transactions, leases, outbox rows and retry fencing remained intact; notifications were not falsely marked published. Retained outbox growth and broker-free throughput require endurance qualification. Docker retains Kafka. At that time SQLite was a test/development preview; the 2026-10-03 database decision supersedes that status.
 
 ### Data and lifecycle
 
@@ -67,13 +69,13 @@ Next qualification: clean-machine installer/Start menu launch, upgrade/uninstall
 
 ## Historical web component increment — 2026-09-17
 
-Active delivery work: **6.8 / M08 — Standalone Windows distribution**, following selected Phase 7 work. Phase 7.4's PostgreSQL contention experiment remains deferred, not completed. Earlier note/question quality and release gates remain open.
+At the 2026-09-17 checkpoint, active delivery work was **6.8 / M08 — Standalone Windows distribution**, following selected Phase 7 work. Phase 7.4's PostgreSQL contention experiment remained deferred, not completed. Earlier note/question quality and release gates remain open.
 
 ## Intended result and current boundary
 
 Students should ultimately install and run the Electron lecture companion without building application services themselves. This first increment produces the prebuilt Next.js workspace as a separately testable component. The existing installer still uses Docker/PowerShell/Ollama prerequisites; this increment does not switch the installed app to a standalone service runtime.
 
-Keep Electron/React/FastAPI, PostgreSQL authority and the existing Docker library intact. Do not activate the leftover SQLite standalone configuration as a production replacement. Any new library remains explicitly selected and separate. Models remain user-selected local files. No student data or model weights enter packaging inputs.
+At that checkpoint, the plan retained PostgreSQL authority and the existing Docker library. Do not apply that superseded database direction; follow the SQLite conversion/rollback runbook at the top of this document. Any new library remains explicitly selected and separate. Models remain user-selected local files. No student data or model weights enter packaging inputs.
 
 ## Build and verify
 

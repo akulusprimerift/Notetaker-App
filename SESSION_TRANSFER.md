@@ -14,6 +14,10 @@ Active phase remains **6.9.5 - Mac installer and distribution**. The accepted `n
 
 See [workspace layout and recording evidence](docs/implementation/workspace-layout-recording.md) for exact checks, limits and delivery pointer. Synthetic browser verification does not qualify physical-device recording or Mac lifecycle behavior.
 
+## SQLite primary database increment — 2026-10-03
+
+Parent-supplied SQLite delivery: branch `mx/notetaker-sqlite`, PR 3, commit `109cff9409965cf3087762b623c8af26ac7a1bdd`, based on `187430f9131faa41805f429ce0d77c1cffeae78d`. The integration allocation merges this exact tested revision with Settings and Flash Cards. Parent reports PostgreSQL conversion passed (2), the same 8 Windows protected-storage failures on macOS, and docs verification of 51 planning files/296 links with structure and changed-script syntax passing. These are predecessor results; exact combined results will be recorded after validation.
+
 ## Phase 6.9.5 DMG published — 2026-10-02
 
 Active phase: **6.9.5 — Mac installer and distribution**. The user reported the 6.9.4 test build works on their Mac. Tagged CI now builds a drag-to-Applications DMG with a Mac icon and run-number build version. Developer ID signing (hardened runtime, entitlements), notarization and stapling run only when the `MACOS_CERTIFICATE_P12`, `MACOS_CERTIFICATE_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` secrets exist; native components are signed before the runtime hash lock because the launcher verifies them. [Details](docs/implementation/macos-distribution.md).

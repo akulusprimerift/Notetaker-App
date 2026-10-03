@@ -18,7 +18,7 @@ import CourseTerminology from './course-terminology';
 type Course={id:string;name:string;code:string;created_at:string};
 type Lecture={id:string;course_id:string;title:string;status:string;audio_removed:boolean;created_at:string;update_cursor:number};
 type Snapshot={lecture:Lecture;course_name:string;settings:{depth:string;format:string};processing_location:string};
-type Session={csrf_token:string;preview:boolean;owner_id:string};
+type Session={csrf_token:string;preview?:boolean;owner_id:string};
 type LectureTab='notes'|'transcript'|'materials'|'capture'|'visuals'|'finalize'|'study';
 type CaptureLecture=Pick<Lecture,'id'|'course_id'|'title'|'audio_removed'>;
 const primaryLectureTabs:ReadonlyArray<{id:LectureTab;label:string;description:string}>=[

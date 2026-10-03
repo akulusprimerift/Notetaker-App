@@ -15,11 +15,9 @@ from .db import database
 
 def main():
     settings=Settings()
-    if settings.preview:
-        raise RuntimeError('Real service verification requires PostgreSQL mode')
     engine,_=database(settings.database_url)
     with engine.connect() as connection:
-        version=connection.execute(text('SELECT version()')).scalar_one()
+        version=connection.execute(text('SELECT sqlite_version()')).scalar_one()
     engine.dispose()
     suffix=uuid4().hex
     bucket='notetaker-verify-'+suffix
@@ -55,7 +53,7 @@ def main():
     finally:
         if consumer:consumer.close()
         admin.delete_topics([topic],request_timeout=10)[topic].result(15)
-    print(json.dumps({'postgres':version,'object_readback':'passed','kafka_roundtrip':'passed','scope':'synthetic service probe; not capture durability'},indent=2))
+    print(json.dumps({'sqlite':version,'object_readback':'passed','kafka_roundtrip':'passed','scope':'synthetic service probe; not capture durability'},indent=2))
 
 
 if __name__=='__main__':main()

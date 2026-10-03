@@ -202,11 +202,12 @@ def test_real_object_deletion_and_late_upload_reconciliation(capture):
     import os
     import pytest
     from notetaker.audio_store import AudioStore
-    if not os.environ.get('NOTETAKER_TEST_DATABASE_URL'):
-        pytest.skip('Real object deletion is exercised with the PostgreSQL/service run.')
+    if not os.environ.get('NOTETAKER_TEST_S3_ENDPOINT'):
+        pytest.skip('Real object deletion is exercised with an explicit synthetic object-store run.')
     app,client,headers,path,run=capture
     bucket='m07-delete-'+uuid4().hex
-    store=AudioStore(app.state.settings.model_copy(update={'audio_bucket':bucket,'preview':False}))
+    store=AudioStore(app.state.settings.model_copy(update={'audio_bucket':bucket,
+        's3_endpoint':os.environ['NOTETAKER_TEST_S3_ENDPOINT']}))
     assert store.available
     app.state.audio_store=store
     store.ready()

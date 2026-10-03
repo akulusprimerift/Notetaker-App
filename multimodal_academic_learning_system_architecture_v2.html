@@ -42,7 +42,7 @@
 <div class="flow-grid">
 <div class="node"><span>01 · BROWSER</span><strong>Next.js + TypeScript</strong><p>AudioWorklet → packaging worker → IndexedDB audio journal.</p></div>
 <div class="node"><span>02 · AUTHORIZED INGEST</span><strong>FastAPI REST / WebSocket</strong><p>Own capture runs, validate chunks and serve versioned student content.</p></div>
-<div class="node"><span>03 · DURABLE STATE</span><strong>SeaweedFS + PostgreSQL</strong><p>Verified audio objects plus committed metadata, job ledger and outbox.</p></div>
+<div class="node"><span>03 · DURABLE STATE</span><strong>SQLite + SeaweedFS</strong><p>Committed metadata, job ledger and outbox plus verified audio objects.</p></div>
 </div>
 <p class="flow-path">After storage verification and database commit → acknowledge the matching chunk → release its browser copy.</p>
 <div class="flow-grid">
@@ -52,7 +52,7 @@
 </div>
 </div>
 <div class="two" style="margin-top:18px">
-<article class="card compact"><h3>Authoritative boundaries</h3><p>PostgreSQL owns versions, job claims and deletion state. Kafka notifies and replays. Objects hold audio. The browser journal supports recovery within disclosed storage limits.</p></article>
+<article class="card compact"><h3>Authoritative boundaries</h3><p>SQLite owns versions, job claims and deletion state. Kafka notifies and replays. Objects hold audio. The browser journal supports recovery within disclosed storage limits.</p></article>
 <article class="card compact"><h3>Honest failure behavior</h3><p>Keep audio if speech fails, transcript if notes fail, and prior notes if finalization fails. Gaps remain visible. There is no automatic external fallback.</p></article>
 </div>
 <p class="small" style="margin-top:18px">Development operations: Docker Compose, private service interfaces, persistent volumes, trace IDs and stage/backlog metrics. No initial Valkey, vector index, vision worker or Kubernetes requirement.</p>
