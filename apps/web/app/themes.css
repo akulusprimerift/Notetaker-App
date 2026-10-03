@@ -370,6 +370,7 @@ h1,.brand{font-family:var(--display-font);font-weight:600;letter-spacing:-.045em
   background:var(--surface);color:var(--accent);font-size:1.1rem;line-height:1;
   box-shadow:0 2px 8px #16212a18
 }
+.sidebar-bottom{padding-bottom:58px}
 .settings-trigger:hover{background:var(--soft);border-color:var(--accent);color:var(--ink)}
 .settings-dialog{
   width:min(560px,calc(100vw - 32px));max-width:none;max-height:min(86vh,760px);margin:auto;
@@ -400,8 +401,8 @@ h1,.brand{font-family:var(--display-font);font-weight:600;letter-spacing:-.045em
 .data-removal-status p{margin:8px 0 0;line-height:1.5}
 .data-removal-status .error{background:var(--warning-bg);color:var(--warning-ink);border-color:var(--line)}
 .removal-empty{margin:0;line-height:1.5}
+@media(max-width:700px){.workspace-body>.settings-trigger{position:static;margin:8px 20px 18px}}
 @media(max-width:600px){
-  .settings-trigger{left:12px;bottom:12px;width:42px;height:42px}
   .settings-dialog{width:calc(100vw - 24px);max-height:90dvh;border-radius:14px}
   .settings-content{padding:20px}
   .settings-heading{gap:12px}

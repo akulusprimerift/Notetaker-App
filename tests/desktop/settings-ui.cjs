@@ -39,11 +39,19 @@ function contrastRatio(foreground,background){
     await trigger.waitFor();
     assert.equal(await trigger.getAttribute('title'),'Settings');
     assert.match(await trigger.innerText(),/^\s*⚙\s*$/);
+    assert.equal(await page.locator('.sidebar-bottom .local-note').innerText(),'Local workspace','workspace status remains visible in the sidebar');
+    assert.equal(await page.locator('.sidebar-bottom > p').count(),0,'redundant saved-device footer copy does not compete with Settings');
+    assert.equal(await page.evaluate(()=>{
+      const trigger=document.querySelector('.settings-trigger').getBoundingClientRect();
+      const status=document.querySelector('.sidebar-bottom .local-note').getBoundingClientRect();
+      return trigger.left<status.right&&trigger.right>status.left&&trigger.top<status.bottom&&trigger.bottom>status.top;
+    }),false,'the Settings icon does not overlap the workspace status');
+    assert.equal(await trigger.evaluate(element=>getComputedStyle(element).position),'fixed','desktop Settings stays in the lower-left corner');
     await page.keyboard.press('Tab');
     const skipLink=page.getByRole('link',{name:'Skip to content',exact:true});
     assert.equal(await skipLink.evaluate(element=>document.activeElement===element),true,'Skip to content remains the first keyboard stop');
-    await page.keyboard.press('Tab');
-    assert.equal(await trigger.evaluate(element=>document.activeElement===element),true,'Settings trigger follows Skip to content in keyboard order');
+    for(let stop=0;stop<40&&!await trigger.evaluate(element=>document.activeElement===element);stop++)await page.keyboard.press('Tab');
+    assert.equal(await trigger.evaluate(element=>document.activeElement===element),true,'Settings trigger is reachable in keyboard order');
     await page.keyboard.press('Enter');
     const settings=page.getByRole('dialog',{name:'Settings'});
     await settings.waitFor();
@@ -107,10 +115,17 @@ function contrastRatio(foreground,background){
       await page.screenshot({path:`.local/settings-review/${theme}.png`,fullPage:true});
       console.log(`${theme}: minimum Settings text ${Math.min(...textContrasts).toFixed(2)}:1; selector boundary ${selectorContrast.toFixed(2)}:1; focus ${focusContrast.toFixed(2)}:1`);
     }
-    await page.getByLabel('App theme').selectOption('pink');
+    await page.getByLabel('App theme').selectOption('light');
+    await settings.waitFor({state:'visible'});
     await page.getByRole('button',{name:'Close',exact:true}).click();
     await settings.waitFor({state:'hidden'});
     assert.equal(await trigger.evaluate(element=>document.activeElement===element),true,'Close returns focus to Settings');
+    await page.screenshot({path:'.local/settings-review/light-workspace.png',fullPage:true});
+    await trigger.click();await settings.waitFor();
+    await page.getByLabel('App theme').selectOption('pink');
+    await page.waitForFunction(()=>document.documentElement.dataset.theme==='pink');
+    await page.getByRole('button',{name:'Close',exact:true}).click();
+    await settings.waitFor({state:'hidden'});
     await page.reload();
     await trigger.waitFor();
     assert.equal(await page.locator('html').getAttribute('data-theme'),'pink','theme survives reload');
@@ -119,6 +134,11 @@ function contrastRatio(foreground,background){
     await page.setViewportSize({width:360,height:740});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'narrow layout fits without horizontal page scroll');
     assert.equal(await settings.evaluate(dialog=>dialog.getBoundingClientRect().width<=innerWidth),true,'Settings dialog fits narrow screen');
+    assert.equal(await trigger.evaluate(element=>getComputedStyle(element).position),'static','narrow Settings sits in the landing-page footer instead of covering content');
+    await settings.getByLabel('App theme').selectOption('light');
+    await page.waitForFunction(()=>document.documentElement.dataset.theme==='light');
+    await page.screenshot({path:'.local/settings-review/light-narrow.png',fullPage:true});
+    assert.ok((await page.getByText(/Your library stays on this device/).count())>0,'workspace save location remains described outside the sidebar');
     await page.emulateMedia({reducedMotion:'reduce'});
     assert.equal(await page.evaluate(()=>matchMedia('(prefers-reduced-motion: reduce)').matches),true);
     assert.ok(await trigger.evaluate(element=>parseFloat(getComputedStyle(element).transitionDuration)<=.001),'reduced motion reduces Settings trigger transition below 1ms');
