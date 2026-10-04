@@ -13,7 +13,7 @@ export default function TranscriptPreview({lecture,onSessionExpired,onOpen}:{lec
     return()=>{alive=false;window.removeEventListener('lecture-snapshot',live);};
   },[lecture,onSessionExpired]);
   useEffect(()=>{if(panel.current)panel.current.scrollTop=panel.current.scrollHeight;},[speech]);
-  return <section className="transcript-preview" aria-label="Live transcript preview"><div className="section-row"><h2>Live transcript</h2><button className="text-button" onClick={onOpen}>Open full transcript</button></div><p className="small muted">Follows new speech automatically. Draft words may change as recognition finishes.</p><div ref={panel} className="transcript-preview-scroll" tabIndex={0} role="region" aria-label="Latest recognized speech">
+  return <section className="transcript-preview" aria-label="Live transcript preview"><div className="section-row"><h2>Live transcript</h2><button className="text-button" onClick={onOpen}>Open full transcript</button></div><p className="transcript-preview-hint small muted">Latest words · draft text may change</p><div ref={panel} className="transcript-preview-scroll" tabIndex={0} role="region" aria-label="Latest recognized speech">
     {speech?.snapshot?.segments.slice(-30).map(p=><p key={p.id}><span className="small muted">{Math.floor(p.start_sample/p.sample_rate/60)}:{String(Math.floor(p.start_sample/p.sample_rate)%60).padStart(2,'0')} </span>{p.text}</p>)}
     {speech?.preview&&<p className="speech-draft"><strong>Transcribing now… </strong>{speech.preview}</p>}
     {error&&<p>{error}</p>}

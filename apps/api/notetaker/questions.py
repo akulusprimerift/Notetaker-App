@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select, func
 from . import models as m
 from .cloud_notes import is_cloud
-from .learning import learning_cards, review_json
+from .learning import saved_note_context
 from .notes import latest
 from .note_contract import compact
 from .security import error
@@ -14,17 +14,18 @@ from .transcription import lock_lecture
 QUALITY_KEYS = ('support', 'answerability', 'clarity', 'usefulness')
 
 
+def review_json(row):
+    return {'version': row.version, 'rating': row.rating, 'reviewed_at': row.created_at.isoformat() + 'Z'}
+
+
 class Strict(BaseModel):
     model_config = ConfigDict(extra='forbid', strict=True, str_strip_whitespace=True)
 
 
 class GenerateInput(Strict):
     revision_id: str = Field(min_length=1, max_length=36)
-    block_id: str = Field(min_length=1, max_length=160)
     preference_id: str = Field(min_length=1, max_length=36)
-    kind: Literal['mixed', 'flashcard', 'practice'] = 'mixed'
-    count: int = Field(default=4, ge=1, le=8)
-    focus: str = Field(default='', max_length=500)
+    prompt: str = Field(min_length=1, max_length=2000)
     cloud_consent: bool = False
 
 
@@ -54,14 +55,39 @@ def job_for(db, row):
 
 
 def source_current(db, lecture, row):
-    deck = learning_cards(db, lecture)
-    return deck['revision_id'] == row.evidence['revision_id'] and any(c['id'] == row.evidence['block_id'] for c in deck['cards'])
+    deck = saved_note_context(db, lecture)
+    if deck['revision_id'] != row.evidence['revision_id']:
+        return False
+    # Older saved question sets pinned one note block. New flash-card sets pin
+    # every eligible block present in the selected note revision.
+    block_id = row.evidence.get('block_id')
+    if block_id:
+        return any(block['id'] == block_id for block in deck['blocks'])
+    block_ids = set(row.evidence.get('block_ids', ()))
+    return bool(block_ids) and block_ids <= {block['id'] for block in deck['blocks']}
+
+
+def flashcard_evidence(deck, prompt):
+    source_fields = ('id', 'text', 'label', 'source_kind', 'revision_id', 'passage_id',
+        'segment_number', 'start_sample', 'end_sample', 'sample_rate')
+    sources = {}
+    notes = []
+    for block in deck['blocks']:
+        notes.append({'block_id': block['id'], 'topic': block['topic'], 'passages': block['passages']})
+        for source in block['sources']:
+            sources.setdefault(source['id'], {key: source[key] for key in source_fields if key in source})
+    return {'contract_version': 'flashcards-v1', 'revision_id': deck['revision_id'],
+        'block_ids': [block['id'] for block in deck['blocks']], 'topic': 'Flash cards from saved notes',
+        'student_prompt': prompt, 'notes': notes, 'sources': list(sources.values()),
+        'issues': deck['issues'], 'kind': 'flashcard', 'count': 8}
 
 
 def summary(db, row):
     job = job_for(db, row)
     pref = db.get(m.NotePreference, row.preference_id)
-    return {'id': row.id, 'topic': row.evidence['topic'], 'model': pref.model,
+    return {'id': row.id, 'topic': row.evidence['topic'],
+        'prompt': row.evidence.get('student_prompt', row.evidence.get('focus', '')),
+        'model': pref.model,
         'status': job.status, 'error_code': job.error_code, 'created_at': row.created_at.isoformat() + 'Z',
         'preview': row.preview if job.status == 'running' else '', 'count': len(row.content or [])}
 
@@ -113,9 +139,9 @@ def install_questions(app, current, db_session, owned_lecture, receipt):
     @app.get('/lectures/{lecture_id}/study/questions')
     def sets(lecture_id: str, session=Depends(current), db=Depends(db_session)):
         lecture = owned(db, session, lecture_id)
-        deck = learning_cards(db, lecture)
+        deck = saved_note_context(db, lecture)
         pref = latest(db, m.NotePreference, lecture_id, m.NotePreference.version)
-        return {'revision_id': deck['revision_id'], 'blocks': [{'id': c['id'], 'topic': c['topic']} for c in deck['cards']],
+        return {'revision_id': deck['revision_id'], 'has_notes': bool(deck['blocks']), 'omitted_blocks': deck['omitted'],
             'preference_id': pref.id if pref else None, 'model': pref.model if pref else None,
             'enabled': bool(pref and pref.enabled), 'cloud': bool(pref and is_cloud(pref.model)),
             'sets': [summary(db, row) for row in db.scalars(select(m.QuestionSet).where(
@@ -132,20 +158,19 @@ def install_questions(app, current, db_session, owned_lecture, receipt):
         if not pref or not pref.enabled or pref.id != body.preference_id:
             error(409, 'model_changed', 'Choose an enabled note model, then refresh question setup.')
         if is_cloud(pref.model) and not body.cloud_consent:
-            error(422, 'cloud_consent_required', 'Confirm sending this note section, source text and study focus to the selected cloud model.')
-        deck = learning_cards(db, lecture)
-        card = next((c for c in deck['cards'] if c['id'] == body.block_id), None)
-        if not card or deck['revision_id'] != body.revision_id:
-            error(409, 'notes_changed', 'Saved notes or sources changed. Refresh question setup.')
+            error(422, 'cloud_consent_required', 'Confirm sending your saved notes, source text and instructions to the selected cloud model.')
+        deck = saved_note_context(db, lecture)
+        if not deck['blocks']:
+            error(422, 'notes_unavailable', 'Save source-linked notes before generating flash cards.')
+        if deck['revision_id'] != body.revision_id:
+            error(409, 'notes_changed', 'Saved notes or sources changed. Refresh flash-card setup.')
         if db.scalar(select(m.Job.id).where(m.Job.lecture_id == lecture_id, m.Job.kind == 'learning.generate', m.Job.status.in_(['due', 'running']))):
             error(409, 'questions_pending', 'A question request is already queued or generating for this lecture.')
         if db.scalar(select(func.count()).select_from(m.QuestionSet).where(m.QuestionSet.lecture_id == lecture_id)) >= 100:
             error(422, 'question_set_limit', 'This lecture has reached its 100 saved question-request limit.')
-        evidence = {'revision_id': deck['revision_id'], 'block_id': card['id'], 'topic': card['topic'],
-            'notes': card['passages'], 'sources': [{k: s[k] for k in ('id', 'text', 'label', 'segment_number', 'start_sample', 'end_sample', 'sample_rate') if k in s} for s in card['sources']],
-            'issues': deck['issues'], 'kind': body.kind, 'count': body.count, 'focus': body.focus}
+        evidence = flashcard_evidence(deck, body.prompt)
         if len(compact(evidence).encode()) > 16000:
-            error(422, 'context_limit', 'This section is too large for one question request. Choose a smaller section.')
+            error(422, 'context_limit', 'Saved notes and source text are too large for one flash-card request. Reduce the saved note context, then try again.')
         settings = latest(db, m.SettingsVersion, lecture_id, m.SettingsVersion.version)
         row = m.QuestionSet(lecture_id=lecture_id, preference_id=pref.id, settings_id=settings.id, evidence=evidence)
         db.add(row); db.flush()

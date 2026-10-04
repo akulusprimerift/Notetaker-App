@@ -1,5 +1,6 @@
 // Real React workspace with synthetic API responses and oscillator audio; no microphone.
 const path=require('node:path');
+const {mkdir}=require('node:fs/promises');
 const {execFileSync}=require('node:child_process');
 const assert=require('node:assert/strict');
 const playwrightDriver=process.env.NOTETAKER_PLAYWRIGHT_DRIVER||
@@ -30,7 +31,7 @@ const {chromium}=require(playwrightDriver);
     const created='2026-10-03T12:00:00Z';
     const course={id:'course',name:'Synthetic course',code:'TEST',created_at:created};
     const lecture={id:'lecture',course_id:'course',title:'Synthetic navigation lecture',status:'prepared',audio_removed:false,created_at:created,update_cursor:0};
-    const transcript={speech_model:{state:'ready',name:'synthetic'},status:'not_started',counts:{due:0,running:0,completed:0,failed:0},errors:[],preview:'',waiting_for_audio:false,processing_delay_seconds:0,snapshot:{id:'transcript',segments:[],issues:[]}};
+    const transcript={speech_model:{state:'ready',name:'synthetic'},status:'not_started',counts:{due:0,running:0,completed:0,failed:0},errors:[],preview:'The lecturer explains how ATP transfers energy between cellular processes, then compares it with long-term energy storage.',waiting_for_audio:false,processing_delay_seconds:0,snapshot:{id:'transcript',segments:[],issues:[]}};
     const profile={depth:'detailed',format:'topic_outline',instructions:'',detail_prompt:'',layout_prompt:''};
     const notes={status:'ready',editing:{version:0,selected:null,proposal:null,proposal_valid:false,sources_changed:false},preference:{version:1,model:'synthetic/local',digest:'a'.repeat(64),enabled:true},revision:{id:'revision',revision:1,created_at:created,profile,metadata:{model:'synthetic/local'},source_issues:[],content:{issues:[],coverage:[],blocks:Array.from({length:12},(_,index)=>({id:`block-${index}`,topic:`Lecture topic ${index+1}`,kind:'explanation',passages:[{id:`passage-${index}`,evidence_kind:'lecture_paraphrase',text:`Detailed synthetic notes for topic ${index+1}. `+('A supported explanation with definitions, examples, conditions, and readable study text. '.repeat(index===0?36:18)),sources:[]}]}))}},processing:{newer_transcript_pending:false,request_age_seconds:0},profile};
     let captureEpoch=0,manifestVersion=0,currentRun=null;
@@ -91,9 +92,31 @@ const {chromium}=require(playwrightDriver);
     const mainNavigation=page.getByRole('navigation',{name:'Main lecture sections'});
     const moreNavigation=page.getByRole('navigation',{name:'Other lecture sections'});
     assert.deepEqual(await mainNavigation.getByRole('link').allTextContents(),['Notes','Finish']);
-    assert.deepEqual(await moreNavigation.getByRole('link').allTextContents(),['Transcript','Materials','Capture','Visual notes','Study tools']);
+    assert.deepEqual(await moreNavigation.getByRole('link').allTextContents(),['Transcript','Materials','Capture','Visual notes','Flash Cards']);
     assert.equal(await page.getByText(/Ready when you are|Your Space to Learn/i).count(),0);
     assert.equal(await page.locator('#main-content > .capture-panel[aria-label="Deletion progress"]').count(),0);
+
+    if(process.env.NOTETAKER_NAVIGATION_ONLY==='1'){
+      const screenshot=process.env.NOTETAKER_NOTES_SCREENSHOT||'.local/layout-review/notes-finish-workspace.png';
+      await mkdir(path.dirname(screenshot),{recursive:true});
+      await page.setViewportSize({width:1440,height:1100});
+      await page.evaluate(()=>Promise.all(document.getAnimations().map(animation=>animation.finished.catch(()=>{}))));
+      await page.screenshot({path:screenshot});
+      const recorderNode=page.locator('.recording-bar .capture-panel-compact');
+      assert.equal(await recorderNode.count(),1,'the persistent recording controls are mounted for the selected lecture');
+      await recorderNode.evaluate(element=>element.dataset.recorderIdentity='kept');
+      for(const label of ['Flash Cards','Transcript','Finish','Notes']){
+        await page.getByRole('link',{name:label,exact:true}).click();
+        if(label==='Flash Cards')await page.getByRole('region',{name:'Flash cards',exact:true}).waitFor();
+        else if(label==='Transcript')await page.locator('.transcript-panel').waitFor();
+        else if(label==='Finish')await page.getByRole('heading',{name:'Finalize and manage this lecture'}).waitFor();
+        else await page.getByRole('heading',{name:'Your lecture notes'}).waitFor();
+        assert.equal(await recorderNode.getAttribute('data-recorder-identity'),'kept',`persistent recording controls stay mounted after ${label} navigation`);
+      }
+      assert.deepEqual(errors,[]);
+      console.log(`Synthetic Notes/Finish workspace screenshot saved to ${screenshot}; persistent recording controls stayed mounted across Notes, Flash Cards, Transcript, and Finish. No audio capture was started.`);
+      return;
+    }
 
     await page.evaluate(()=>{document.documentElement.scrollTop=document.documentElement.scrollHeight;});
     await page.waitForFunction(()=>window.scrollY>0);

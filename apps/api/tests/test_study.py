@@ -3,8 +3,8 @@ from sqlalchemy import select, func
 from test_workspace import setup, course, lecture
 from test_capture import capture
 from test_transcription import speech
-from test_notes import notes, correction
-from test_note_edits import generated, command
+from test_notes import notes
+from test_note_edits import generated
 from test_lifecycle import finalize, remove
 from notetaker import models as m
 from notetaker.lifecycle import reconcile_deletion
@@ -42,46 +42,7 @@ def test_mark_rejects_other_lecture_run_and_outside_retained_audio(capture):
     another = lecture(client, headers, course(client, headers)['id'])
     assert mark(client, headers, '/lectures/' + another['id'], run).status_code == 422
     assert mark(client, headers, path, run, sample=43201 * 48000).status_code == 422
-    assert client.get(path + '/study/catch-up?seconds=99999').status_code == 422
-
-
-def test_catchup_uses_saved_passages_and_current_source_versions(notes):
-    app, client, headers, path, run = notes
-    saved = generated(app, client, path)
-    export = client.get(path + '/notes/revisions/' + saved['id'] + '/export').text
-    response = client.get(path + '/study/catch-up?seconds=60')
-    assert response.status_code == 200, response.text
-    data = response.json()
-    assert data['revision_id'] == saved['id'] and data['items']
-    source_ids = {source['id'] for source in data['sources']}
-    assert all(set(item['source_ids']) <= source_ids for item in data['items'])
-    original_passages = {p['text'] for b in saved['content']['blocks'] for p in b['passages']}
-    assert all(item['text'] in original_passages for item in data['items'])
-    old_id = client.get(path + '/transcript').json()['snapshot']['segments'][0]['id']
-    correction(client, headers, path, 'Search requires sorted data; otherwise this method is invalid.')
-    updated = client.get(path + '/study/catch-up?seconds=60').json()
-    assert all(old_id not in item['source_ids'] for item in updated['items'])
-    assert client.get(path + '/notes/revisions/' + saved['id'] + '/export').text == export
-    assert client.get(path + '/study/catch-up?run_id=' + run['id'] + '&end_sample=9999999').json()['awaiting_transcript']
-
-
-def test_catchup_fallback_is_labelled_transcript_and_no_new_inference(notes):
-    _, client, _, path, _ = notes
-    data = client.get(path + '/study/catch-up').json()
-    assert data['revision_id'] is None
-    assert all(item['kind'] == 'transcript' for item in data['items'])
-    assert 'transcript excerpts' in data['message']
-
-
-def test_catchup_respects_selected_student_revision(notes):
-    app, client, headers, path, _ = notes
-    saved = generated(app, client, path)
-    passage = saved['content']['blocks'][0]['passages'][0]
-    response = command(client, headers, path, {'action': 'save', 'expected_version': 0,
-        'base_id': saved['id'], 'passages': [{'id': passage['id'], 'text': 'My careful explanation with its original source.'}]})
-    assert response.status_code == 200, response.text
-    result = client.get(path + '/study/catch-up?seconds=60').json()
-    assert any(item['student_edited'] and item['text'].startswith('My careful') for item in result['items'])
+    assert client.get(path + '/study/catch-up?seconds=99999').status_code == 404
 
 
 def test_final_snapshot_freezes_student_markers_and_deletion_removes_them(notes):

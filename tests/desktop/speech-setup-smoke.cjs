@@ -17,6 +17,7 @@ async function post(url,body){const r=await fetch('/api'+url,{method:'POST',head
 const course=await post('/courses',{name:'Synthetic speech setup',code:'TEST'});return post('/courses/'+course.id+'/lectures',{title:'Synthetic readiness check'});
 });
 await page.goto('http://127.0.0.1:3000/#lecture/'+lecture.id);
+await page.locator('.processing-details > summary').click();
 await page.getByText('No usable speech model selected',{exact:true}).waitFor();
 await application.evaluate(({dialog},folder)=>{dialog.showMessageBox=async()=>({response:1});dialog.showOpenDialog=async()=>({canceled:false,filePaths:[folder]});},model);
 await page.getByRole('button',{name:'Select speech model',exact:true}).click();
@@ -24,6 +25,7 @@ await page.getByText(/selected. Finish recording and wait for confirmed saves/).
 const config=JSON.parse(await fs.readFile(path.join(profile,'desktop-settings.json'),'utf8'));
 assert.equal(config.speechPath,model);
 await quit();page=await launch();await page.waitForURL('http://127.0.0.1:3000/',{timeout:660000});await page.goto('http://127.0.0.1:3000/#lecture/'+lecture.id);
+await page.locator('.processing-details > summary').click();
 await page.locator('.speech-model > .section-row strong').filter({hasText:'Speech model active · ready to transcribe'}).waitFor({timeout:180000});
 assert.equal(await page.getByRole('button',{name:'★ Mark Important'}).count(),0);
 await page.getByRole('region',{name:'Live transcript preview'}).waitFor();
