@@ -1,6 +1,7 @@
 // Real React rendering with synthetic network responses; microphone use is forbidden.
 const {chromium}=require('../../.venv/Lib/site-packages/playwright/driver/package');
 const assert=require('node:assert/strict');
+const {setTheme}=require('./settings-test-helpers.cjs');
 (async()=>{
   const browser=await chromium.launch({headless:true});
   try{
@@ -47,7 +48,7 @@ const assert=require('node:assert/strict');
     await page.getByRole('region',{name:'Speech being transcribed'}).waitFor({state:'detached'});
     notes.revision={id:'notes1',revision:1,created_at:lecture.created_at,profile:notes.profile,metadata:{model:'synthetic'},source_issues:['synthetic warning'],content:{blocks:[{id:'b1',topic:'A key concept',kind:'emphasis',passages:[{id:'p1',text:'Context matters, including exceptions.',evidence_kind:'lecture_paraphrase',sources:[]}]}],issues:[],coverage:[]}};
     await page.locator('.capture-panel').evaluate(el=>el.dataset.retained='yes');
-    await page.getByRole('tab',{name:/Study notes/}).click();
+    await page.getByRole('link',{name:'Notes',exact:true}).click();
     await page.locator('.study-emphasis strong').filter({hasText:'Context matters'}).waitFor();
     await page.getByLabel('Note model',{exact:true}).selectOption('qwen3:4b');
     await page.getByRole('button',{name:'Start automatic notes',exact:true}).click();
@@ -88,7 +89,7 @@ const assert=require('node:assert/strict');
     await page.keyboard.press('Escape');
     await page.getByRole('dialog',{name:'Set up speech recognition'}).waitFor({state:'hidden'});
     assert.equal(await page.getByRole('button',{name:'How to get a model'}).evaluate(el=>el===document.activeElement),true);
-    await page.getByLabel('App theme').selectOption('dark');
+    await setTheme(page,'dark');
     await page.setViewportSize({width:400,height:850});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     await page.screenshot({path:'.local/speech-ux-narrow.png',fullPage:true});

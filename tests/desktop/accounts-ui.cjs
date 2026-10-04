@@ -2,6 +2,7 @@
 const {chromium}=require('../../.venv/Lib/site-packages/playwright/driver/package');
 const assert=require('node:assert/strict');
 const {mkdir}=require('node:fs/promises');
+const {setTheme}=require('./settings-test-helpers.cjs');
 (async()=>{
   const browser=await chromium.launch({headless:true});
   try{
@@ -32,10 +33,12 @@ const {mkdir}=require('node:fs/promises');
     });
     await page.goto(process.env.NOTETAKER_UI_ORIGIN||'http://127.0.0.1:3015');
     await page.getByRole('heading',{name:'Your lecture library.'}).waitFor();
-    await page.getByLabel('App theme').selectOption('dark');
-    const opener=page.getByRole('button',{name:'Accounts & API keys',exact:true});
+    await setTheme(page,'dark');
+    await page.getByRole('button',{name:'Settings',exact:true}).click();
+    const settings=page.getByRole('dialog',{name:'Settings'});await settings.waitFor();
+    const opener=settings.getByRole('button',{name:'Accounts & API keys',exact:true});
     await opener.click();
-    const dialog=page.getByRole('dialog');await dialog.waitFor();
+    const dialog=page.getByRole('dialog',{name:'Accounts & API keys'});await dialog.waitFor();
     assert.equal(await dialog.getByText('Choose client',{exact:true}).count(),0);
     assert.equal(await dialog.getByText('Model ID',{exact:true}).count(),0);
     await dialog.getByRole('button',{name:'Link ChatGPT',exact:true}).click();
@@ -56,10 +59,10 @@ const {mkdir}=require('node:fs/promises');
     await page.setViewportSize({width:400,height:850});await opener.click();
     assert.ok(await dialog.evaluate(element=>element.scrollWidth<=element.clientWidth));
     await page.screenshot({path:'.local/accounts-review/narrow.png'});
-    await page.keyboard.press('Escape');await page.setViewportSize({width:1200,height:1000});
+    await page.keyboard.press('Escape');await page.keyboard.press('Escape');await page.setViewportSize({width:1200,height:1000});
     await page.goto((process.env.NOTETAKER_UI_ORIGIN||'http://127.0.0.1:3015')+'/#course/synthetic-course');
     await page.locator('.materials-uploader').waitFor();
-    assert.equal(await page.locator('.materials-uploader').evaluate(element=>getComputedStyle(element).backgroundColor),'rgb(18, 27, 45)');
+    assert.equal(await page.locator('.materials-uploader').evaluate(element=>getComputedStyle(element).backgroundColor),'rgb(26, 38, 48)');
     await page.screenshot({path:'.local/accounts-review/materials-midnight.png',fullPage:true});
     console.log('Accounts UI: browser-link request, key-only setup, secret clearing, keyboard focus restoration and narrow layout passed.');
   }finally{await browser.close();}

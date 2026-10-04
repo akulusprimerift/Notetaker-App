@@ -1,7 +1,6 @@
 'use client';
 import LiveUpdates from './live';
 import Materials from './materials';
-import Theme from './theme';
 import LectureNavigation from './lecture-navigation';
 import CourseDelete from './course-delete';
 
@@ -10,10 +9,9 @@ import Recording from './recording';
 import Transcript from './transcript';
 import Notes from './notes';
 import Finalization from './finalization';
-import DataRemoval from './data-removal';
 import VisualNotes from './visual-notes';
-import DesktopTools from './desktop-tools';
 import AccountsDialog from './accounts-dialog';
+import SettingsDialog from './settings-dialog';
 import StudyTools from './study-tools';
 import CourseTerminology from './course-terminology';
 
@@ -22,16 +20,20 @@ type Lecture={id:string;course_id:string;title:string;status:string;audio_remove
 type Snapshot={lecture:Lecture;course_name:string;settings:{depth:string;format:string};processing_location:string};
 type Session={csrf_token:string;preview:boolean;owner_id:string};
 type LectureTab='notes'|'transcript'|'materials'|'capture'|'visuals'|'finalize'|'study';
-const lectureTabs:ReadonlyArray<{id:LectureTab;label:string;description:string}>=[
-  {id:'notes',label:'Study notes',description:'Read and edit your saved notes'},
+type CaptureLecture=Pick<Lecture,'id'|'course_id'|'title'|'audio_removed'>;
+const primaryLectureTabs:ReadonlyArray<{id:LectureTab;label:string;description:string}>=[
+  {id:'notes',label:'Notes',description:'Read and edit your saved notes'},
+  {id:'finalize',label:'Finish',description:'Export or manage this lecture'},
+];
+const secondaryLectureTabs:ReadonlyArray<{id:LectureTab;label:string;description:string}>=[
   {id:'transcript',label:'Transcript',description:'Follow and correct the lecture'},
   {id:'materials',label:'Materials',description:'Review slides and course sources'},
   {id:'capture',label:'Capture',description:'Record and recover audio'},
   {id:'visuals',label:'Visual notes',description:'Review source-linked schematics'},
   {id:'study',label:'Study tools',description:'Catch up and review important moments'},
-  {id:'finalize',label:'Finish',description:'Export or manage this lecture'},
 ];
-const isLectureTab=(value:string):value is LectureTab=>lectureTabs.some(tab=>tab.id===value);
+const lectureTabOrder:ReadonlyArray<LectureTab>=['notes','transcript','materials','capture','visuals','study','finalize'];
+const isLectureTab=(value:string):value is LectureTab=>[...primaryLectureTabs,...secondaryLectureTabs].some(tab=>tab.id===value);
 class ApiError extends Error {constructor(message:string, public status:number){super(message)}}
 async function request<T>(path:string, init:RequestInit={}):Promise<T>{
   let response:Response;
@@ -52,12 +54,16 @@ export default function Workspace(){
   const [error,setError]=useState('');
   const [busy,setBusy]=useState(false);
   const [captureBusy,setCaptureBusy]=useState(false);
+  const [captureLecture,setCaptureLecture]=useState<CaptureLecture|null>(null);
+  const [recordCourseId,setRecordCourseId]=useState('');
+  const [recordLectureId,setRecordLectureId]=useState('');
   const [transcriptBusy,setTranscriptBusy]=useState(false);
   const [deleteLecture,setDeleteLecture]=useState(false);
   const sessionExpired=useCallback(()=>setSession(null),[]);
   const [removedAudio,setRemovedAudio]=useState<string[]>([]);
   const dataRemoved=useCallback((lecture:string,kind:string)=>{
     setRemovedAudio(ids=>ids.includes(lecture)?ids:[...ids,lecture]);
+    setCaptureLecture(current=>current?.id===lecture?(kind==='lecture'?null:{...current,audio_removed:true}):current);
     if(kind==='lecture'){
       setSnapshot(old=>old?.lecture.id===lecture?null:old);
       setLectures(old=>old.filter(row=>row.id!==lecture));
@@ -76,6 +82,7 @@ export default function Workspace(){
   const [courseCode,setCourseCode]=useState('');
   const [notice,setNotice]=useState('');
   const formRef=useRef<HTMLDivElement>(null);
+  const recorderPicker=useRef<HTMLDetailsElement>(null);
   const firstField=useRef<HTMLInputElement>(null);
   const returnFocus=useRef<HTMLElement|null>(null);
   const command=useRef<{payload:string;key:string}|null>(null);
@@ -92,7 +99,7 @@ export default function Workspace(){
     const previous=previousTab.current;
     previousTab.current=lectureTab;
     if(previous===lectureTab||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-    const direction=lectureTabs.findIndex(tab=>tab.id===lectureTab)>lectureTabs.findIndex(tab=>tab.id===previous)?1:-1;
+    const direction=lectureTabOrder.indexOf(lectureTab)>lectureTabOrder.indexOf(previous)?1:-1;
     const animation=lecturePanel.current?.animate([
       {opacity:0,transform:`translateX(${direction*36}px)`},
       {opacity:1,transform:'translateX(0)'},
@@ -138,6 +145,15 @@ export default function Workspace(){
       }catch(err){if(active)report(err)}finally{if(active)setViewLoading(false)}
     };void work();return()=>{active=false};
   },[routeKind,routeId,session,report]);
+  useEffect(()=>{
+    if(!snapshot)return;
+    setCaptureLecture(current=>current===null||(!captureBusy&&current.id!==snapshot.lecture.id)?{
+      id:snapshot.lecture.id,course_id:snapshot.lecture.course_id,title:snapshot.lecture.title,audio_removed:snapshot.lecture.audio_removed,
+    }:current);
+  },[snapshot,captureBusy]);
+  useEffect(()=>{
+    if(selectedId&&courses.some(course=>course.id===selectedId))setRecordCourseId(selectedId);
+  },[selectedId,courses]);
   useEffect(()=>{if(form)firstField.current?.focus()},[form]);
 
   function openForm(kind:'course'|'lecture'){
@@ -149,6 +165,18 @@ export default function Workspace(){
     if(!selectedLectureId)return;
     location.hash=`#lecture/${selectedLectureId}/${tab}`;
   }
+  function chooseRecordingLecture(){
+    const course=courses.find(item=>item.id===recordCourseId);
+    const lecture=(courseLectures[recordCourseId]??[]).find(item=>item.id===recordLectureId&&!item.audio_removed);
+    if(!course||!lecture||captureBusy)return;
+    setCaptureLecture({id:lecture.id,course_id:course.id,title:lecture.title,audio_removed:lecture.audio_removed});
+    if(recorderPicker.current)recorderPicker.current.open=false;
+    location.hash=`#lecture/${lecture.id}/notes`;
+  }
+  function closeRecordPicker(){if(recorderPicker.current)recorderPicker.current.open=false;}
+  function goToRecordingCourse(){
+    if(!captureBusy&&recordCourseId){if(recorderPicker.current)recorderPicker.current.open=false;location.hash=`#course/${recordCourseId}`;}
+  }
   async function save(event:FormEvent){
     event.preventDefault();if(!session)return;setBusy(true);setError('');
     const payload=JSON.stringify(form==='course'?{name:name.trim(),code:courseCode.trim()}:{title:name.trim()});
@@ -156,7 +184,8 @@ export default function Workspace(){
     try{
       const path=form==='course'?'/courses':`/courses/${selectedId}/lectures`;
       const row=await request<Course|Lecture>(path,{method:'POST',headers:{'X-CSRF-Token':session.csrf_token,'Idempotency-Key':command.current.key},body:payload});
-      if(form==='course')setCourses(await request<Course[]>('/courses'));
+      if(form==='course'){setCourses(await request<Course[]>('/courses'));setRecordCourseId(row.id)}
+      else setCourseLectures(old=>({...old,[selectedId!]:[row as Lecture,...(old[selectedId!]??[])]}));
       const destination=form==='course'?`course/${row.id}`:`lecture/${row.id}`;
       command.current=null;setForm(null);location.hash=destination;
     }catch(err){report(err)}finally{setBusy(false)}
@@ -165,34 +194,51 @@ export default function Workspace(){
   if(!session)return <main className="welcome"><section className="unlock-card"><h1>Open your workspace</h1><p>Your library is saved on this device.</p>{error&&<p role="alert" className="error">{error}</p>}<button className="primary" onClick={()=>void load()}>Open workspace</button></section></main>;
 
   return <div className={`workspace ${sidebarHidden?'sidebar-hidden':''}`}>
-    <AccountsDialog csrf={session.csrf_token} onSessionExpired={sessionExpired}/><a className="skip" href="#main-content" onClick={event=>{event.preventDefault();document.getElementById('main-content')?.focus()}}>Skip to content</a>
+    <AccountsDialog csrf={session.csrf_token} onSessionExpired={sessionExpired}/>
+    <SettingsDialog owner={session.owner_id} csrf={session.csrf_token} onRemoved={dataRemoved}/>
+    <a className="skip" href="#main-content" onClick={event=>{event.preventDefault();document.getElementById('main-content')?.focus()}}>Skip to content</a>
     <aside id="lecture-sidebar" className="sidebar" inert={sidebarHidden} aria-hidden={sidebarHidden}><a className="brand" href="#"><span className="brand-icon">n</span>notetaker<span className="brand-dot">.</span></a>
       <nav aria-label="Workspace"><a href="#" className={`nav-library ${!route?'active':''}`}><span aria-hidden="true">▦</span> Your library</a><div className="nav-title"><span>YOUR COURSES</span><button aria-label="Add a course" onClick={()=>openForm('course')}>+</button></div>
         {courses.length===0?<p className="sidebar-empty">Your courses will appear here.</p>:courses.map(course=><div className="sidebar-course" key={course.id}><a href={`#course/${course.id}`} className={`course-link ${selectedId===course.id?'active':''}`}><span className="course-initial">{initial(course.name)}</span><span>{course.name}</span><span className="course-count">{courseLectures[course.id]?.length??'—'}</span></a>{selectedId===course.id&&courseLectures[course.id]?.map(lecture=><a key={lecture.id} href={`#lecture/${lecture.id}`} className={`lecture-link ${selectedLectureId===lecture.id?'active':''}`}><span className="lecture-link-dot" aria-hidden="true"/><span>{lecture.title}</span></a>)}</div>)}
-      </nav><div className="sidebar-bottom"><button type="button" className="secondary full" onClick={()=>window.dispatchEvent(new Event('open-accounts'))}>Accounts &amp; API keys</button><div className="local-note"><span className="status-dot"/>Local workspace</div><p>Saved on this device</p></div>
+      </nav><div className="sidebar-bottom"><div className="local-note"><span className="status-dot"/>Local workspace</div></div>
     </aside>
-    <div className="workspace-body"><div className="topbar"><button className="secondary sidebar-toggle" aria-controls="lecture-sidebar" aria-expanded={!sidebarHidden} onClick={toggleSidebar}>{sidebarHidden?'Show library':'Hide library'}</button><span className="topbar-tagline">YOUR SPACE TO LEARN</span><div className="topbar-actions"><button type="button" className="desktop-tools accounts-mobile" onClick={()=>window.dispatchEvent(new Event('open-accounts'))}>Accounts &amp; API keys</button><DesktopTools/><Theme/><span className="privacy-badge"><span className="status-dot"/>{session.preview?'Local preview':'Private library'}</span></div></div>
+    <div className="workspace-body"><header className="workspace-header"><div className="topbar"><button className="secondary sidebar-toggle" aria-controls="lecture-sidebar" aria-expanded={!sidebarHidden} onClick={toggleSidebar}>{sidebarHidden?'Show library':'Hide library'}</button><div className="topbar-actions"><span className="privacy-badge"><span className="status-dot"/>{session.preview?'Local preview':'Private library'}</span></div></div>
+      <div className="recording-bar" role="region" aria-label="Persistent recording controls">
+        {captureLecture&&!captureLecture.audio_removed&&!removedAudio.includes(captureLecture.id)?<>
+          <div className="recording-context"><span className="recording-context-dot" aria-hidden="true"/><span className="recording-context-title">{captureLecture.title}</span><span className="small muted">{courses.find(course=>course.id===captureLecture.course_id)?.name??'Course'}</span>{selectedLectureId!==captureLecture.id&&<a className="recording-return" href={`#lecture/${captureLecture.id}/notes`}>Open recording lecture</a>}{!captureBusy&&<details className="recording-change" ref={recorderPicker} onToggle={event=>{if(event.currentTarget.open){setRecordCourseId(captureLecture.course_id);setRecordLectureId(captureLecture.audio_removed?'':captureLecture.id);}}}><summary className="text-button">Change lecture</summary><div className="recording-picker-panel" role="group" aria-label="Change recording lecture"><p>Choose the course and lecture that should receive a new recording.</p><label htmlFor="record-course">Course<select id="record-course" value={recordCourseId} onChange={event=>{setRecordCourseId(event.target.value);setRecordLectureId('');}}><option value="">Select a course</option>{courses.map(course=><option key={course.id} value={course.id}>{course.name}</option>)}</select></label><label htmlFor="record-lecture">Lecture<select id="record-lecture" value={recordLectureId} disabled={!recordCourseId} onChange={event=>setRecordLectureId(event.target.value)}><option value="">Select a lecture</option>{(courseLectures[recordCourseId]??[]).filter(lecture=>!lecture.audio_removed).map(lecture=><option key={lecture.id} value={lecture.id}>{lecture.title}</option>)}</select></label><button className="secondary" disabled={!recordCourseId||!recordLectureId} onClick={chooseRecordingLecture}>Use this lecture</button></div></details>}</div>
+          <Recording owner={session.owner_id} lecture={captureLecture.id} csrf={session.csrf_token} onBusy={setCaptureBusy} showDetails={lectureTab==='capture'} compact/>
+        </>:<details className="recording-picker" ref={recorderPicker} onToggle={event=>{if(event.currentTarget.open&&captureLecture){setRecordCourseId(captureLecture.course_id);setRecordLectureId('');}}}>
+          <summary className="primary">Record</summary><div className="recording-picker-panel" role="group" aria-label="Select a course and lecture to record"><p>{captureLecture?.audio_removed||captureLecture&&removedAudio.includes(captureLecture.id)?`Audio was removed from ${captureLecture.title}. Choose another lecture before recording.`:'Choose a course and lecture. Recording will not start until you press Start recording.'}</p>
+            {courses.length===0?<button className="secondary" onClick={()=>{closeRecordPicker();openForm('course')}}>Create a course</button>:<>
+              <label htmlFor="record-course">Course<select id="record-course" value={recordCourseId} onChange={event=>{setRecordCourseId(event.target.value);setRecordLectureId('');}}><option value="">Select a course</option>{courses.map(course=><option key={course.id} value={course.id}>{course.name}</option>)}</select></label>
+              <label htmlFor="record-lecture">Lecture<select id="record-lecture" value={recordLectureId} disabled={!recordCourseId} onChange={event=>setRecordLectureId(event.target.value)}><option value="">Select a lecture</option>{(courseLectures[recordCourseId]??[]).filter(lecture=>!lecture.audio_removed).map(lecture=><option key={lecture.id} value={lecture.id}>{lecture.title}</option>)}</select></label>
+              {recordCourseId&&(courseLectures[recordCourseId]??[]).every(lecture=>lecture.audio_removed)&&<p className="small muted">This course has no lecture ready for a new recording.</p>}
+              {recordCourseId&&<button className="text-button" onClick={goToRecordingCourse}>Open course to create a lecture</button>}
+              <button className="secondary" disabled={!recordCourseId||!recordLectureId} onClick={chooseRecordingLecture}>Use this lecture</button>
+            </>}
+          </div>
+        </details>}
+      </div></header>
     <main id="main-content" tabIndex={-1}>
-      <div className="preview-notice">{session.preview?'Local preview · ':''}Your model takes notes from the lecture. Review the ideas, check the sources, and keep learning.</div>
-      <DataRemoval owner={session.owner_id} csrf={session.csrf_token} onRemoved={dataRemoved}/>
       {error&&!form&&<div className="error" role="alert">{error} <a href="#">Return to library</a></div>}
       {viewLoading?<p role="status" className="page-loading">Opening lecture library…</p>:snapshot?<>
         <a className="back-link" href={`#course/${snapshot.lecture.course_id}`}>← {snapshot.course_name}</a>
         <div className="page-heading"><div><p className="eyebrow">LECTURE WORKSPACE</p><h1>{snapshot.lecture.title}</h1><p className="muted">Created {date(snapshot.lecture.created_at)} <span className="separator">/</span> Saved to your course</p></div><button className="text-button" disabled={captureBusy||transcriptBusy} onClick={()=>{setDeleteLecture(true);openLectureTab('finalize')}}>Delete lecture</button></div>
-        <div className="lecture-toolbar" aria-label="Lecture workspace navigation">
-          <div className="lecture-toolbar-copy"><span className="status-dot"/><span>{captureBusy?'Recording or saving audio':snapshot.lecture.audio_removed?'Audio removed':'Ready when you are'}</span></div>
-          <button className="secondary toolbar-action" onClick={()=>openLectureTab('capture')}>{captureBusy?'Open recording':'Record a segment'}</button>
-        </div>
-        {snapshot.lecture.audio_removed||removedAudio.includes(snapshot.lecture.id)?<p className="inline-notice">Audio has been removed. Transcript, notes and saved revisions remain available.</p>:<Recording owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setCaptureBusy} compact={lectureTab!=='capture'}/>}
-        <LectureNavigation tabs={lectureTabs} selected={lectureTab} onSelect={openLectureTab}/>
+        {snapshot.lecture.audio_removed||removedAudio.includes(snapshot.lecture.id)?<p className="inline-notice">Audio has been removed. Transcript, notes and saved revisions remain available.</p>:null}
         <LiveUpdates key={snapshot.lecture.id+'-live'} lecture={snapshot.lecture.id} onSessionExpired={sessionExpired}/>
-        <div ref={lecturePanel} className="lecture-panel" role="tabpanel" aria-label={lectureTabs.find(tab=>tab.id===lectureTab)?.label}>
-          {lectureTab==='notes'&&<Notes key={snapshot.lecture.id+'-notes'} lecture={snapshot.lecture.id} csrf={session.csrf_token} onSessionExpired={sessionExpired} onOpenTranscript={()=>openLectureTab('transcript')}/>}
-          {lectureTab==='transcript'&&<Transcript key={snapshot.lecture.id} owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setTranscriptBusy} onSessionExpired={sessionExpired}/>}
-          {lectureTab==='materials'&&<Materials key={snapshot.lecture.id+'-materials'} course={snapshot.lecture.course_id} lecture={snapshot.lecture.id} csrf={session.csrf_token}/>}
-          {lectureTab==='visuals'&&<VisualNotes key={snapshot.lecture.id+'-visuals'} lecture={snapshot.lecture.id} onSessionExpired={sessionExpired}/>}
-          {lectureTab==='study'&&<StudyTools key={snapshot.lecture.id+'-study'} lecture={snapshot.lecture.id} course={snapshot.lecture.course_id} csrf={session.csrf_token}/>}
-          {lectureTab==='finalize'&&<Finalization key={snapshot.lecture.id+'-final'} lecture={snapshot.lecture.id} csrf={session.csrf_token} busy={captureBusy||transcriptBusy} onRemoved={dataRemoved} deleteRequested={deleteLecture} onDeleteHandled={()=>setDeleteLecture(false)}/>}
+        <div className="lecture-layout">
+          <aside className="lecture-auxiliary"><LectureNavigation tabs={secondaryLectureTabs} selected={lectureTab} lectureId={snapshot.lecture.id} kind="secondary"/></aside>
+          <div className="lecture-main"><LectureNavigation tabs={primaryLectureTabs} selected={lectureTab} lectureId={snapshot.lecture.id} kind="primary"/>
+            <div ref={lecturePanel} className="lecture-panel" aria-label={`${lectureTab==='notes'?'Notes':lectureTab==='finalize'?'Finish':secondaryLectureTabs.find(tab=>tab.id===lectureTab)?.label??'Lecture'} section`}>
+              {lectureTab==='notes'&&<Notes key={snapshot.lecture.id+'-notes'} lecture={snapshot.lecture.id} csrf={session.csrf_token} onSessionExpired={sessionExpired} onOpenTranscript={()=>openLectureTab('transcript')}/>}
+              {lectureTab==='transcript'&&<Transcript key={snapshot.lecture.id} owner={session.owner_id} lecture={snapshot.lecture.id} csrf={session.csrf_token} onBusy={setTranscriptBusy} onSessionExpired={sessionExpired}/>}
+              {lectureTab==='capture'&&<div id="capture-details-slot" className="capture-details-slot"/>}
+              {lectureTab==='materials'&&<Materials key={snapshot.lecture.id+'-materials'} course={snapshot.lecture.course_id} lecture={snapshot.lecture.id} csrf={session.csrf_token}/>}
+              {lectureTab==='visuals'&&<VisualNotes key={snapshot.lecture.id+'-visuals'} lecture={snapshot.lecture.id} onSessionExpired={sessionExpired}/>}
+              {lectureTab==='study'&&<StudyTools key={snapshot.lecture.id+'-study'} lecture={snapshot.lecture.id} course={snapshot.lecture.course_id} csrf={session.csrf_token}/>}
+              {lectureTab==='finalize'&&<Finalization key={snapshot.lecture.id+'-final'} lecture={snapshot.lecture.id} csrf={session.csrf_token} busy={captureBusy||transcriptBusy} onRemoved={dataRemoved} deleteRequested={deleteLecture} onDeleteHandled={()=>setDeleteLecture(false)}/>}
+            </div>
+          </div>
         </div>
       </>:route.startsWith('course/')&&selected?<>
         <a className="back-link" href="#">← Your library</a><div className="page-heading"><div><p className="eyebrow">{selected.code||'YOUR COURSE'}</p><h1>{selected.name}</h1><p className="muted">Your lectures, together in one place.</p></div><button className="primary" onClick={()=>openForm('lecture')}>+ New lecture</button></div>
@@ -207,7 +253,7 @@ export default function Workspace(){
         {courses.length===0?<section className="empty-state"><span className="empty-art" aria-hidden="true">▤</span><p className="eyebrow">A LIBRARY THAT GROWS WITH YOU</p><h2>Every great set of notes starts somewhere.</h2><p>Add your first course. Then give each lecture its own<br className="desktop-break"/> space for the ideas, examples and details worth keeping.</p><button className="secondary" onClick={()=>openForm('course')}>Add your first course <span aria-hidden="true">↗</span></button></section>:<div className="course-grid">{courses.map((course,i)=><a className={`course-card tone-${i%3}`} href={`#course/${course.id}`} key={course.id}><span className="card-icon">{initial(course.name)}</span><span className="card-arrow" aria-hidden="true">↗</span><p className="eyebrow">{course.code||'COURSE'}</p><h2>{course.name}</h2><div className="card-footer"><span>Open lectures</span><span>Added {date(course.created_at)}</span></div></a>)}<button className="add-card" onClick={()=>openForm('course')}><span aria-hidden="true">+</span>Add another course</button></div>}
         <div className="library-footer"><span className="status-dot"/><p>Your library stays on this device. A little organization now makes coming back easier.</p></div>
       </>:null}
-    </main></div>
+    </main><button type="button" className="settings-trigger" aria-label="Settings" title="Settings" onClick={()=>window.dispatchEvent(new Event('open-settings'))}><span aria-hidden="true">⚙</span></button></div>
     {form&&<div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget&&!busy)closeForm()}}><div className="modal" role="dialog" aria-modal="true" aria-labelledby="form-title" ref={formRef} onKeyDown={e=>{
       if(e.key==='Escape'&&!busy)closeForm();
       if(e.key==='Tab'){const fields=Array.from(formRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled)')??[]);const first=fields[0],last=fields.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus()}}

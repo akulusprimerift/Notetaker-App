@@ -38,8 +38,8 @@ const assert=require('node:assert/strict');
     await page.waitForFunction(()=>document.body.innerText.includes('Apply note preferences'));
     assert.equal(choices.at(-1).cloud_consent,true);
     // Leave the lecture section and come back: still confirmed, nothing re-asks.
-    await page.getByRole('tab',{name:/Transcript/}).click();
-    await page.getByRole('tab',{name:/Study notes/}).click();
+    await page.getByRole('link',{name:'Transcript',exact:true}).click();
+    await page.getByRole('link',{name:'Notes',exact:true}).click();
     await confirmed().waitFor();assert.equal(await prompt().count(),0);
     await page.reload();
     await confirmed().waitFor();assert.equal(await prompt().count(),0);

@@ -1,6 +1,7 @@
 // Real React rendering with synthetic network responses; microphone use is forbidden.
 const {chromium}=require('../../.venv/Lib/site-packages/playwright/driver/package');
 const assert=require('node:assert/strict');
+const {setTheme}=require('./settings-test-helpers.cjs');
 (async()=>{
   const browser=await chromium.launch({headless:true});
   try{
@@ -38,7 +39,7 @@ const assert=require('node:assert/strict');
     const {mkdir}=require('node:fs/promises');
     await mkdir('.local/appearance-review',{recursive:true});
     for(const theme of ['pink','blue','dark','light']){
-      await page.getByLabel('App theme').selectOption(theme);
+      await setTheme(page,theme);
       assert.equal(await page.locator('html').getAttribute('data-theme'),theme);
       await page.reload();
       await page.locator(`html[data-theme=${theme}]`).waitFor();
@@ -70,33 +71,30 @@ const assert=require('node:assert/strict');
     assert.ok(fonts.some(font=>/TikTok/i.test(font.familyName)),JSON.stringify(fonts));
     await page.locator('.capture-panel').evaluate(el=>el.dataset.retained='yes');
     await page.evaluate(()=>{window.slides=[];const animate=Element.prototype.animate;Element.prototype.animate=function(frames,options){if(this.classList.contains('lecture-panel'))window.slides.push({frames,options});return animate.call(this,frames,options);};});
-    await page.getByRole('tab',{name:/Transcript/}).click();
+    await page.getByRole('link',{name:'Transcript',exact:true}).click();
     await page.locator('.transcript-panel').waitFor();
     assert.equal(await page.evaluate(()=>window.slides.at(-1).frames[0].transform),'translateX(36px)');
-    await page.waitForFunction(()=>{
-      const tab=document.querySelector('.lecture-tabs [aria-selected="true"]').getBoundingClientRect();
-      const marker=document.querySelector('.tab-highlight').getBoundingClientRect();
-      return Math.abs(tab.x-marker.x)<1&&Math.abs(tab.width-marker.width)<1;
-    });
-    await page.getByRole('tab',{name:/Study notes/}).click();
+    await page.getByRole('navigation',{name:'Other lecture sections'}).getByRole('link',{name:'Transcript'}).waitFor();
+    assert.equal(await page.getByRole('link',{name:'Transcript',exact:true}).getAttribute('aria-current'),'page');
+    await page.getByRole('link',{name:'Notes',exact:true}).click();
     await page.locator('.streaming-text').waitFor();
     assert.equal(await page.evaluate(()=>window.slides.at(-1).frames[0].transform),'translateX(-36px)');
     await page.emulateMedia({reducedMotion:'reduce'});
     const count=await page.evaluate(()=>window.slides.length);
-    await page.getByRole('tab',{name:/Transcript/}).click();
+    await page.getByRole('link',{name:'Transcript',exact:true}).click();
     await page.locator('.transcript-panel').waitFor();
     assert.equal(await page.evaluate(()=>window.slides.length),count);
     assert.equal(await page.locator('.capture-panel').getAttribute('data-retained'),'yes');
     await page.evaluate(()=>{location.hash='';});
     await page.locator('.course-card').waitFor();
-    assert.equal(await page.locator('.course-card').evaluate(el=>getComputedStyle(el).backdropFilter.includes('blur')),true);
+    assert.equal(await page.locator('.course-card').evaluate(el=>getComputedStyle(el).backdropFilter.includes('blur')),false);
     for(const theme of ['pink','blue','dark']){
-      await page.getByLabel('App theme').selectOption(theme);
+      await setTheme(page,theme);
       await page.evaluate(()=>Promise.all(document.getAnimations().map(animation=>animation.finished.catch(()=>{}))));
       await page.screenshot({path:`.local/appearance-review/${theme}-dashboard.png`,fullPage:true});
     }
     // Blue qualification covers the full navigation and dialogs before packaging.
-    await page.getByLabel('App theme').selectOption('blue');
+    await setTheme(page,'blue');
     const newCourse=page.getByRole('button',{name:'+ New course',exact:true});
     await newCourse.hover();
     const hoverContrast=await newCourse.evaluate(element=>{
@@ -110,18 +108,21 @@ const assert=require('node:assert/strict');
     await page.getByRole('dialog').waitFor();
     await page.screenshot({path:'.local/appearance-review/blue-course-form.png',fullPage:true});
     await page.getByRole('button',{name:'Close form'}).click();
-    await page.getByRole('button',{name:'Accounts & API keys',exact:true}).filter({visible:true}).click();
+    await page.getByRole('button',{name:'Settings',exact:true}).click();
+    const settings=page.getByRole('dialog',{name:'Settings'});await settings.waitFor();
+    await settings.getByRole('button',{name:'Accounts & API keys',exact:true}).click();
     await page.getByRole('dialog',{name:'Accounts & API keys'}).waitFor();
     await page.screenshot({path:'.local/appearance-review/blue-accounts.png',fullPage:true});
     await page.getByRole('button',{name:'Close',exact:true}).click();
+    await page.keyboard.press('Escape');
     await page.evaluate(()=>{location.hash='lecture/lecture/notes';});
-    await page.getByRole('tab',{name:'Study notes',exact:true}).waitFor();
+    await page.getByRole('link',{name:'Notes',exact:true}).waitFor();
     for(const width of [1440,400]){
       await page.setViewportSize({width,height:900});
-      for(const label of ['Study notes','Transcript','Materials','Capture','Visual notes','Study tools','Finish']){
-        await page.getByRole('tab',{name:label,exact:true}).click();
-        if(label==='Capture')await page.locator('.capture-panel:not(.capture-panel-compact)').waitFor();
-        else await page.getByRole('tabpanel',{name:label,exact:true}).waitFor();
+      for(const label of ['Notes','Finish','Transcript','Materials','Capture','Visual notes','Study tools']){
+        await page.getByRole('link',{name:label,exact:true}).click();
+        if(label==='Capture')await page.locator('.capture-detail-panel').waitFor();
+        else await page.locator('.lecture-panel').waitFor();
         await page.screenshot({path:`.local/appearance-review/blue-${width}-${label.replaceAll(' ','-')}.png`,fullPage:true});
         assert.deepEqual(errors,[]);
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`Blue ${label} at ${width}px`);
