@@ -24,11 +24,10 @@ async function write(root,name,bytes) {
 async function fixture(root) {
   const components={};
   for(const [name,paths] of Object.entries({service:['NotetakerService'],
-    postgres:['bin/postgres','bin/initdb','bin/pg_ctl','share/postgresql/postgres.bki'],
     seaweed:['weed'],ollama:['ollama'],'account-client':['bin/codex']})) {
     const directory=path.join(root,'inputs',name);
     for(const file of [...paths,'LICENSE'])await write(directory,file,'synthetic '+file);
-    components[name]={directory,version:name==='postgres'?'17.11':name==='account-client'?'0.154.0':'fixture-1',
+    components[name]={directory,version:name==='account-client'?'0.154.0':'fixture-1',
       source:'synthetic fixture, never executable',files:await inventory(directory)};
   }
   const web=path.join(root,'web');
@@ -59,12 +58,13 @@ test('Mac stage produces a verified target manifest and retains every source byt
   assert.equal(manifest.user_models_bundled,false);
   assert.equal(manifest.native_audit.native_startup_verified,false);
   assert.deepEqual(await inventory(path.join(root,'inputs')),before);
-  assert.equal(manifest.sources.length,5);
+  assert.equal(manifest.profile,'macos-sqlite-seaweed-reconciliation');
+  assert.equal(manifest.sources.length,4);
   await write(destination,'seaweed/weed','tampered');
   await assert.rejects(verifyBundle(destination),/damaged/);
 }));
 test('Mac stage refuses damaged, incomplete, unlicensed and incompatible components',async()=>temporary(async root=>{
-  for(const failure of ['hash','missing','license','postgres','helper','web','audit']) {
+  for(const failure of ['hash','missing','license','helper','web','audit']) {
     const input=await fixture(path.join(root,failure));
     if(failure==='hash')await write(input.lock.components.ollama.directory,'ollama','modified');
     if(failure==='missing'||failure==='license') {
@@ -72,12 +72,12 @@ test('Mac stage refuses damaged, incomplete, unlicensed and incompatible compone
       await fs.unlink(path.join(component.directory,failure==='missing'?'weed':'LICENSE'));
       component.files=await inventory(component.directory);await input.save();
     }
-    if(failure==='postgres'||failure==='helper') {
-      input.lock.components[failure==='postgres'?'postgres':'account-client'].version='18.0';await input.save();
+    if(failure==='helper') {
+      input.lock.components['account-client'].version='18.0';await input.save();
     }
     if(failure==='web')await write(input.web,'apps/web/server.js','modified');
     if(failure==='audit')input.audit=async()=>{throw new Error('native audit failure');};
-    await assert.rejects(stage(input),/mismatch|Missing bundled|license|PostgreSQL 17|helper version|integrity|native audit/);
+    await assert.rejects(stage(input),/mismatch|Missing bundled|license|helper version|integrity|native audit/);
     const output=path.join(input.root,'.local/macos-runtime');
     for(const directory of await fs.readdir(output).catch(()=>[]))
       await assert.rejects(fs.access(path.join(output,directory,'runtime-manifest.json')));

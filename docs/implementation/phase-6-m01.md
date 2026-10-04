@@ -1,5 +1,7 @@
 # Phase 6 / M01: Private workspace foundation
 
+Database update (2026-10-03): the earlier PostgreSQL system-of-record/SQLite-preview split is superseded. SQLite is now the supported database for all runtimes, while the `.local/workspace.db` path is retained so an existing local preview library opens in place. Docker PostgreSQL data stays in its original volume and requires the explicit [conversion runbook](sqlite-database.md). The execution notes below describe the historical M01 environment, not current service defaults.
+
 Date: 2026-09-06. Status: M01 complete for the private workspace and service foundation; M02 capture is next.
 
 This document records the M01 checkpoint. The current app now includes the [M02 recording implementation](phase-6-m02.md); descriptions below of unavailable recording refer to the earlier M01 interface. M02's device qualification remains open.
@@ -12,11 +14,11 @@ The backend has one-use local unlock, hashed sessions, HttpOnly/SameSite cookies
 
 Migration [0001](../../apps/api/migrations/versions/0001_private_workspace_foundation.py) introduces owners/sessions/bootstrap, courses, lectures/epochs, immutable settings versions, jobs, outbox/inbox, receipts and update records. A destructive downgrade is deliberately disabled. M03/M05 still own actual dispatch, worker execution and full WebSocket replay; M01's authenticated socket sends only a snapshot-required notice then closes.
 
-## Explicit preview exception
+## Historical SQLite preview
 
-PostgreSQL remains the application system of record. While Docker was unavailable, this milestone added a **separately selected SQLite preview** to run the real course/lecture UI and application tests. It requires `NOTETAKER_PREVIEW=true`; there is no automatic fallback from PostgreSQL failure. The UI labels that mode and the local file is `.local/workspace.db`, excluded from Git and container builds.
+At this checkpoint PostgreSQL was the application system of record. A separately selected SQLite path was used for local UI and application tests, with no automatic fallback from PostgreSQL failure. The SQLite file `.local/workspace.db` is now reused as the default primary local library so existing preview data remains available without copying it.
 
-This is an implementation-stage preview exception to the deployment baseline, not a replacement storage architecture or evidence of PostgreSQL concurrency/durability. Preview content is not automatically copied into PostgreSQL. Retain the preview file if its data is wanted; do not silently migrate or erase it when switching modes.
+The original preview run did not establish production concurrency/durability. Current SQLite behavior and limits are documented in the [database runbook](sqlite-database.md).
 
 ## Environment and dependencies
 
@@ -51,7 +53,7 @@ If Python is supplied separately, pass its existing environment interpreter usin
 
 ## Run the container application
 
-Open Docker Desktop and wait for its Linux engine. WSL setup is complete on the verified host. The [launcher](../../scripts/Start-App.ps1) detects the Docker CLI, checks the engine, initializes credentials only if absent, builds the app and waits for startup. It preserves existing volumes and does not stop unrelated processes. Stop the SQLite preview first if it occupies the app's ports.
+Open Docker Desktop and wait for its Linux engine. WSL setup is complete on the verified host. The [launcher](../../scripts/Start-App.ps1) detects the Docker CLI, checks the engine, initializes credentials only if absent, builds the app and waits for startup. It preserves existing volumes and does not stop unrelated processes. At the M01 checkpoint, stop the separate SQLite preview first if it occupies the app's ports.
 
 The per-user Docker CLI was found at `C:/Users/Neil/AppData/Local/Programs/DockerDesktop/resources/bin/docker.exe`; a newly opened terminal should pick up the installed command path. If not, use that executable explicitly.
 
@@ -69,7 +71,7 @@ Open `http://127.0.0.1:3000` and paste the code from `.local/unlock-code.txt`. `
 
 The initialization script has already been run on this workspace. It creates ignored service credentials and S3 identity configuration. Compose exposes only loopback ports, persists PostgreSQL data, SeaweedFS objects **and filer metadata**, and Kafka logs. It uses local service networking and S3 credentials. Models remain a separately provisioned local service; M01 starts none.
 
-The service verifier creates and removes only its own freshly named synthetic S3 bucket/object and Kafka topic. The application tests use fresh random PostgreSQL schemas and remove only those schemas; they never drop the application database. The [restart drill](../../apps/api/notetaker/verify_restart.py) also creates a private synthetic course/lecture through the API in its own schema, stores an object and broker record, restarts the three containers, then reopens the course/lecture and checks the original object's byte length/SHA-256 and broker record. It removes only resources generated in that invocation. A nonzero exit is a failed check, never completion evidence. Interrupted checks can leave their uniquely named test resources for inspection.
+The service verifier creates and removes only its own freshly named synthetic S3 bucket/object and Kafka topic. Backend tests use fresh temporary SQLite files and do not inspect any existing application database. The [restart drill](../../apps/api/notetaker/verify_restart.py) creates a fresh SQLite file and synthetic course/lecture through the API, stores an object and broker record, opens the same library in a fresh API process, restarts the object/broker containers, then checks the original object's byte length/SHA-256 and broker record. It removes only resources generated in that invocation. A nonzero exit is a failed check, never completion evidence. Interrupted checks can leave their uniquely named test resources for inspection.
 
 `docker compose --env-file .local/services.env stop` stops services while retaining volumes. Do not use volume removal to solve an ordinary startup problem. There is no automatic backup. Never delete `.local` or volumes containing wanted data; future backup/restore work must preserve database and referenced objects together.
 

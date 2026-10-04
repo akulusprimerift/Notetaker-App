@@ -68,5 +68,10 @@ export default function LiveUpdates({lecture,onSessionExpired}:{lecture:string;o
     void connect();
     return()=>{stopped=true;clearTimeout(retry);socket?.close();};
   },[lecture,onSessionExpired]);
-  return <><SpeechModel model={model}/><div className="live-progress" role="status"><strong>{status}</strong><span>{delay===null?'Checking processing delay…':`${delay.toFixed(1)} seconds of saved audio awaiting transcription`}</span>{speechUnavailable?<span className="error">Transcription and automatic notes are waiting for a speech model. Select one above, then finish recording and restart local services. Saved audio is retained.</span>:<span className="small muted">Processing can fall behind while recording continues. Audio save progress is shown separately above.</span>}</div></>;
+  const needsAttention=speechUnavailable||model?.state==='failed'||model?.state==='offline';
+  const summary=needsAttention?'Transcription needs attention':model?.state==='ready'?'Speech model ready':model?.state==='loading'?'Loading speech model…':model?.state==='selected'?'Speech model selected':status;
+  return <details className="processing-details" data-attention={needsAttention||undefined}>
+    <summary><span className={`status-dot ${needsAttention?'status-dot-warning':''}`} aria-hidden="true"/><strong>Transcription</strong><span className="processing-summary">{summary}</span><span className="processing-toggle">Details</span></summary>
+    <div className="processing-detail-body"><SpeechModel model={model}/><div className="live-progress" role="status"><strong>{status}</strong><span>{delay===null?'Checking processing delay…':`${delay.toFixed(1)} seconds of saved audio awaiting transcription`}</span>{speechUnavailable?<span className="error">Transcription and automatic notes are waiting for a speech model. Select one below. Finish recording and restart local services to activate a newly selected model. Saved audio is retained.</span>:<span className="small muted">Processing can fall behind while recording continues. Audio save progress is shown separately above.</span>}</div></div>
+  </details>;
 }

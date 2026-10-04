@@ -1,5 +1,9 @@
 # Phase 5: Implementation roadmap
 
+Database update (2026-10-03): SQLite is the supported application database across all runtimes; PostgreSQL is retained only as an explicit read-only conversion source. The dated phase selections below are historical. Current active phase and sequencing are maintained in [project-phases.md](../project-phases.md); conversion, backup and rollback steps are in the [SQLite runbook](sqlite-database.md).
+
+Product direction update (2026-10-03): the accepted Flash Cards increment replaces the former Catch Me Up study surface with user-prompted generation from current saved notes. Catch Me Up is no longer an active feature; its original phase plan and qualification record are historical. See [current behavior and evidence](flash-cards.md).
+
 Priority override (2026-09-30): macOS work is paused at the user’s request. **6.8 / M08 — shared Windows performance and stop/restart repair** is the single active implementation phase. Speed improvements and recording/notes restart repairs are implemented and packaged, with isolated Windows synthetic verification. Installed-upgrade and real-lecture qualification remain open. Preserve all earlier qualification gaps. [Repair evidence and next work](live-speed-restart.md). Earlier current-phase entries below are historical.
 
 Current phase (2026-09-30): **6.9.3 — macOS integration** is the single active implementation phase, at the user’s request. Native menus, window/Dock behavior, microphone permission recovery and sleep/wake recorder handling are implemented in shared source with Windows and synthetic evidence. Keychain uses the existing protected-storage bridge. Native Mac qualification remains open, including earlier 6.9.1 containment and 6.9.2 runtime build/startup gates. See [integration behavior, evidence and exact next work](macos-integration.md). Earlier dated active-phase entries below are historical.
@@ -145,10 +149,10 @@ Enforce same-lecture foreign keys, unique run/sequence, logical jobs, consumer/e
 
 ## After the core release
 
-P1: Catch Me Up, Mark Important and optional course glossary, each reusing validated evidence and measured usefulness. P1 after G05 scope decision: document/slide ingestion and visual capture with distinct source types. Later learning work: practice, mastery and personalization after note quality is proven.
+Historical P1 plan (superseded for Catch Me Up): source-linked study support and optional course glossary, each reusing validated evidence and measured usefulness. P1 after G05 scope decision: document/slide ingestion and visual capture with distinct source types. Later learning work: practice, mastery and personalization after note quality is proven.
 
 Platform experiments follow an explicit workload/failure question: pgvector for demonstrated retrieval, Valkey for measured hot paths, Protobuf/Apicurio for schema evolution, full telemetry for diagnosed needs, then Kubernetes/Strimzi, KEDA/load tests, and optional GitOps/CDC. Outbox, retry, ownership and deletion safety are already core; they are never postponed to a portfolio milestone.
 
-## Sequencing clarification — 2026-09-15
+## Historical sequencing clarification — 2026-09-15
 
-Phase 7.1 is now active following committed theme/account repairs and catalog/disconnect improvements. [Note usefulness](phase-7-1.md) adds student bookmarks, source-linked catch-up and immutable course terminology hints with synthetic engineering evidence. Human usefulness, authenticated provider use and earlier release gates remain unqualified. Continue selected Phase 7 work, then standalone Windows packaging, then macOS. Claude subscription login remains dependent on provider approval. See the [session transfer](../../SESSION_TRANSFER.md).
+At that time Phase 7.1 was active following committed theme/account repairs and catalog/disconnect improvements. [Note usefulness](phase-7-1.md) records student bookmarks, source-linked catch-up and immutable course terminology hints with synthetic engineering evidence. Catch-up has since been retired from the active product surface; human usefulness, authenticated provider use and earlier release gates remain unqualified. This sequencing is historical. See the [session transfer](../../SESSION_TRANSFER.md).

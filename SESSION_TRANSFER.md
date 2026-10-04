@@ -1,5 +1,12 @@
 # Session transfer
 
+## Prompted Flash Cards with Settings and SQLite - 2026-10-03
+
+Active learning surface: focused Flash Cards generated only after the student submits a nonblank prompt, using the current saved notes revision, including manually authored or edited notes without transcript links. The exact combined validation tree is c03904bf6ec0f003de3ffef7377a9778c49b6cf7 (Flash Cards 532141ad1db0503ec5a9f5722242aff76b68d939 + Settings/SQLite integration f582e35fc1043ae6a975fb7abd1dffeb688b6f8a; f582e35 combines Settings 952a803d2c089ba9afaabf0ab16905b64307a746 and SQLite 109cff9409965cf3087762b623c8af26ac7a1bdd). Focused personal-note/prompt persistence and SQLite checks passed (3 tests); synthetic Flash Cards browser flow, Settings keyboard/contrast/accessibility, and no-capture recorder-mount persistence across Notes/Flash Cards/Transcript/Finish passed. Full combined backend: 259 passed, 4 skipped, 8 existing Windows protected-storage failures on macOS. JS contracts, frontend typecheck/lint/build and Python Ruff passed. The appearance verifier reports Helvetica Bold on Mac where it expects local TikTok Sans; font CSS is unchanged from Settings and the result is retained as platform qualification. Standard audio-start was not rerun; the parent Mac AudioWorklet limitation remains. Exact report and inspected screenshots are under /Users/kash/.local/share/multplx/home/data/notetaker-flashcards/.
+
+Revision 2 changes only the final PR base: wait for the parent's current typed SQLite completion at f582e35fc1043ae6a975fb7abd1dffeb688b6f8a, then fast-forward the original feature branch and publish the focused PR against mx/notetaker-sqlite. Until that gate, do not advance the original feature branch or publish. Preserve the combined integration allocation and exact validation results; no remote merges or shared-branch changes.
+
+
 ## Workspace settings and themes — 2026-10-03
 
 Active phase remains **6.9.5 — Mac installer and distribution**. Settings and the four workspace themes now live in a separate native **Settings** dialog opened by a small icon-only button at the lower left. The desktop button sits in the lower-left sidebar corner with clear spacing from “Local workspace”; below 700px it moves into the landing-page footer so it does not float over cards or footer text. The dialog also provides Accounts & API keys, desktop workspace setup and data-removal progress. Escape/close returns focus; the existing local theme preference and desktop appearance bridge remain intact. Four restrained palettes use solid reading surfaces, visible focus/hover and theme-tinted scrollbars.
@@ -14,6 +21,10 @@ Active phase remains **6.9.5 - Mac installer and distribution**. The accepted `n
 
 See [workspace layout and recording evidence](docs/implementation/workspace-layout-recording.md) for exact checks, limits and delivery pointer. Synthetic browser verification does not qualify physical-device recording or Mac lifecycle behavior.
 
+## SQLite primary database increment — 2026-10-03
+
+Parent-supplied SQLite delivery: branch `mx/notetaker-sqlite`, PR 3, commit `109cff9409965cf3087762b623c8af26ac7a1bdd`, based on `187430f9131faa41805f429ce0d77c1cffeae78d`. The integration allocation merges this exact tested revision with Settings and Flash Cards. Parent reports PostgreSQL conversion passed (2), the same 8 Windows protected-storage failures on macOS, and docs verification of 51 planning files/296 links with structure and changed-script syntax passing. These are predecessor results; exact combined results will be recorded after validation.
+
 ## Phase 6.9.5 DMG published — 2026-10-02
 
 Active phase: **6.9.5 — Mac installer and distribution**. The user reported the 6.9.4 test build works on their Mac. Tagged CI now builds a drag-to-Applications DMG with a Mac icon and run-number build version. Developer ID signing (hardened runtime, entitlements), notarization and stapling run only when the `MACOS_CERTIFICATE_P12`, `MACOS_CERTIFICATE_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` secrets exist; native components are signed before the runtime hash lock because the launcher verifies them. [Details](docs/implementation/macos-distribution.md).
@@ -21,6 +32,16 @@ Active phase: **6.9.5 — Mac installer and distribution**. The user reported th
 Executed: Windows `bun run test`, `bun run test:desktop`, docs and whitespace checks. Run 37075163831 (tag `macos-v0.1.0-beta.1`) passed and published pre-release `Notetaker-0.1.0-macOS-arm64-unsigned.dmg` (711,945,751 bytes, SHA-256 `63a6f0edbf1d44f1bbcf4a3613851a68c40468a1bfd56946b7746d3382d2b0b0`); no signing secrets were present, so it is ad-hoc signed and un-notarized.
 
 **Exact next work:** the user installs the DMG over the existing app and confirms the library is retained. To complete 6.9.5, add a Developer ID Application certificate and the secrets above, push a new `macos-v*` tag, and verify the notarized DMG opens on a clean Mac without `xattr`. Then 6.9.6.
+
+## Independent Flash Cards increment -- 2026-10-03
+
+The accepted `notetaker-flashcards` work is being implemented from original base `187430f9131faa41805f429ce0d77c1cffeae78d` on isolated branch `mx/notetaker-flashcards`. It replaces the Study Tools tab with explicitly prompted Flash Cards, removes Catch Me Up and recall from the active UI/API while retaining student data, and sends the current saved note revision plus student instructions to the selected model. Uncited student-authored additions are eligible with evidence IDs pinned to their selected note revision; original transcript/material citations remain attached, and stale source blocks still fail closed. See [behavior and implementation evidence](docs/implementation/flash-cards.md).
+
+Independent synthetic checks pass for the prompt/retry/reveal/edit/history/stale-source/400px UI flow, focused backend API paths, frontend typecheck/lint/build, Python lint, JS contracts and docs structure. The full API suite has 8 unrelated Windows protected-storage failures on macOS; exact counts are in the linked implementation record. No local inference quality, student outcome, microphone, Windows package or release claim was made.
+
+The parent supplied the SQLite primary delivery identity: branch `mx/notetaker-sqlite`, commit `109cff9409965cf3087762b623c8af26ac7a1bdd` (PR 3). Parent-reported PostgreSQL conversion result: passed (2); the full backend baseline has the same 8 Windows protected-storage failures on macOS. Parent also reports the documentation verifier passed 51 planning files, 296 links, structure and changed-script syntax with the task-local PowerShell 7.6.6 runtime. These are predecessor results, not runs on this independent feature branch. Do not import SQLite or Settings partial work until the Settings gate releases the exact current typed delivery; then validate the exact combined revisions in an isolated integration state.
+
+**Current wait:** final integration/publication is gated on the parent's exact typed settings predecessor completion and SQLite primary delivery evidence. No partial settings/layout work has been imported. Next: integrate only the exact supplied commit/branch, recheck combined SQLite and Windows compatibility, repeat the docs verifier on the final branch, then prepare evidence and a stacked PR targeting `mx/notetaker-settings`. Do not merge.
 
 ## First downloadable Mac test build — 2026-10-02
 

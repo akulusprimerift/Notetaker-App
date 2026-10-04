@@ -6,7 +6,7 @@ root = Path(SPECPATH).parent
 datas = [(str(root / 'apps/api/migrations'), 'apps/api/migrations'),
          (str(root / 'contracts/ai'), 'contracts/ai'), (str(root / 'prompts'), 'prompts')]
 binaries = []
-hidden = collect_submodules('notetaker') + ['sqlalchemy.dialects.postgresql.psycopg']
+hidden = collect_submodules('notetaker') + ['psycopg', 'psycopg.pq', 'psycopg_binary']
 for package in ['faster_whisper', 'ctranslate2', 'tokenizers', 'av', 'docx', 'pptx']:
     package_data, package_bins, package_imports = collect_all(package)
     datas += package_data

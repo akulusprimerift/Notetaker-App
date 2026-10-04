@@ -11,13 +11,7 @@ with zipfile.ZipFile(archive) as bundle:
         if name.is_absolute() or '..' in name.parts or '\\' in entry.filename:
             raise ValueError('Unsafe archive entry')
         parts = name.parts
-        if component == 'postgres':
-            if not parts or parts[0] != 'pgsql':
-                continue
-            parts = parts[1:]
-            if not parts or parts[0] not in ('bin', 'lib', 'share', 'server_license.txt', 'commandlinetools_3rd_party_licenses.txt'):
-                continue
-        elif component == 'ollama':
+        if component == 'ollama':
             if any(part in ('cuda_v12', 'cuda_v13', 'vulkan') for part in parts):
                 continue
         target = root.joinpath(*parts)

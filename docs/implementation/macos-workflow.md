@@ -12,7 +12,7 @@ Active phase: **6.9.4**, started at the user's request on 2026-10-01. Earlier 6.
 4. Timestamped passages and streamed note previews measured during capture, saved note revisions, settled transcript/notes.
 5. Citations resolve to saved transcript passages or the material; source text and source audio load.
 6. Protected student edit → changed detail prompt → valid regeneration proposal → edit retained → merge one section → undo to the edit.
-7. Recall cards from the selected student revision, a self-assessment and catch-up.
+7. Explicitly request flash cards with student instructions from the current selected saved note revision, inspect their pinned source quotes and save a self-assessment.
 8. Student-revision Markdown/DOCX and generated-revision exports; finalization; final-snapshot Markdown retains the student edit; every saved chunk matches its SHA-256.
 
 Omitting `--speech-model` runs the missing-speech-model path instead: status `missing`, audio verified and intact, `model_unavailable` visible, no invented passages. The report is written to `workflow-report.json` in the profile with platform, CPU, model names and timings.
@@ -32,6 +32,8 @@ Executed against the installed-equivalent standalone runtime `.local/audio-reten
 | Regeneration proposal after prompt change | 56.8 s |
 
 All workflow checks passed, as did the missing-speech-model run (47 s audio, `--fast`). A 68 s paced run also passed all checks. The note model, not capture or speech, limits this machine: notes trail a 4.5-minute lecture by about 10 minutes, and concurrent note generation raises the speech backlog. These are synthetic Windows numbers for comparison only; they do not qualify Mac performance, real-lecture accuracy or note quality.
+
+This baseline predates the Flash Cards change. Its `catch_up: true` workflow-report field records the earlier 2026-10-01 harness behavior and is historical, not a current capability.
 
 Harness defects found and fixed during these runs: missing capture heartbeats (lease expired at chunk 22); a marker containing Markdown-escaped brackets (exports correctly escape them); transcript metrics read from the note stream, which omits transcript state on the PostgreSQL host, so they now come from `/transcript` as in the workspace. No product code changed.
 
@@ -53,6 +55,6 @@ Use only existing local models; close any other Notetaker first (occupied ports 
 
 - Native Mac runs of both harness modes and the packaged smoke; measured Mac limits (longest lecture whose notes keep pace, backlog growth, memory via Activity Monitor or `/usr/bin/time -l`).
 - Service failure during processing (note runtime stopped mid-generation) and low storage near SeaweedFS's free-space reserve. Not automated: stopping Ollama by name could affect a user's own Ollama, and filling a disk is unsafe on a shared machine. Use a disposable Mac volume/user.
-- Packaged UI walk-through of the same workflow, quit/reopen recovery during capture, and visual/question study tools with the selected model.
+- Packaged UI walk-through of the same workflow, quit/reopen recovery during capture, and prompted Flash Cards with the selected model.
 
 No microphone, student library, model download, cloud provider, installer build/replacement or push was used.

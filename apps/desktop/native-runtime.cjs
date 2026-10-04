@@ -46,8 +46,10 @@ class NativeRuntime {
     try{secret=this.safeStorage.decryptString(await fs.readFile(secretPath));}
     catch(error){
       if(error.code!=='ENOENT')throw new Error('The standalone library credential could not be unlocked.');
-      try{await fs.access(path.join(library,'postgres','PG_VERSION'));throw new Error('The existing library credential is missing. Restore it before opening this library.');}
-      catch(missing){if(missing.code!=='ENOENT')throw missing;}
+      for(const existing of [path.join(library,'notetaker.sqlite3'),path.join(library,'postgres','PG_VERSION')]){
+        try{await fs.access(existing);throw new Error('The existing library credential is missing. Restore it before opening this library.');}
+        catch(missing){if(missing.code!=='ENOENT')throw missing;}
+      }
       secret=randomBytes(32).toString('hex');
       await fs.mkdir(this.dataPath,{recursive:true});
       await fs.writeFile(secretPath,this.safeStorage.encryptString(secret),{flag:'wx',mode:0o600});

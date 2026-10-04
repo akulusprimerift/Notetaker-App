@@ -1,12 +1,12 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, model_validator
 from urllib.parse import urlsplit
+from sqlalchemy.engine import make_url
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="NOTETAKER_", env_file=".env", extra="ignore")
-    database_url: str = "postgresql+psycopg://notetaker:development@127.0.0.1:5432/notetaker"
-    preview: bool = False
+    database_url: str = "sqlite:///./.local/workspace.db"
     standalone: bool = False
     audio_directory: str = ''
     web_origin: str = "http://127.0.0.1:3000"
@@ -50,13 +50,10 @@ class Settings(BaseSettings):
             raise ValueError('HTTPS requires secure session cookies')
         if self.standalone:
             from pathlib import Path
-            from sqlalchemy.engine import make_url
-            if self.preview or not self.database_url.startswith('sqlite:///') or not Path(self.audio_directory).is_absolute():
+            if not self.database_url.startswith('sqlite:///') or not Path(self.audio_directory).is_absolute():
                 raise ValueError('Standalone storage requires a SQLite file and an absolute audio directory')
             if not Path(make_url(self.database_url).database or '').is_absolute():
                 raise ValueError('Standalone storage requires an absolute database file path')
-        if self.database_url.startswith("sqlite") and not (self.preview or self.standalone):
-            raise ValueError("SQLite requires explicit preview or standalone mode")
-        if not self.database_url.startswith(("sqlite", "postgresql+psycopg://")):
-            raise ValueError("Unsupported database driver")
+        if make_url(self.database_url).get_backend_name() != 'sqlite':
+            raise ValueError('SQLite is the supported application database. Use the explicit PostgreSQL conversion tool for existing data.')
         return self

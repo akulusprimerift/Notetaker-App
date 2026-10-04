@@ -1,5 +1,7 @@
 # Phase 5: Reconciliation record
 
+Architecture update (2026-10-03): this record preserves the 2026-09 baseline decisions, including PostgreSQL authority at that time. SQLite is now the supported application database; the consolidated specification and [database runbook](sqlite-database.md) carry the current decision and explicit legacy conversion path.
+
 Date: 2026-09-06. Decision status: implementation baseline; no new release claims.
 
 The [consolidated specification](../../multimodal_academic_learning_system_spec.md) replaces the original first-release blueprint. The [v0.2 specification](../archive/original-spec-v0.2.md) and [v0.2 HTML](../archive/original-architecture-v0.2.html) preserve the source content unchanged; Git history also retains the originals. The root HTML filename remains stable, while its title/version and content now describe the current design.

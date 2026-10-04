@@ -23,7 +23,7 @@ class FakeQuestions:
         preview('What condition is required?')
         if self.after: self.after()
         source = evidence['sources'][0]
-        return [{'id': 'q1', 'kind': 'practice', 'objective': 'conditions',
+        return [{'id': 'q1', 'kind': 'flashcard', 'objective': 'conditions',
             'question': 'What condition does binary search require?', 'answer': source['text'],
             'citations': [{'source_id': 'foreign' if self.bad else source['id'], 'quote': source['text']}]}], {
                 'model': pref.model, 'model_digest': pref.model_digest, 'semantic_support': 'not_evaluated'}
@@ -35,8 +35,8 @@ def post(client, headers, path, body, key=None):
 
 def enqueue(client, headers, path, **changes):
     state = client.get(path + '/study/questions').json()
-    body = {'revision_id': state['revision_id'], 'block_id': state['blocks'][0]['id'],
-        'preference_id': state['preference_id'], 'kind': 'mixed', 'count': 4, **changes}
+    body = {'revision_id': state['revision_id'], 'preference_id': state['preference_id'],
+        'prompt': 'Make flash cards about the important conditions.', **changes}
     return post(client, headers, path + '/study/questions', body)
 
 
@@ -54,13 +54,18 @@ def test_generation_is_pinned_idempotent_and_owned(notes):
     app, client, headers, path, _ = notes
     generated(app, client, path)
     state = client.get(path + '/study/questions').json()
-    body = {'revision_id': state['revision_id'], 'block_id': state['blocks'][0]['id'], 'preference_id': state['preference_id']}
+    assert state['has_notes']
+    with app.state.sessions() as db:
+        assert db.scalar(select(func.count()).select_from(m.QuestionSet)) == 0
+        assert db.scalar(select(func.count()).select_from(m.Job).where(m.Job.kind == 'learning.generate')) == 0
+    body = {'revision_id': state['revision_id'], 'preference_id': state['preference_id'],
+        'prompt': 'Use concise questions about conditions and keep every qualification.'}
     key = str(uuid4())
     assert client.post(path + '/study/questions', json=body).status_code == 403
     first = post(client, headers, path + '/study/questions', body, key)
     assert first.status_code == 202, first.text
     assert post(client, headers, path + '/study/questions', body, key).json()['id'] == first.json()['id']
-    assert post(client, headers, path + '/study/questions', {**body, 'count': 2}, key).status_code == 409
+    assert post(client, headers, path + '/study/questions', {**body, 'prompt': 'Use one short card.'}, key).status_code == 409
     assert enqueue(client, headers, path).status_code == 409
     endpoint = path + '/study/questions/' + first.json()['id']
     selected = worker.claim(app.state.sessions)
@@ -73,13 +78,33 @@ def test_generation_is_pinned_idempotent_and_owned(notes):
     assert worker.execute(app.state.sessions, FakeQuestions(), selected, heartbeat=False)
     saved = client.get(endpoint).json()
     assert saved['status'] == 'completed' and saved['questions'][0]['citations'] and not saved['stale']
+    assert saved['prompt'] == body['prompt']
+    assert saved['model'] == 'qwen3:4b'
     assert saved['questions'][0]['quality']['support'] == -1
     other = lecture(client, headers, course(client, headers)['id'])
     assert client.get('/lectures/' + other['id'] + '/study/questions/' + saved['id']).status_code == 404
-    assert enqueue(client, headers, path, block_id='foreign').status_code == 409
+    assert enqueue(client, headers, path, revision_id='foreign').status_code == 409
+    assert enqueue(client, headers, path, prompt='   ').status_code == 422
     assert enqueue(client, headers, path, count=9).status_code == 422
     client.cookies.clear()
     assert client.get(endpoint).status_code == 401
+
+
+def test_inventory_is_read_only_and_generation_requires_saved_notes(notes):
+    app, client, headers, path, _ = notes
+    state = client.get(path + '/study/questions').json()
+    assert not state['has_notes'] and state['revision_id'] is None
+    with app.state.sessions() as db:
+        assert db.scalar(select(func.count()).select_from(m.QuestionSet)) == 0
+        assert db.scalar(select(func.count()).select_from(m.Job).where(m.Job.kind == 'learning.generate')) == 0
+    response = post(client, headers, path + '/study/questions', {
+        'revision_id': 'missing-notes', 'preference_id': state['preference_id'],
+        'prompt': 'Create a short set.', 'cloud_consent': False,
+    })
+    assert response.status_code == 422 and response.json()['error']['code'] == 'notes_unavailable'
+    with app.state.sessions() as db:
+        assert db.scalar(select(func.count()).select_from(m.QuestionSet)) == 0
+        assert db.scalar(select(func.count()).select_from(m.Job).where(m.Job.kind == 'learning.generate')) == 0
 
 
 @pytest.mark.parametrize('change', ['correction', 'edit', 'model', 'settings', 'audio', 'lifecycle', 'delete', 'cancel'])
@@ -179,10 +204,39 @@ def test_cloud_generation_requires_additional_consent(notes):
     assert enqueue(client, headers, path, cloud_consent=True).status_code == 202
 
 
+def test_request_pins_every_current_saved_note_and_student_prompt(notes):
+    app, client, headers, path, _ = notes
+    saved = generated(app, client, path)
+    prompt = 'Make concise cards about the full process and retain its exception.'
+    queued = enqueue(client, headers, path, prompt=prompt)
+    assert queued.status_code == 202, queued.text
+    with app.state.sessions() as db:
+        row = db.get(m.QuestionSet, queued.json()['id'])
+        evidence = row.evidence
+        assert evidence['contract_version'] == 'flashcards-v1'
+        assert evidence['student_prompt'] == prompt
+        assert evidence['revision_id'] == saved['id']
+        assert evidence['block_ids'] == [block['id'] for block in saved['content']['blocks']]
+        assert evidence['notes'][0]['passages'][0]['text'] == saved['content']['blocks'][0]['passages'][0]['text']
+        assert evidence['sources'] and evidence['sources'][0]['text']
+        assert all('audio_url' not in source for source in evidence['sources'])
+    selected = worker.claim(app.state.sessions)
+    seen = {}
+    class CaptureQuestions(FakeQuestions):
+        def generate_questions(self, evidence, pref, preview):
+            seen.update(evidence)
+            return super().generate_questions(evidence, pref, preview)
+    assert worker.execute(app.state.sessions, CaptureQuestions(), selected, heartbeat=False)
+    assert seen['student_prompt'] == prompt
+    assert seen['revision_id'] == saved['id']
+    assert seen['sources'] == evidence['sources']
+    assert client.get(path + '/study/questions/' + queued.json()['id']).json()['questions']
+
+
 @pytest.mark.parametrize('fault', ['foreign', 'quote', 'duplicate', 'blank', 'count', 'kind', 'extra', 'invented_number'])
 def test_question_contract_rejects_structural_failures(fault):
-    evidence = {'sources': [{'id': 's1', 'text': 'Binary search requires sorted input.'}], 'count': 2, 'kind': 'practice'}
-    question = {'kind': 'practice', 'objective': 'conditions', 'question': 'What does binary search require?',
+    evidence = {'sources': [{'id': 's1', 'text': 'Binary search requires sorted input.'}], 'count': 2, 'kind': 'flashcard'}
+    question = {'kind': 'flashcard', 'objective': 'conditions', 'question': 'What does binary search require?',
         'answer': 'Binary search requires sorted input.', 'citations': [{'source_id': 's1', 'quote': 'requires sorted input'}]}
     output = {'questions': [deepcopy(question)]}
     if fault == 'foreign': output['questions'][0]['citations'][0]['source_id'] = 'foreign'
@@ -190,7 +244,7 @@ def test_question_contract_rejects_structural_failures(fault):
     elif fault == 'duplicate': output['questions'].append(deepcopy(question))
     elif fault == 'blank': output['questions'][0]['answer'] = ' ' * 8
     elif fault == 'count': evidence['count'] = 0
-    elif fault == 'kind': output['questions'][0]['kind'] = 'flashcard'
+    elif fault == 'kind': output['questions'][0]['kind'] = 'practice'
     elif fault == 'invented_number': output['questions'][0]['question'] = 'How does binary search handle 1024 unsorted items?'
     else: output['questions'][0]['approved'] = True
     with pytest.raises(ValueError): validate_questions(output, evidence)
@@ -198,8 +252,10 @@ def test_question_contract_rejects_structural_failures(fault):
 
 def test_question_adapter_routes_and_rechecks_local_identity():
     from notetaker.question_provider import generate_questions
-    evidence = {'sources': [{'id': 's1', 'text': 'Binary search requires sorted input.'}], 'count': 1, 'kind': 'practice'}
-    output = {'questions': [{'kind': 'practice', 'objective': 'conditions', 'question': 'What does binary search require?',
+    evidence = {'contract_version': 'flashcards-v1', 'student_prompt': 'Keep the conditions concise.',
+        'notes': [{'topic': 'Search', 'passages': [{'text': 'Binary search requires sorted input.'}]}],
+        'sources': [{'id': 's1', 'text': 'Binary search requires sorted input.'}], 'count': 1, 'kind': 'flashcard'}
+    output = {'questions': [{'kind': 'flashcard', 'objective': 'conditions', 'question': 'What does binary search require?',
         'answer': evidence['sources'][0]['text'], 'citations': [{'source_id': 's1', 'quote': 'sorted input'}]}]}
     calls = []
     class Local:
@@ -210,7 +266,10 @@ def test_question_adapter_routes_and_rechecks_local_identity():
     generated_questions, metadata = generate_questions(Local(), evidence, SimpleNamespace(model='qwen3:4b', model_digest='d'*64))
     assert generated_questions[0]['id'] == 'q1' and metadata['semantic_support'] == 'not_evaluated'
     assert calls.count('verify') == 3
-    assert calls[1]['messages'][0]['content'].startswith('Create a small study set')
+    assert calls[1]['messages'][0]['content'].startswith('Create flash cards')
+    assert 'Keep the conditions concise.' in calls[1]['messages'][1]['content']
+    question_schema = calls[1]['format']['properties']['questions']['items']
+    assert question_schema['properties']['kind']['enum'] == ['flashcard']
     assert '$ref' not in json.dumps(calls[1]['format']) and 'maxLength' not in json.dumps(calls[1]['format'])
 
 
@@ -218,7 +277,9 @@ def test_question_adapter_routes_and_rechecks_local_identity():
 def test_question_adapter_uses_selected_bridge_without_fallback(model):
     from notetaker.question_provider import generate_questions
     from notetaker.note_provider import NoteFailure
-    evidence = {'sources': [{'id': 's1', 'text': 'An enzyme lowers activation energy.'}], 'count': 1, 'kind': 'flashcard'}
+    evidence = {'contract_version': 'flashcards-v1', 'student_prompt': 'Use clear language.',
+        'notes': [{'topic': 'Enzymes', 'passages': [{'text': 'An enzyme lowers activation energy.'}]}],
+        'sources': [{'id': 's1', 'text': 'An enzyme lowers activation energy.'}], 'count': 1, 'kind': 'flashcard'}
     output = {'questions': [{'kind': 'flashcard', 'objective': 'definition', 'question': 'What does an enzyme lower?',
         'answer': evidence['sources'][0]['text'], 'citations': [{'source_id': 's1', 'quote': 'lowers activation energy'}]}]}
     calls = []

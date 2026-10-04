@@ -1,5 +1,7 @@
 # macOS standalone runtime — Phase 6.9.2
 
+Database update (2026-10-03): new Mac runtimes use SQLite in `standalone-library/notetaker.sqlite3`; the service bundle does not start PostgreSQL. The pinned Python environment includes the Psycopg client only for the explicit `migrate-postgres` conversion role. Preserve an existing PostgreSQL-only library and convert it deliberately using the [database runbook](sqlite-database.md). This database work does not alter the active 6.9.5 Mac distribution phase.
+
 Status (2026-09-29): **6.9.2 is active**. Native build/staging commands, dependency checks and an unpacked Electron app target are implemented. Their cross-platform contracts pass on Windows. No native Mac runtime, app or installer has been produced in this session. Completion still requires Apple Silicon builds and actual bundled-service startup without developer dependencies on the runtime machine.
 
 ## Build-machine preparation
@@ -17,7 +19,7 @@ bun run build:macos-service
 bun run prepare:desktop-web
 ```
 
-The historically named `requirements-windows.lock` is universal and includes macOS markers for macholib; it already pins the speech stack and PyInstaller. The development lock supplies test tools. Do not replace the locks or silently choose other package versions if an arm64 wheel is unavailable: record the missing dependency and resolve it explicitly. Existing environments should be synchronized, not recreated. The service command requires the repository's `.venv`, checks its native architecture, and creates a fresh `.local/macos-service/<uuid>` output. It shares the existing service spec and explicitly sets `target_arch='arm64'` as supported by [PyInstaller's architecture documentation](https://pyinstaller.org/en/stable/feature-notes.html#macos-multi-arch-support). No model is needed to build.
+The historically named `requirements-windows.lock` is universal and includes macOS markers for macholib; it pins the speech stack and PyInstaller. The Psycopg client is included for the explicit conversion command only; no PostgreSQL server is bundled. The development lock supplies test tools. Do not replace the locks or silently choose other package versions if an arm64 wheel is unavailable: record the missing dependency and resolve it explicitly. Existing environments should be synchronized, not recreated. The service command requires the repository's `.venv`, checks its native architecture, and creates a fresh `.local/macos-service/<uuid>` output. It shares the existing service spec and explicitly sets `target_arch='arm64'` as supported by [PyInstaller's architecture documentation](https://pyinstaller.org/en/stable/feature-notes.html#macos-multi-arch-support). No model is needed to build.
 
 ## Supply and lock native components
 
@@ -28,7 +30,7 @@ Required layout within the selected folders:
 | Component | Required files and supporting content |
 | --- | --- |
 | `service` | `NotetakerService`, the entire generated `_internal` tree, Python and bundled package license/notice files collected from the actual Mac build environment. |
-| `postgres` | PostgreSQL **17.x**: `bin/postgres`, `bin/initdb`, `bin/pg_ctl`, `share/postgresql/postgres.bki`, all other required share files, extensions and relocated libraries, publisher licenses. |
+| SQLite | The standard-library SQLite library used by Python; no separate database server component is required. |
 | `seaweed` | `weed`, its runtime dependencies and license. Validate the supervisor's server flags against the selected build. |
 | `ollama` | `ollama`, the matching Mac runtime libraries/runners and license. Do not include `~/.ollama/models` or other model weights. |
 | `account-client` | Pinned Codex **0.154.0** arm64 vendor tree with `bin/codex`, plus license and notice files. Bun installs its platform package under `node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin`; copy it to a separate staging folder before adding notices. |
@@ -41,7 +43,6 @@ Create an ignored `.local/mac-component-sources.json` with this shape, replacing
 {
   "components": {
     "service": {"directory": "/absolute/frozen-service", "version": "0.1.0", "source": "local build: git commit, lock hashes, Python version; Mac dependency notices"},
-    "postgres": {"directory": "/absolute/postgres", "version": "17.REPLACE", "source": "publisher URL, verified SHA-256 and relocation recipe"},
     "seaweed": {"directory": "/absolute/seaweed", "version": "REPLACE", "source": "publisher URL and verified SHA-256"},
     "ollama": {"directory": "/absolute/ollama", "version": "REPLACE", "source": "publisher URL and verified SHA-256"},
     "account-client": {"directory": "/absolute/account-client", "version": "0.154.0", "source": "Bun frozen lock; arm64 vendor tree plus upstream license/notice"}
@@ -57,11 +58,11 @@ bun run build:macos-app /absolute/prepared-macos-runtime
 
 Use the paths printed by the preceding commands. Each inventory/staging operation creates a new UUID directory. Sources are left intact. A failed stage stays available for inspection and receives no runnable runtime manifest. Lock files contain local build paths; retain them under `.local`, not in Git. Record sanitized versions/checksums in implementation evidence once actual Mac components are selected.
 
-Staging requires the full locked inventory to match, verifies the web component's inventory, rejects missing files, notices and incompatible database/helper versions, and checks every Mach-O file for an arm64 slice. It rejects absolute load paths/search paths outside macOS system directories, missing bundled dependency suffixes, and missing/escaping loader-relative dependencies. It does not rewrite libraries or signatures. Suffix presence for `@rpath`/`@executable_path` is a preliminary check, **not proof that dyld can resolve the complete graph**. Actual startup from the packaged location, library/framework signatures and clean-machine tests remain mandatory. An executable version string alone is also not proof of compatibility.
+Staging requires the full locked inventory to match, verifies the web component's inventory, rejects missing files/notices and mismatched helper versions, and checks every Mach-O file for an arm64 slice. It rejects absolute load paths/search paths outside macOS system directories, missing bundled dependency suffixes, and missing/escaping loader-relative dependencies. It does not rewrite libraries or signatures. Suffix presence for `@rpath`/`@executable_path` is a preliminary check, **not proof that dyld can resolve the complete graph**. Actual startup from the packaged location, library/framework signatures and clean-machine tests remain mandatory. An executable version string alone is also not proof of compatibility.
 
 The manifest records `darwin/arm64`, per-file hashes, component provenance, CPU speech processing and that native startup is unverified. Electron packaging rechecks integrity and native dependencies and uses the staged account helper. It emits an **unpacked development app** under `.local/macos-standalone-dist`; signing identity discovery is disabled. DMG, icons, signing, notarization and public distribution belong to 6.9.5.
 
-The shared runtime already stores PostgreSQL, audio objects, credentials, logs, speech status and the writable web copy under the selected Electron user-data folder, outside the app bundle. The Docker and Windows libraries are not migrated. Note models and speech folders remain explicit local choices; no speech model is selected by these scripts. Missing models must leave saved audio intact and processing visibly retryable.
+The shared runtime stores the SQLite library, audio objects, credentials, logs, speech status and writable web copy under the selected Electron user-data folder, outside the app bundle. Existing Docker and standalone PostgreSQL libraries remain untouched until their owners explicitly convert them. Note models and speech folders remain explicit local choices; no speech model is selected by these scripts. Missing models must leave saved audio intact and processing visibly retryable.
 
 ## Native verification to execute
 
