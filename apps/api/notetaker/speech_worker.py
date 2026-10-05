@@ -1,6 +1,5 @@
-"""Single local speech process; Kafka delivery and database recovery share fenced claims."""
+"""Local speech processing recovered from the SQLite job queue."""
 import argparse
-import json
 import logging
 import threading
 import time
@@ -10,7 +9,7 @@ from sqlalchemy import select, update
 from .config import Settings
 from .db import database
 from .audio_store import AudioStore
-from .models import (Lecture, Job, Outbox, Inbox, SpeechWindow, SpeechGeneration, CaptureRun, AudioManifestRevision,
+from .models import (Lecture, Job, SpeechWindow, SpeechGeneration, CaptureRun, AudioManifestRevision,
     TranscriptSegment, TranscriptVersion, UploadReservation, now)
 from .transcription import (lock_lecture, schedule, read_audio, freeze_transcript, windows_for, current_runs, valid_window,
     saved_through, release_frontier, released_limit)
@@ -18,7 +17,6 @@ from .resource_budget import available, inference_slot
 from .speech_provider import WhisperProvider, SpeechFailure, validate_result
 
 LEASE_SECONDS=60
-TOPIC='notetaker.speech.v1'
 log=logging.getLogger('notetaker.speech')
 
 
@@ -253,60 +251,15 @@ def execute(sessions, store, provider, claimed, heartbeat=True):
         if heartbeat:thread.join(timeout=2)
 
 
-def event_payload(event):
-    return {'schema_version':1,'event_id':event.id,'lecture_id':event.lecture_id,
-        'entity_id':event.entity_id,'lifecycle_epoch':event.lifecycle_epoch,'event_type':event.event_type}
-
-
-def dispatch(sessions, producer):
-    with sessions() as db:
-        events=db.scalars(select(Outbox).where(Outbox.published_at.is_(None),
-            Outbox.event_type.in_(['audio.verified','speech.requested'])).order_by(Outbox.created_at).limit(25)).all()
-        for event in events:db.expunge(event)
-    for event in events:
-        outcome=[]
-        producer.produce(TOPIC,key=event.lecture_id,value=json.dumps(event_payload(event)).encode(),
-            on_delivery=lambda err,msg:outcome.append(err))
-        producer.flush(2)
-        if not outcome or outcome[0] is not None:return False
-        with sessions() as db:
-            db.execute(update(Outbox).where(Outbox.id==event.id,Outbox.published_at.is_(None)).values(published_at=now()))
-            db.commit()
-    return True
-
-
-def consume_event(sessions, payload):
-    # Broker content is only a hint. Match the original private outbox record before accepting it.
-    if not isinstance(payload,dict) or set(payload)!={'schema_version','event_id','lecture_id','entity_id','lifecycle_epoch','event_type'}:
-        return None
-    with sessions() as db:
-        event=db.get(Outbox,payload.get('event_id'))
-        if not event or payload!=event_payload(event):return None
-        lecture=lock_lecture(db,event.lecture_id)
-        if lecture.tombstoned or lecture.lifecycle_epoch!=event.lifecycle_epoch:return None
-        existing=db.get(Inbox,('speech-v1',event.id))
-        if not existing:
-            db.add(Inbox(consumer='speech-v1',event_id=event.id));db.commit()
-        job=db.get(Job,event.entity_id)
-        return job.id if job and job.kind=='speech.window' else None
-
-
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('--once',action='store_true',help='Plan and execute at most one due window without Kafka.')
+    parser.add_argument('--once',action='store_true',help='Plan and execute at most one due window.')
     args=parser.parse_args()
     settings=Settings()
-    if settings.preview:raise SystemExit('Speech workers require PostgreSQL application storage.')
+    if settings.preview:raise SystemExit('Speech workers require the saved SQLite library; disable preview mode.')
     engine,sessions=database(settings.database_url);store=AudioStore(settings);provider=WhisperProvider(settings)
     from .speech_status import start_status
     status_stopped = start_status(settings, provider)
-    producer=consumer=None
-    if not args.once and settings.broker_enabled:
-        from confluent_kafka import Producer,Consumer
-        producer=Producer({'bootstrap.servers':settings.kafka_bootstrap,'message.timeout.ms':2000,'log_level':0})
-        consumer=Consumer({'bootstrap.servers':settings.kafka_bootstrap,'group.id':'notetaker-speech-v1',
-            'enable.auto.commit':False,'auto.offset.reset':'earliest','log_level':0})
-        consumer.subscribe([TOPIC])
     try:
         if not args.once:
             try:
@@ -318,19 +271,7 @@ def main():
                 log.warning('speech_model_unavailable_at_startup')
         while True:
             plan_pending(sessions,store)
-            hint=None
-            if producer:
-                try:
-                    dispatch(sessions,producer)
-                    message=consumer.poll(0.1)
-                    if message and not message.error():
-                        raw=message.value()
-                        hint=consume_event(sessions,json.loads(raw)) if len(raw)<=2048 else None
-                        consumer.commit(message=message,asynchronous=False)
-                except Exception:
-                    log.warning('speech_broker_unavailable') # Reconciliation below remains operational.
-            claimed=claim(sessions,hint) if hint else None
-            claimed=claimed or claim(sessions)
+            claimed=claim(sessions)
             if claimed:
                 succeeded=execute(sessions,store,provider,claimed)
                 log.info('speech_attempt job_id=%s published=%s',claimed[0],succeeded)
@@ -338,7 +279,6 @@ def main():
             if not claimed:time.sleep(.5)
     finally:
         status_stopped.set()
-        if consumer:consumer.close()
         engine.dispose()
 
 

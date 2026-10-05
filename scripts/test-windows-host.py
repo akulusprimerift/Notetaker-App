@@ -89,7 +89,7 @@ def main():
                 report['startup_seconds'] = startup_seconds
                 (profile / 'workflow-report.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
                 print(json.dumps(report, indent=2), flush=True)
-        print(json.dumps({'host': 'passed', 'postgres_api_write_read': 'passed', 'profile': str(profile)}), flush=True)
+        print(json.dumps({'host': 'passed', 'sqlite_api_write_read': 'passed', 'startup_seconds': startup_seconds, 'profile': str(profile)}), flush=True)
     finally:
         child.stdin.close()
         try:
@@ -175,7 +175,7 @@ def workflow(client, headers, course, args, profile):
         except Exception as exc:  # The report records stream loss; checks below still decide pass/fail.
             timeline['stream_error'] = type(exc).__name__
     def poll():
-        # The PostgreSQL host's note stream omits transcript state; poll it as the workspace does.
+        # The note stream omits transcript state; poll it as the workspace does.
         with httpx.Client(base_url='http://127.0.0.1:8010', cookies=client.cookies, timeout=30, trust_env=False) as poller:
             while not stop.is_set():
                 transcript = poller.get(path + '/transcript').json()
@@ -318,7 +318,7 @@ def workflow(client, headers, course, args, profile):
         if response.json()['error']['code'] != 'finalization_version' or attempt == 4:
             ok(response)
     snapshot = wait('Final snapshot', lambda: next((row['snapshot_id'] for row in
-        ok(client.get(path + '/finalization')).json()['history'] if row.get('snapshot_id')), None), 600)
+        ok(client.get(path + '/finalization')).json()['history'] if row.get('snapshot_id')), None), max(600, args.timeout))
     body = ok(client.get(path + '/final-snapshots/' + snapshot + '/export', params={'format': 'markdown'})).content
     assert marker.strip().encode() in body, 'Final snapshot lost the selected student revision'
     (profile / 'final-snapshot.md').write_bytes(body)

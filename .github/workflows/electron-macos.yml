@@ -20,10 +20,6 @@ jobs:
         shell: bash scripts/ci-step.sh {0}
     env:
       MACOSX_DEPLOYMENT_TARGET: '14.0'
-      PG_VERSION: '17.11'
-      PG_SHA256: dd27f2b3c59e73ed14aa3324901242bf69a032a6347805f274e6260322d42979
-      WEED_VERSION: '4.47'
-      WEED_MD5: 1a005a70ed013b3503a54b7c7833423f
       OLLAMA_VERSION: '0.33.3'
       OLLAMA_SHA256: 342db03df80bb9db84ff64246031bd5f70c09b59ff52fa5cc9aaae3476cc4a9d
       MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
@@ -67,7 +63,7 @@ jobs:
         run: |
           bun run test
           bun run test:desktop
-          PYTHONPATH=apps/api uv run --no-project python -m pytest apps/api/tests/test_runtime_platform.py apps/api/tests/test_windows_host.py -q
+          PYTHONPATH=apps/api uv run --no-project python -m pytest apps/api/tests -q
       - name: Build frozen service and web component
         run: |
           bun run build:macos-service
@@ -76,31 +72,6 @@ jobs:
         run: |
           set -euo pipefail
           C="$RUNNER_TEMP/nt-components"; mkdir -p "$C"; cd "$RUNNER_TEMP"
-          # PostgreSQL 17 from source (publisher SHA-256). A prefix without "postgres"/"pgsql"
-          # yields share/postgresql; system zlib only, so nothing else needs relocation.
-          curl -fsSLO "https://ftp.postgresql.org/pub/source/v$PG_VERSION/postgresql-$PG_VERSION.tar.bz2"
-          echo "$PG_SHA256  postgresql-$PG_VERSION.tar.bz2" | shasum -a 256 -c
-          tar xf "postgresql-$PG_VERSION.tar.bz2"
-          PREFIX="$RUNNER_TEMP/nt-pg-root"
-          (cd "postgresql-$PG_VERSION" && ./configure --prefix="$PREFIX" --without-icu --without-readline --without-openssl >/dev/null \
-            && make -j"$(sysctl -n hw.ncpu)" >/dev/null && make install >/dev/null)
-          rm -rf "$PREFIX/include" "$PREFIX/lib/pkgconfig" "$PREFIX"/lib/*.a
-          for f in $(find "$PREFIX/bin" "$PREFIX/lib" -type f); do
-            file -b "$f" | grep -q Mach-O || continue
-            dir="$(dirname "${f#$PREFIX/}")"; up="$(echo "$dir" | sed -E 's#[^/]+#..#g')"
-            case "$f" in *.dylib) [ "$dir" = lib ] && install_name_tool -id "@rpath/$(basename "$f")" "$f";; esac
-            for dep in $(otool -L "$f" | awk 'NR>1{print $1}' | grep "^$PREFIX/" || true); do
-              install_name_tool -change "$dep" "@loader_path/$up/${dep#$PREFIX/}" "$f"
-            done
-            codesign --force --sign - "$f"
-          done
-          cp "postgresql-$PG_VERSION/COPYRIGHT" "$PREFIX/COPYRIGHT"
-          mv "$PREFIX" "$C/postgres"
-          # SeaweedFS (publisher MD5 is the only checksum it publishes).
-          curl -fsSL -o weed.tgz "https://github.com/seaweedfs/seaweedfs/releases/download/$WEED_VERSION/darwin_arm64.tar.gz"
-          [ "$(md5 -q weed.tgz)" = "$WEED_MD5" ]
-          mkdir "$C/seaweed"; tar xzf weed.tgz -C "$C/seaweed"
-          cp "$GITHUB_WORKSPACE/apps/desktop/third-party/native/SEAWEEDFS-LICENSE" "$C/seaweed/LICENSE"
           # Ollama CLI/runtime only; no models.
           curl -fsSL -o ollama.tgz "https://github.com/ollama/ollama/releases/download/v$OLLAMA_VERSION/ollama-darwin.tgz"
           echo "$OLLAMA_SHA256  ollama.tgz" | shasum -a 256 -c
@@ -128,8 +99,6 @@ jobs:
           cat > "$C/sources.json" <<EOF
           {"components": {
             "service": {"directory": "$SERVICE", "version": "0.1.0", "source": "$SOURCE; locked uv/Bun dependencies, Python 3.12"},
-            "postgres": {"directory": "$C/postgres", "version": "$PG_VERSION", "source": "ftp.postgresql.org source SHA-256 $PG_SHA256; built --without-icu/readline/openssl, loader paths relocated, ad-hoc signed"},
-            "seaweed": {"directory": "$C/seaweed", "version": "$WEED_VERSION", "source": "github.com/seaweedfs release darwin_arm64.tar.gz MD5 $WEED_MD5"},
             "ollama": {"directory": "$C/ollama", "version": "$OLLAMA_VERSION", "source": "github.com/ollama release ollama-darwin.tgz SHA-256 $OLLAMA_SHA256"},
             "account-client": {"directory": "$C/account-client", "version": "0.154.0", "source": "Bun frozen lock @openai/codex-darwin-arm64"}
           }}

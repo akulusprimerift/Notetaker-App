@@ -24,11 +24,10 @@ async function write(root,name,bytes) {
 async function fixture(root) {
   const components={};
   for(const [name,paths] of Object.entries({service:['NotetakerService'],
-    postgres:['bin/postgres','bin/initdb','bin/pg_ctl','share/postgresql/postgres.bki'],
-    seaweed:['weed'],ollama:['ollama'],'account-client':['bin/codex']})) {
+    ollama:['ollama'],'account-client':['bin/codex']})) {
     const directory=path.join(root,'inputs',name);
     for(const file of [...paths,'LICENSE'])await write(directory,file,'synthetic '+file);
-    components[name]={directory,version:name==='postgres'?'17.11':name==='account-client'?'0.154.0':'fixture-1',
+    components[name]={directory,version:name==='account-client'?'0.154.0':'fixture-1',
       source:'synthetic fixture, never executable',files:await inventory(directory)};
   }
   const web=path.join(root,'web');
@@ -59,25 +58,25 @@ test('Mac stage produces a verified target manifest and retains every source byt
   assert.equal(manifest.user_models_bundled,false);
   assert.equal(manifest.native_audit.native_startup_verified,false);
   assert.deepEqual(await inventory(path.join(root,'inputs')),before);
-  assert.equal(manifest.sources.length,5);
-  await write(destination,'seaweed/weed','tampered');
+  assert.equal(manifest.sources.length,3);
+  await write(destination,'ollama/ollama','tampered');
   await assert.rejects(verifyBundle(destination),/damaged/);
 }));
 test('Mac stage refuses damaged, incomplete, unlicensed and incompatible components',async()=>temporary(async root=>{
-  for(const failure of ['hash','missing','license','postgres','helper','web','audit']) {
+  for(const failure of ['hash','missing','license','helper','web','audit']) {
     const input=await fixture(path.join(root,failure));
     if(failure==='hash')await write(input.lock.components.ollama.directory,'ollama','modified');
     if(failure==='missing'||failure==='license') {
-      const component=input.lock.components.seaweed;
-      await fs.unlink(path.join(component.directory,failure==='missing'?'weed':'LICENSE'));
+      const component=input.lock.components.ollama;
+      await fs.unlink(path.join(component.directory,failure==='missing'?'ollama':'LICENSE'));
       component.files=await inventory(component.directory);await input.save();
     }
-    if(failure==='postgres'||failure==='helper') {
-      input.lock.components[failure==='postgres'?'postgres':'account-client'].version='18.0';await input.save();
+    if(failure==='helper') {
+      input.lock.components['account-client'].version='18.0';await input.save();
     }
     if(failure==='web')await write(input.web,'apps/web/server.js','modified');
     if(failure==='audit')input.audit=async()=>{throw new Error('native audit failure');};
-    await assert.rejects(stage(input),/mismatch|Missing bundled|license|PostgreSQL 17|helper version|integrity|native audit/);
+    await assert.rejects(stage(input),/mismatch|Missing bundled|license|helper version|integrity|native audit/);
     const output=path.join(input.root,'.local/macos-runtime');
     for(const directory of await fs.readdir(output).catch(()=>[]))
       await assert.rejects(fs.access(path.join(output,directory,'runtime-manifest.json')));
@@ -95,6 +94,16 @@ test('runtime copy refuses private data and escaping or cyclic directory links',
   await fs.unlink(path.join(source,'cycle'));
   await write(source,'.env.private','must not ship');
   await assert.rejects(copyTree(source,path.join(root,'private-copy')),/Private/);
+}));
+test('runtime inventories and copies exclude SQLite libraries and unfinished conversion data',async()=>temporary(async root=>{
+  for(const name of ['sqlite-library/workspace.sqlite3','nested/workspace.sqlite3-wal',
+    'workspace.sqlite3-shm','conversion.pending','conversion-report.json']){
+    const source=path.join(root,'input-'+name.replaceAll('/','-'));
+    await write(source,name,'private synthetic library bytes');
+    await assert.rejects(inventory(source),/Private/);
+    await assert.rejects(copyTree(source,source+'-copy'),/Private/);
+    assert.equal(await fs.readFile(path.join(source,name),'utf8'),'private synthetic library bytes');
+  }
 }));
 test('Mach-O audit rejects x64-only binaries and build-machine dependencies',async()=>temporary(async root=>{
   assert.throws(()=>auditBundledReferences('@loader_path/../../outside.dylib (compatibility version 1.0.0)', 'service/main',[]),/escaping/);

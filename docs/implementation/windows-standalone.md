@@ -1,5 +1,11 @@
 # Standalone Windows distribution
 
+Current direction (2026-10-05): **SQLite standalone only**. PostgreSQL, SeaweedFS, Kafka and Docker are retired from the app. The Windows runtime bundles SQLite through Python, FastAPI, speech/notes workers, the shared React web component and Ollama. See [current build, storage, explicit conversion and executed evidence](sqlite-standalone.md).
+
+The remaining entries are historical PostgreSQL packaging evidence. Their commands and library-selection directions are superseded; preserve earlier libraries until explicit conversion succeeds. Earlier Mac/Windows hardware and release qualification remains open.
+
+## Historical distribution notes
+
 Latest UI update (2026-09-24): [paged notes and glass installer](paged-notes-and-motion.md#installer-delivery--2026-09-24) is available under .local/paged-ui-update/installer with packaged startup, synthetic save/reopen/readback and export checks. Installed-upgrade qualification remains open.
 
 Latest installer (2026-09-24): the [appearance delivery](workspace-appearance.md#installer-delivery--2026-09-24) packages Pink/Blue themes, glass surfaces and animated navigation under `.local/appearance-package/installer/Notetaker-0.1.0-Windows-Standalone-Setup.exe`. It reuses the hash-verified unchanged native services and passes packaged synthetic audio save/reopen/readback and theme-persistence checks. See the linked evidence for size/checksum and qualification limits.

@@ -1,5 +1,9 @@
 # Project phases
 
+Priority change (2026-10-05): the user selects **SQLite-only standalone delivery** and removes Docker. Phase **6.9.5** remains the single active phase. [Storage conversion, Windows/Mac packaging changes and executed evidence](implementation/sqlite-standalone.md) supersede the earlier PostgreSQL/Docker delivery directions. Prior libraries are retained; conversion is explicit and side by side. Earlier hardware, human quality and Mac release gates remain open.
+
+Implementation status: the SQLite app and explicit verified conversion are implemented; the rebuilt Windows standalone installer passes SQLite backend, frozen migration/parser and packaged synthetic recording/export/reopen checks. Mac source/build paths are updated and their shared contracts pass on Windows; native SQLite Mac packaging and qualification remain next. This does not close installed-upgrade, hardware or release gates.
+
 Current phase (2026-10-02): **6.9.5 — Mac installer and distribution** is the single active phase; the user reported the 6.9.4 test build working on their Apple Silicon Mac. Tagged CI builds publish a DMG with optional Developer ID signing/notarization ([distribution](implementation/macos-distribution.md)). Earlier current-phase entries below are historical.
 
 Independent workspace increment (2026-10-03): the accepted layout task keeps 6.9.5 as the single active phase. Its scope is the persistent recording header, lecture navigation hierarchy and secondary placement of data-removal status. Synthetic browser evidence and the scoped PR are tracked in [workspace layout and recording](implementation/workspace-layout-recording.md); this does not qualify native Mac capture or the broader release gates.

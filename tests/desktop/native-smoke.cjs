@@ -1,4 +1,4 @@
-// Isolated PostgreSQL/Seaweed library, synthetic PCM only; no microphone or providers.
+// Isolated SQLite/local-audio library, synthetic PCM only; no microphone or providers.
 const path=require('node:path');
 const fs=require('node:fs/promises');
 const assert=require('node:assert/strict');
@@ -21,8 +21,10 @@ const {_electron:electron}=require(playwrightDriver);
   const executable=process.env.NOTETAKER_TEST_EXECUTABLE||require('electron');
   const args=[...(process.env.NOTETAKER_TEST_EXECUTABLE?[]:[root]),'--user-data-dir='+profile];
   let application;
+  const startupSeconds=[];
   let firstLaunch=true;
   async function launch(){
+    const started=Date.now();
     application=await electron.launch({executablePath:executable,args,env,timeout:240000});
     const page=await application.firstWindow();
     if(firstLaunch){
@@ -36,6 +38,7 @@ const {_electron:electron}=require(playwrightDriver);
       console.error('Setup status:',await page.locator('#status').textContent().catch(()=>''));throw error;
     });
     await page.getByRole('heading',{name:'Your lecture library.'}).waitFor();
+    startupSeconds.push(Number(((Date.now()-started)/1000).toFixed(2)));
     // Evaluate in the renderer: Bun can constant-fold typeof require in a callback.
     assert.equal(await page.evaluate('typeof require'),'undefined');
     await page.evaluate(()=>{navigator.mediaDevices.getUserMedia=async()=>{throw new Error('Microphone forbidden');};});
@@ -50,7 +53,7 @@ const {_electron:electron}=require(playwrightDriver);
       app.quit();
     }).catch(()=>{});
     await exited;
-    // The host closes its own PostgreSQL tree before Electron completes quit.
+    // The host closes its own worker tree before Electron completes quit.
     await new Promise(resolve=>setTimeout(resolve,2000));
   }
   try{
@@ -86,6 +89,9 @@ const {_electron:electron}=require(playwrightDriver);
       return {course:course.id,lecture:lecture.id,chunk:receipt.chunk_id,hash,storage:receipt.storage_state};
     });
     assert.equal(saved.storage,'verified');
+    const database=await fs.readFile(path.join(profile,'sqlite-library','workspace.sqlite3'));
+    assert.equal(database.subarray(0,16).toString(),'SQLite format 3\0');
+    assert.equal(await fs.access(path.join(profile,'sqlite-library','postgres')).then(()=>true,()=>false),false);
     await page.evaluate(async lecture=>{
       const session=await(await fetch('/api/session/open',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).json();
       const {Recorder}=await import('/capture/recorder.mjs');
@@ -155,9 +161,9 @@ const {_electron:electron}=require(playwrightDriver);
       return {course:courses.some(course=>course.id===saved.course),hash,status:response.status};
     },saved);
     assert.equal(preserved.status,200);assert.equal(preserved.course,true);assert.equal(preserved.hash,saved.hash);
-    console.log(JSON.stringify({standalone_launch:true,postgres_migrations:true,synthetic_audio_verified:true,
+    console.log(JSON.stringify({standalone_launch:true,sqlite_migrations:true,synthetic_audio_verified:true,
       close_reopen_readback:true,recording_restart_cycles:3,electron_isolation:true,appearance_and_theme_persistence:true,portable_snapshot_exports:true,
       platform:process.platform,arch:process.arch,window_controls_overlay:process.platform==='win32'?true:null,
-      profile,limitations:'No microphone, human quality, clean-machine or long-duration qualification. Mac native chrome belongs to 6.9.3.'},null,2));
+      profile,startup_seconds:startupSeconds,limitations:'No microphone, human quality, clean-machine or long-duration qualification. Mac native chrome belongs to 6.9.3.'},null,2));
   }finally{if(application)await close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

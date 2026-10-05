@@ -13,10 +13,10 @@ function accountExecutable({packaged,resources,root,platform=desktopPlatform()})
     : path.join(root,'node_modules','@openai',platform.helperPackage,'vendor',platform.helperVendor,'bin',platform.helper);
 }
 function validateRuntimeTarget(manifest, target=desktopPlatform()) {
-  // Existing Windows bundles predate explicit target metadata.
-  const platform=manifest.platform ?? (manifest.profile==='windows-postgresql-seaweed-reconciliation'?'win32':null);
-  const arch=manifest.arch ?? (manifest.profile==='windows-postgresql-seaweed-reconciliation'?'x64':null);
+  const platform=manifest.platform,arch=manifest.arch;
   if(platform!==target.platform||arch!==target.arch)throw new Error('The bundled runtime does not match this computer. Install the matching Notetaker build.');
+  if(manifest.profile!==`${platform==='win32'?'windows':'macos'}-sqlite-local-reconciliation`)
+    throw new Error('This build requires a standalone SQLite runtime. Rebuild or install the updated app.');
   if(!manifest.files.some(file=>file.path===`service/${target.service}`))throw new Error('The bundled service is missing from the runtime manifest.');
 }
 module.exports={desktopPlatform,accountExecutable,validateRuntimeTarget};

@@ -70,11 +70,8 @@ def receipt(db, request, session, action, payload):
         error(422, "idempotency_key_required", "A valid request identifier is required.")
     fingerprint = digest(json.dumps(payload, sort_keys=True, separators=(",", ":")))
     # Serializes command receipts for this owner, including concurrent identical requests.
-    # SQLite has no row-level FOR UPDATE; preview uses a write lock instead.
-    if db.bind.dialect.name == "sqlite":
-        db.execute(update(Owner).where(Owner.id == session.owner_id).values(singleton=1))
-    else:
-        db.scalar(select(Owner).where(Owner.id == session.owner_id).with_for_update())
+    # SQLite serializes these commands using its database writer lock.
+    db.execute(update(Owner).where(Owner.id == session.owner_id).values(singleton=1))
     existing = db.scalar(select(CommandReceipt).where(CommandReceipt.owner_id == session.owner_id, CommandReceipt.action == action, CommandReceipt.key == key))
     if existing and existing.fingerprint != fingerprint:
         error(409, "idempotency_conflict", "This request identifier was already used for different content.")
@@ -160,10 +157,7 @@ def create_app(settings: Settings | None = None):
             error(403,'local_workspace_only','Automatic workspace access is available only on this device.')
         # The app is bound to loopback. A same-origin POST opens its one local owner.
         # Insert-on-conflict also handles two fresh browser tabs opening together.
-        if db.bind.dialect.name == 'postgresql':
-            from sqlalchemy.dialects.postgresql import insert
-        else:
-            from sqlalchemy.dialects.sqlite import insert
+        from sqlalchemy.dialects.sqlite import insert
         db.execute(insert(Owner).values(id=str(uuid4()), singleton=1, created_at=now()).on_conflict_do_nothing(index_elements=['singleton']))
         owner = db.scalar(select(Owner))
         old_token = request.cookies.get('nt_session')
@@ -218,7 +212,7 @@ def create_app(settings: Settings | None = None):
         existing,key,fingerprint=receipt(db,request,session,action,body.model_dump())
         if existing:
             return lecture_json(owned_lecture(db,session.owner_id,existing.result_id))
-        db.scalar(select(Course).where(Course.id==course_id).with_for_update())
+        db.scalar(select(Course).where(Course.id==course_id))
         db.expire_all()
         owned_course(db,session.owner_id,course_id)
         lecture=Lecture(course_id=course_id,title=body.title,update_seq=1)

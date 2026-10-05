@@ -1,0 +1,4 @@
+# Maintenance conversion only; excluded from the standalone app and service.
+-r requirements.in
+psycopg[binary]==3.3.5
+boto3==1.43.89

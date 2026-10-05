@@ -1,4 +1,4 @@
-"""One local note request at a time, recovered from PostgreSQL after worker exits."""
+"""One local note request at a time, recovered from SQLite after worker exits."""
 import logging
 import threading
 import time

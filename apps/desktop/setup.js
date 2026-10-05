@@ -11,11 +11,11 @@ async function status() {
   element('setup-content').hidden=value.autoStarting;
   element('loading-status').textContent=value.message;
   element('status').textContent = value.message;
-  element('location').textContent = 'App data: ' + value.dataPath + '\n' + (value.serviceMode==='native'?'Standalone library: '+value.libraryPath:value.serviceRoot?'Existing workspace: '+value.serviceRoot:'Select your existing workspace folder to reuse its library when starting services.');
+  element('location').textContent = 'App data: ' + value.dataPath + '\n' + 'SQLite library: '+value.libraryPath;
   element('start').disabled = value.starting;
   element('native').hidden = !value.nativeAvailable;
   element('native').disabled = value.starting;
-  element('native').textContent = value.serviceMode==='native'?'Open standalone library':'Create or open standalone library';
+  element('native').textContent = value.libraryChosen?'Open standalone library':'Create or open standalone library';
   element('pause').hidden=value.serviceMode!=='native';element('pause').disabled=value.starting;
 }
 async function models() {

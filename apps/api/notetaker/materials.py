@@ -161,7 +161,7 @@ def install_materials(app, current, db_session, owned_course, owned_lecture, rec
         # Serialize course additions and lecture creation on their common parent.
         action = 'materials:' + (lecture_id or course_id)
         previous, key, fingerprint = receipt(db, request, session, action, fingerprint_body)
-        db.scalar(select(Course).where(Course.id == course_id).with_for_update())
+        db.scalar(select(Course).where(Course.id == course_id))
         db.expire_all()
         owned_course(db, session.owner_id, course_id)
         if previous: return summary(db.get(CourseMaterial, previous.result_id))

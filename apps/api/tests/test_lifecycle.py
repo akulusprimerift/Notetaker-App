@@ -199,28 +199,19 @@ def test_failed_notes_leave_history_and_offer_available_finalization(notes):
 
 
 def test_real_object_deletion_and_late_upload_reconciliation(capture):
-    import os
-    import pytest
+    import hashlib
     from notetaker.audio_store import AudioStore
-    if not os.environ.get('NOTETAKER_TEST_DATABASE_URL'):
-        pytest.skip('Real object deletion is exercised with the PostgreSQL/service run.')
     app,client,headers,path,run=capture
-    bucket='m07-delete-'+uuid4().hex
-    store=AudioStore(app.state.settings.model_copy(update={'audio_bucket':bucket,'preview':False}))
-    assert store.available
+    store=AudioStore(app.state.settings)
     app.state.audio_store=store
     store.ready()
-    try:
-        assert upload(client,headers,path,run).status_code==200
-        keys=store.list_keys(path.split('/')[-1]+'/');assert len(keys)==1
-        row=remove(client,headers,path).json()
-        reconcile_deletion(app.state.sessions,store,row['id'])
-        assert store.list_keys(path.split('/')[-1]+'/')==[]
-        # Simulate an upload whose object write finished after its reservation was erased.
-        store.client.put_object(Bucket=bucket,Key=keys[0],Body=b'synthetic late object')
-        reconcile_deletion(app.state.sessions,store,row['id'])
-        assert store.list_keys(path.split('/')[-1]+'/')==[]
-        assert client.get('/deletions').json()[0]['status']=='complete'
-    finally:
-        for key in store.list_keys(''):store.delete_verified(key)
-        store.client.delete_bucket(Bucket=bucket)
+    assert upload(client,headers,path,run).status_code==200
+    keys=store.list_keys(path.split('/')[-1]+'/');assert len(keys)==1
+    row=remove(client,headers,path).json()
+    reconcile_deletion(app.state.sessions,store,row['id'])
+    assert store.list_keys(path.split('/')[-1]+'/')==[]
+    late=b'synthetic late object'
+    store.write_verified(keys[0],late,hashlib.sha256(late).hexdigest())
+    reconcile_deletion(app.state.sessions,store,row['id'])
+    assert store.list_keys(path.split('/')[-1]+'/')==[]
+    assert client.get('/deletions').json()[0]['status']=='complete'

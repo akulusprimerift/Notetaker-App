@@ -289,7 +289,7 @@ class ProviderBridge {
       sendJson(response,200,result);
     } catch(error) {const failure=error instanceof BridgeError?error:new BridgeError('provider_bridge_failure','The provider connection could not be completed.',503);sendJson(response,failure.status,{code:failure.code,message:failure.message});}finally{if(lockedProvider)this.busy.delete(lockedProvider);}
   }
-  async start() {this.server=createServer((request,response)=>void this.handle(request,response));await new Promise((resolve,reject)=>{this.server.once('error',reject);this.server.listen(0,'0.0.0.0',resolve);});this.port=this.server.address().port;return {url:`http://host.docker.internal:${this.port}`,token:this.token,port:this.port};}
+  async start() {this.server=createServer((request,response)=>void this.handle(request,response));await new Promise((resolve,reject)=>{this.server.once('error',reject);this.server.listen(0,'127.0.0.1',resolve);});this.port=this.server.address().port;return {url:`http://127.0.0.1:${this.port}`,token:this.token,port:this.port};}
   async close() {closeOwned();for(const client of this.clients)await client.close();if(this.server)await new Promise(resolve=>this.server.close(resolve));this.server=null;}
 }
 

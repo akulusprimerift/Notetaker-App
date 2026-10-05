@@ -14,12 +14,12 @@ test('desktop service and helper selection separates Windows x64 and Apple Silic
   assert.throws(()=>desktopPlatform('darwin','x64'),/Apple Silicon/);
   assert.throws(()=>desktopPlatform('linux','x64'),/supports/);
 });
-test('runtime target rejects cross-platform bundles and retains legacy Windows compatibility',()=>{
+test('runtime target rejects cross-platform bundles and rejects obsolete database runtimes',()=>{
   const win=desktopPlatform('win32','x64'),mac=desktopPlatform('darwin','arm64');
   const legacy={profile:'windows-postgresql-seaweed-reconciliation',files:[{path:'service/NotetakerService.exe'}]};
-  validateRuntimeTarget(legacy,win);
+  assert.throws(()=>validateRuntimeTarget(legacy,win),/does not match/);
   assert.throws(()=>validateRuntimeTarget(legacy,mac),/does not match/);
-  const manifest={platform:'darwin',arch:'arm64',files:[{path:'service/NotetakerService'}]};
+  const manifest={platform:'darwin',arch:'arm64',profile:'macos-sqlite-local-reconciliation',files:[{path:'service/NotetakerService'}]};
   validateRuntimeTarget(manifest,mac);
   assert.throws(()=>validateRuntimeTarget(manifest,win),/does not match/);
   assert.throws(()=>validateRuntimeTarget({...manifest,files:[]},mac),/missing/);

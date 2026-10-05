@@ -26,7 +26,7 @@ The SQLite preview does not enable recording. PostgreSQL and private SeaweedFS s
 
 ## Run and verify
 
-Use the existing [local launcher](../../scripts/Start-App.ps1):
+Use the existing historical local launcher (retired):
 
 ```powershell
 pwsh -File scripts/Start-App.ps1

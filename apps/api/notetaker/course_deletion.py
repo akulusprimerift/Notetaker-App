@@ -51,7 +51,7 @@ def install_course_deletion(app,current,db_session,receipt):
     @app.post('/courses/{course_id}/deletion',status_code=202)
     def remove(course_id:str,body:CourseDelete,request:Request,session=Depends(current),db=Depends(db_session)):
         prior,key,fingerprint=receipt(db,request,session,'delete_course:'+course_id,body.model_dump())
-        course=db.scalar(select(m.Course).where(m.Course.id==course_id,m.Course.owner_id==session.owner_id).with_for_update().execution_options(populate_existing=True))
+        course=db.scalar(select(m.Course).where(m.Course.id==course_id,m.Course.owner_id==session.owner_id).execution_options(populate_existing=True))
         if not course:error(404,'unavailable','This course is unavailable.')
         if prior or course.tombstoned:return progress(db,course)
         lectures=list(db.scalars(select(m.Lecture).where(m.Lecture.course_id==course_id,m.Lecture.tombstoned.is_(False)).order_by(m.Lecture.id)))

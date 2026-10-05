@@ -12,7 +12,7 @@ async function main() {
   const root=path.resolve(__dirname,'..'),resources=path.resolve(process.argv[2]);
   const manifest=await verifyBundle(resources);
   validateRuntimeTarget(manifest,desktopPlatform());
-  if(manifest.profile!=='macos-postgresql-seaweed-reconciliation')throw new Error('Expected a staged Mac standalone runtime.');
+  if(manifest.profile!=='macos-sqlite-local-reconciliation')throw new Error('Expected a staged Mac standalone runtime.');
   if(!sameInventory((await inventory(resources)).filter(file=>file.path!=='runtime-manifest.json'),manifest.files))
     throw new Error('The staged Mac runtime inventory changed. Prepare a new verified bundle.');
   await auditNative(resources,manifest.files);

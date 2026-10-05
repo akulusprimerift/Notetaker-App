@@ -1,5 +1,11 @@
 # macOS standalone runtime — Phase 6.9.2
 
+Current direction (2026-10-05): **SQLite standalone only**. PostgreSQL, SeaweedFS, Kafka and Docker are retired from the app. The Mac runtime bundles SQLite through Python, FastAPI, speech/notes workers, the shared React web component and Ollama. See [current build, storage, explicit conversion and executed evidence](sqlite-standalone.md).
+
+The remaining entries are historical PostgreSQL packaging evidence. Their commands and library-selection directions are superseded; preserve earlier libraries until explicit conversion succeeds. Earlier Mac/Windows hardware and release qualification remains open.
+
+## Historical distribution notes
+
 Status (2026-09-29): **6.9.2 is active**. Native build/staging commands, dependency checks and an unpacked Electron app target are implemented. Their cross-platform contracts pass on Windows. No native Mac runtime, app or installer has been produced in this session. Completion still requires Apple Silicon builds and actual bundled-service startup without developer dependencies on the runtime machine.
 
 ## Build-machine preparation

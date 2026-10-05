@@ -1,6 +1,6 @@
-"""Shared standalone service tree for an explicitly separate PostgreSQL library."""
+"""Shared standalone SQLite library and local inference service tree."""
 import ctypes
-from contextlib import contextmanager
+from contextlib import contextmanager, closing
 import json
 import os
 from pathlib import Path
@@ -54,6 +54,20 @@ def require_free_ports(ports):
                 raise RuntimeError(f'Port {port} is in use. Close the other workspace before starting this library.') from None
 
 
+def require_sqlite_library(data):
+    # Conversion is explicit and side by side; never open a legacy directory as empty.
+    if (data / 'postgres').exists() or (data / 'PG_VERSION').exists():
+        raise RuntimeError('This library uses PostgreSQL. Convert it to a separate SQLite library before opening it. Existing files were retained.')
+    filename = data / 'workspace.sqlite3'
+    if not filename.resolve().is_relative_to(data.resolve()):
+        raise RuntimeError('The library database must stay inside its library folder.')
+    if filename.exists():
+        import sqlite3
+        with closing(sqlite3.connect(filename.as_uri() + '?mode=ro', uri=True)) as connection:
+            if connection.execute('PRAGMA quick_check').fetchone() != ('ok',):
+                raise RuntimeError('The SQLite library needs recovery. Existing files were retained.')
+
+
 def main(config):
     if sys.platform not in ('win32', 'darwin'):
         raise RuntimeError('Standalone services support Windows and macOS only')
@@ -64,7 +78,8 @@ def main(config):
     data = Path(config['data']).resolve()
     data.mkdir(parents=True, exist_ok=True)
     protect_library(data)
-    require_free_ports([3000, 8010, 55432, 19333, 29333, 18080, 28080, 18888, 28888, 18333, 28333, 11435])
+    require_sqlite_library(data)
+    require_free_ports([3000, 8010, 11435])
     stop = threading.Event()
     for sig in (signal.SIGTERM, signal.SIGINT):
         signal.signal(sig, lambda *_: stop.set())
@@ -75,26 +90,22 @@ def main(config):
         stop.set()
     threading.Thread(target=watch_parent, daemon=True).start()
     env = {key: value for key, value in os.environ.items() if not key.startswith(('NOTETAKER_', 'PG', 'OLLAMA_', 'PYTHON'))}
-    password = config['secret']
-    env.update(NOTETAKER_DATABASE_URL=f'postgresql+psycopg://notetaker:{password}@127.0.0.1:55432/postgres',
+    env.update(NOTETAKER_DATABASE_URL='sqlite:///' + (data / 'workspace.sqlite3').as_posix(),
         PYINSTALLER_RESET_ENVIRONMENT='1',
-        NOTETAKER_PREVIEW='false', NOTETAKER_STANDALONE='false', NOTETAKER_BROKER_ENABLED='false',
-        NOTETAKER_S3_ENDPOINT='http://127.0.0.1:18333', NOTETAKER_S3_ACCESS_KEY='notetaker',
-        NOTETAKER_S3_SECRET_KEY=password, NOTETAKER_OLLAMA_URL='http://127.0.0.1:11435',
+        NOTETAKER_PREVIEW='false', NOTETAKER_STANDALONE='true', NOTETAKER_AUDIO_DIRECTORY=str(data / 'audio'),
+        NOTETAKER_OLLAMA_URL='http://127.0.0.1:11435',
         NOTETAKER_WEB_ORIGIN='http://127.0.0.1:3000', NOTETAKER_SPEECH_MODEL_PATH=config.get('speechPath', ''),
         NOTETAKER_SPEECH_STATUS_PATH=str(data / 'speech-status.json'), NOTETAKER_SPEECH_STATUS_SESSION=os.urandom(16).hex(),
         NOTETAKER_PROVIDER_BRIDGE_URL=config.get('bridgeURL', ''), NOTETAKER_PROVIDER_BRIDGE_TOKEN=config.get('bridgeToken', ''),
         OLLAMA_HOST='127.0.0.1:11435', OLLAMA_NO_CLOUD='1',
         OLLAMA_MODELS=str(Path.home() / '.ollama/models'))
     children, logs = [], []
-    pg = root / 'postgres/bin'
-    pgdata = data / 'postgres'
     def progress(message):
         print(json.dumps({'status': 'progress', 'message': message}), flush=True)
     @contextmanager
     def external_dll_path():
         # PyInstaller changes the process DLL directory; do not pass its Python
-        # dependency DLLs to PostgreSQL, Seaweed or Ollama executables.
+        # dependency DLLs to Ollama executables.
         if sys.platform == 'win32' and getattr(sys, 'frozen', False):
             ctypes.windll.kernel32.SetDllDirectoryW(None)
         try:
@@ -128,43 +139,11 @@ def main(config):
             stop.wait(.25)
         raise RuntimeError('Local service startup did not complete. Your library was retained.')
     try:
-        progress('Opening your private PostgreSQL library…')
-        if not (pgdata / 'PG_VERSION').exists():
-            if pgdata.exists() and any(pgdata.iterdir()):
-                raise RuntimeError('Incomplete database initialization; existing files were retained for recovery.')
-            pwfile = data / 'init-password'
-            try:
-                pwfile.write_text(password, encoding='utf-8')
-                run([executable(pg, 'initdb'), '-D', pgdata, '-U', 'notetaker', '--auth=scram-sha-256',
-                    '--encoding=UTF8', '--locale=C', '--pwfile', pwfile])
-            finally:
-                pwfile.unlink(missing_ok=True)
-        if (pgdata / 'PG_VERSION').read_text().strip() != '17':
-            raise RuntimeError('This database requires a supported upgrade. Existing data was retained.')
-        launch('postgres', [executable(pg, 'postgres'), '-D', pgdata, '-h', '127.0.0.1', '-p', '55432'])
-        import psycopg
-        def database_ready():
-            with psycopg.connect(host='127.0.0.1', port=55432, dbname='postgres', user='notetaker', password=password, connect_timeout=2):
-                return True
-        wait_for(database_ready)
-        progress('Opening private audio storage…')
-        objects = data / 'objects'
-        objects.mkdir(exist_ok=True)
-        (data / 'filer.toml').write_text('[leveldb2]\nenabled = true\ndir = "' + (data / 'filer').as_posix() + '"\n')
-        s3config = data / 's3.json'
-        s3config.write_text(json.dumps({'identities': [{'name': 'notetaker', 'credentials': [
-            {'accessKey': 'notetaker', 'secretKey': password}], 'actions': ['Admin', 'Read', 'Write', 'List', 'Tagging']}]}))
-        launch('objects', [executable(root, 'seaweed/weed'), 'server', '-ip=127.0.0.1', '-ip.bind=127.0.0.1',
-            '-dir=' + str(objects), '-master.port=19333', '-volume.port=18080', '-filer', '-filer.port=18888',
-            '-s3', '-s3.port=18333', '-s3.port.iceberg=0', '-s3.port.lance=0',
-            # The default eight-volume cap filled with system volumes and one full audio
-            # volume, refusing every upload. Zero sizes the cap from free disk space.
-            '-s3.config=' + str(s3config), '-master.volumeSizeLimitMB=256', '-volume.max=0'])
+        progress('Opening your private SQLite library…')
         from .config import Settings
         from .audio_store import AudioStore
         settings = Settings(_env_file=None, **{key.lower().removeprefix('notetaker_'): value for key, value in env.items() if key.startswith('NOTETAKER_')})
-        store = AudioStore(settings)
-        wait_for(lambda: store.ready() is None)
+        AudioStore(settings).ready()
         service_command = [sys.executable] if getattr(sys, 'frozen', False) else [sys.executable, str(Path(__file__).parents[1] / 'windows_service.py')]
         progress('Checking library migrations. Your existing library is retained…')
         run([*service_command, 'migrate'], timeout=180)
@@ -183,13 +162,7 @@ def main(config):
             if any(child.poll() is not None for child in children):
                 raise RuntimeError('A local service stopped. Close and reopen Notetaker to recover.')
     finally:
-        stop_children(children[1:])
-        if children and children[0].poll() is None:
-            try:
-                run([executable(pg, 'pg_ctl'), '-D', pgdata, 'stop', '-m', 'fast', '-w', '-t', '15'], timeout=20, shutting_down=True)
-            except Exception:
-                pass
-        stop_children(children[:1])
+        stop_children(children)
         for stream in logs:
             stream.close()
 

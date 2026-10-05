@@ -2,7 +2,6 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const {ORIGIN,localPage,audioPermission} = require('../../apps/desktop/policy.cjs');
 const {discoverModels,discoverSpeechModels} = require('../../apps/desktop/models.cjs');
-const {findPowerShell,powerShellCandidates} = require('../../apps/desktop/powershell.cjs');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
@@ -36,18 +35,4 @@ test('model discovery reads installed metadata and local files without downloads
     const incomplete=path.join(home,'Models','incomplete');await fs.mkdir(incomplete,{recursive:true});await fs.writeFile(path.join(incomplete,'model.bin'),'fixture');
     assert.deepEqual(await discoverSpeechModels({home,selected:speech,roots:[speech]}),[speech,downloads]);
   }finally{assert.equal(path.dirname(path.resolve(home)),path.resolve(os.tmpdir()));assert.ok(path.basename(home).startsWith('notetaker-model-test-'));await fs.rm(home,{recursive:true,force:true});}
-});
-
-test('PowerShell discovery checks PATH and standard per-machine/per-user locations',async()=>{
-  const env={Path:'C:\\missing;C:\\tools',ProgramW6432:'C:\\Program Files',LOCALAPPDATA:'C:\\Users\\student\\AppData\\Local'};
-  const candidates=powerShellCandidates({env,platform:'win32'});
-  assert.deepEqual(candidates.slice(0,2),['C:\\missing\\pwsh.exe','C:\\tools\\pwsh.exe']);
-  assert.ok(candidates.includes('C:\\Program Files\\PowerShell\\7\\pwsh.exe'));
-  assert.ok(candidates.includes('C:\\Users\\student\\AppData\\Local\\Microsoft\\PowerShell\\7\\pwsh.exe'));
-  const selected=await findPowerShell({env,platform:'win32',access:async candidate=>{
-    if(candidate.endsWith('PowerShell\\7\\pwsh.exe')&&candidate.startsWith('C:\\Program Files'))return;
-    throw new Error('not found');
-  }});
-  assert.equal(selected,'C:\\Program Files\\PowerShell\\7\\pwsh.exe');
-  assert.equal(await findPowerShell({env:{Path:'C:\\missing'},platform:'win32',access:async()=>{throw new Error('not found')}}),null);
 });

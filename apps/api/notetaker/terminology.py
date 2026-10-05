@@ -46,7 +46,7 @@ def install_terminology(app, current, db_session, owned_course, receipt):
         prior, key, fingerprint = receipt(db, request, session, action, body.model_dump())
         # receipt serializes owner mutations, including SQLite writes and course deletion.
         course = owned_course(db, session.owner_id, course_id)
-        db.refresh(course, with_for_update=True)
+        db.refresh(course)
         if course.tombstoned:
             error(404, 'unavailable', 'This course is unavailable.')
         if prior:

@@ -8,7 +8,9 @@ async function inventory(root, relative = '') {
   const files = [];
   for (const entry of await fs.readdir(path.join(root, relative), {withFileTypes:true})) {
     const name = path.join(relative, entry.name);
-    if (entry.name.startsWith('.env') || ['.local', '.git'].includes(entry.name))
+    if (entry.name.startsWith('.env') || ['.local', '.git'].includes(entry.name) ||
+        /^(workspace\.sqlite3(?:-wal|-shm)?|conversion\.pending|conversion-report\.json)$/i.test(entry.name) ||
+        (!relative && entry.name==='sqlite-library'))
       throw new Error('Private configuration cannot be included in the web bundle.');
     if (entry.isSymbolicLink()) throw new Error('Web bundle contains an unexpected symbolic link.');
     if (entry.isDirectory()) files.push(...await inventory(root, name));

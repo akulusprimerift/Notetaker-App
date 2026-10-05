@@ -51,7 +51,7 @@ If Python is supplied separately, pass its existing environment interpreter usin
 
 ## Run the container application
 
-Open Docker Desktop and wait for its Linux engine. WSL setup is complete on the verified host. The [launcher](../../scripts/Start-App.ps1) detects the Docker CLI, checks the engine, initializes credentials only if absent, builds the app and waits for startup. It preserves existing volumes and does not stop unrelated processes. Stop the SQLite preview first if it occupies the app's ports.
+Open Docker Desktop and wait for its Linux engine. WSL setup is complete on the verified host. The historical launcher (retired) detects the Docker CLI, checks the engine, initializes credentials only if absent, builds the app and waits for startup. It preserves existing volumes and does not stop unrelated processes. Stop the SQLite preview first if it occupies the app's ports.
 
 The per-user Docker CLI was found at `C:/Users/Neil/AppData/Local/Programs/DockerDesktop/resources/bin/docker.exe`; a newly opened terminal should pick up the installed command path. If not, use that executable explicitly.
 
@@ -69,7 +69,7 @@ Open `http://127.0.0.1:3000` and paste the code from `.local/unlock-code.txt`. `
 
 The initialization script has already been run on this workspace. It creates ignored service credentials and S3 identity configuration. Compose exposes only loopback ports, persists PostgreSQL data, SeaweedFS objects **and filer metadata**, and Kafka logs. It uses local service networking and S3 credentials. Models remain a separately provisioned local service; M01 starts none.
 
-The service verifier creates and removes only its own freshly named synthetic S3 bucket/object and Kafka topic. The application tests use fresh random PostgreSQL schemas and remove only those schemas; they never drop the application database. The [restart drill](../../apps/api/notetaker/verify_restart.py) also creates a private synthetic course/lecture through the API in its own schema, stores an object and broker record, restarts the three containers, then reopens the course/lecture and checks the original object's byte length/SHA-256 and broker record. It removes only resources generated in that invocation. A nonzero exit is a failed check, never completion evidence. Interrupted checks can leave their uniquely named test resources for inspection.
+The service verifier creates and removes only its own freshly named synthetic S3 bucket/object and Kafka topic. The application tests use fresh random PostgreSQL schemas and remove only those schemas; they never drop the application database. The historical restart drill (retired) also creates a private synthetic course/lecture through the API in its own schema, stores an object and broker record, restarts the three containers, then reopens the course/lecture and checks the original object's byte length/SHA-256 and broker record. It removes only resources generated in that invocation. A nonzero exit is a failed check, never completion evidence. Interrupted checks can leave their uniquely named test resources for inspection.
 
 `docker compose --env-file .local/services.env stop` stops services while retaining volumes. Do not use volume removal to solve an ordinary startup problem. There is no automatic backup. Never delete `.local` or volumes containing wanted data; future backup/restore work must preserve database and referenced objects together.
 

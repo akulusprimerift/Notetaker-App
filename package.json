@@ -22,6 +22,7 @@
     "build:web": "cd apps/web && next build",
     "prepare:desktop-web": "node scripts/prepare-desktop-web.cjs",
     "prepare:windows-runtime": "node scripts/prepare-windows-runtime.cjs",
+    "build:windows-service": "node scripts/build-windows-service.cjs",
     "build:macos-service": "node scripts/build-macos-service.cjs",
     "prepare:macos-runtime": "node scripts/macos-runtime.cjs",
     "lock:macos-runtime": "node scripts/lock-macos-components.cjs",
@@ -30,7 +31,8 @@
     "lint": "eslint apps/web/app apps/web/public",
     "dev:desktop": "electron .",
     "build:desktop": "electron-builder --config electron-builder.cjs --win nsis --x64",
-    "test:desktop": "node --test tests/desktop/*.test.cjs"
+    "test:desktop": "node --test tests/desktop/*.test.cjs",
+    "test:standalone": "node tests/desktop/native-smoke.cjs"
   },
   "devDependencies": {
     "@openai/codex": "0.154.0",

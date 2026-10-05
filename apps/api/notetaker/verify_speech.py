@@ -46,7 +46,7 @@ def main():
     parser.add_argument('--title',default='Synthetic CS speech — no microphone')
     args=parser.parse_args()
     settings=Settings()
-    if settings.preview:raise SystemExit('Use the PostgreSQL application.')
+    if settings.preview:raise SystemExit('Use the SQLite application.')
     engine,sessions=database(settings.database_url)
     with wave.open(str(args.audio),'rb') as wav:
         if wav.getnchannels()!=1 or wav.getsampwidth()!=2:raise SystemExit('Expected synthetic mono PCM16 WAV.')

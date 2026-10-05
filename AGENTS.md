@@ -17,13 +17,13 @@ Audio preservation is independent of inference. Never silently discard sources, 
 
 ## Stack and boundaries
 
-The user selected an Electron-based Windows rebuild on 2026-09-11. For the Windows deliverable, use the existing Next.js/React workspace inside the hardened Electron shell, with the Docker/FastAPI services and explicit local model selection. The Qt native application and its standalone profile have been removed from the delivery path. Preserve the existing PostgreSQL/Docker/React workspace and its student data; do not silently migrate or delete it. Model weights remain user-selected local files.
+The user selected an Electron-based Windows rebuild on 2026-09-11. For the Windows deliverable, use the existing Next.js/React workspace inside the hardened Electron shell, with bundled FastAPI services, SQLite and explicit local model selection. The Qt native application and its standalone profile have been removed from the delivery path. The user selected SQLite-only standalone delivery on 2026-10-05. Docker is retired. Preserve earlier PostgreSQL libraries and student data; conversion must be explicit, verified and written to a separate folder. Model weights remain user-selected local files.
 
 - Next.js, React and strict TypeScript; accessible semantic HTML and existing CSS patterns.
 - Browser AudioWorklet/worker capture, IndexedDB audio recovery and durable local edit drafts.
 - Python/FastAPI modular backend; separate faster-whisper speech and Ollama note worker processes.
-- SQLAlchemy/Alembic with PostgreSQL as authority. SQLite is an explicitly selected development/test preview.
-- Private SeaweedFS audio objects; Kafka notifications plus database reconciliation/outbox. Docker Compose for local services.
+- SQLAlchemy/Alembic with SQLite as the only application database. Use foreign keys, WAL, FULL synchronization, bounded writer waits and cross-process inference locks.
+- Private verified local audio files; SQLite job reconciliation and immutable outbox/history. Standalone services require no database server, broker or containers.
 - Windows desktop host and installer in M08, reusing UI/backend. Optional cloud providers belong to later Phase 7, with explicit user choice.
 
 ## Code style and correctness

@@ -99,9 +99,8 @@ def install_capture(app, current, db_session, owned_lecture, receipt):
 
     def lock(db, owner, lecture_id):
         owned_lecture(db, owner, lecture_id)
-        if db.bind.dialect.name == 'sqlite':
-            db.execute(update(Lecture).where(Lecture.id == lecture_id).values(update_seq=Lecture.update_seq))
-        lecture = db.scalar(select(Lecture).where(Lecture.id == lecture_id).with_for_update().execution_options(populate_existing=True))
+        db.execute(update(Lecture).where(Lecture.id == lecture_id).values(update_seq=Lecture.update_seq))
+        lecture = db.scalar(select(Lecture).where(Lecture.id == lecture_id).execution_options(populate_existing=True))
         if lecture.tombstoned:
             error(404, 'unavailable', 'This lecture is unavailable.')
         return lecture

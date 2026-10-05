@@ -8,9 +8,9 @@ from sqlalchemy import select, func
 from test_workspace import setup, login, course, lecture
 from test_capture import capture, upload, seal
 from notetaker.models import (Lecture, Job, SpeechWindow, SpeechGeneration, TranscriptVersion,
-    TranscriptSnapshot, CaptureRun, Outbox, Inbox, Session, Owner, now)
+    TranscriptSnapshot, CaptureRun, Outbox, Session, Owner, now)
 from notetaker.transcription import lock_lecture, schedule
-from notetaker.speech_worker import plan_pending, claim, execute, publish, renew, dispatch, consume_event, event_payload, pause_cut
+from notetaker.speech_worker import plan_pending, claim, execute, publish, renew, pause_cut
 from notetaker.speech_provider import SpeechFailure, validate_result, owned_words, WhisperProvider
 
 
@@ -252,23 +252,15 @@ def test_playback_rechecks_authentication_after_object_read(speech):
     assert client.get(path+'/sources/'+segment['id']+'/audio').status_code==401
 
 
-def test_outbox_and_inbox_duplicate_delivery_use_same_job(speech):
+def test_sqlite_reconciliation_claims_saved_jobs_once_without_broker(speech):
     app,*_=speech
-    class Producer:
-        def __init__(self):self.sent=[]
-        def produce(self,topic,key,value,on_delivery):self.sent.append(json.loads(value));on_delivery(None,None)
-        def flush(self,timeout):return 0
-    producer=Producer()
-    assert dispatch(app.state.sessions,producer)
-    events=[p for p in producer.sent if p['event_type']=='speech.requested']
-    assert len(events)==2 and all('text' not in p for p in producer.sent)
-    first=consume_event(app.state.sessions,events[0])
-    assert consume_event(app.state.sessions,events[0])==first
-    assert consume_event(app.state.sessions,{**events[0],'lecture_id':str(uuid4())}) is None
-    assert consume_event(app.state.sessions,{**events[0],'text':'untrusted'}) is None
-    assert claim(app.state.sessions,first)
-    assert claim(app.state.sessions,first) is None
-    with app.state.sessions() as db:assert db.scalar(select(func.count()).select_from(Inbox))==1
+    chosen=claim(app.state.sessions)
+    assert chosen is not None
+    assert claim(app.state.sessions) is None
+    plan_pending(app.state.sessions)
+    with app.state.sessions() as db:
+        assert db.scalar(select(func.count()).select_from(Job).where(Job.kind=='speech.window'))==2
+        assert db.get(Job,chosen[0]).attempt_token==chosen[1]
 
 
 def test_midpoint_ownership_preserves_real_repetitions():

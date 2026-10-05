@@ -2,14 +2,11 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from pathlib import Path
 from uuid import uuid4
-import os
 import pytest
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
 from sqlalchemy import select, func, inspect, text
-from sqlalchemy.engine import make_url
-from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError
 from starlette.websockets import WebSocketDisconnect
 
@@ -32,19 +29,8 @@ def migrate(app):
 
 @pytest.fixture
 def setup(tmp_path):
-    postgres=os.environ.get('NOTETAKER_TEST_DATABASE_URL')
-    admin=None
-    schema='verify_'+uuid4().hex
-    if postgres:
-        if not postgres.startswith('postgresql+psycopg://'):
-            raise ValueError('Integration tests require a PostgreSQL URL')
-        admin=create_engine(postgres)
-        with admin.begin() as connection:
-            connection.execute(text(f'CREATE SCHEMA "{schema}"'))
-        url=make_url(postgres).update_query_dict({'options':f'-csearch_path={schema}'}).render_as_string(hide_password=False)
-        settings=Settings(database_url=url,preview=False,allowed_hosts=['testserver'])
-    else:
-        settings=Settings(database_url=f"sqlite:///{(tmp_path/'workspace.db').as_posix()}",preview=True,allowed_hosts=['testserver'])
+    settings=Settings(_env_file=None, database_url=f"sqlite:///{(tmp_path/'workspace.sqlite3').as_posix()}",
+        audio_directory=str(tmp_path/'audio'), allowed_hosts=['testserver'])
     app=create_app(settings)
     migrate(app)
     with app.state.sessions() as db:
@@ -55,11 +41,6 @@ def setup(tmp_path):
             yield app,client,settings
     finally:
         app.state.engine.dispose()
-        if admin:
-            # Only this test's fresh random schema is removed, never the user's database.
-            with admin.begin() as connection:
-                connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
-            admin.dispose()
 
 
 def login(client):
@@ -88,9 +69,12 @@ def test_migration_creates_foundation_and_is_repeatable(setup):
     assert client.get('/health').json()=={"status":"ok", "provider_bridge_port":None}
 
 
-def test_sqlite_is_explicit_preview_only():
-    with pytest.raises(ValueError,match='explicit'):
-        Settings(database_url='sqlite:///unapproved.db',preview=False)
+def test_only_sqlite_library_storage_is_supported():
+    assert Settings(_env_file=None).database_url.startswith('sqlite:///')
+    with pytest.raises(ValueError,match='SQLite'):
+        Settings(_env_file=None, database_url='postgresql+psycopg://test:test@127.0.0.1/db')
+    with pytest.raises(ValueError,match='absolute'):
+        Settings(_env_file=None, database_url='sqlite:///relative.db')
 
 
 def test_workspace_opens_without_code_and_reuses_session(setup):

@@ -25,7 +25,7 @@ jobs:
       - name: Install Python verification dependencies
         run: |
           uv venv
-          uv pip sync apps/api/requirements-dev.lock
+          uv pip sync apps/api/requirements-windows.lock apps/api/requirements-dev.lock
       - name: Verify renderer and desktop contracts
         run: |
           bun run test
@@ -33,16 +33,35 @@ jobs:
           bun run lint
           bun run build:web
           bun run test:desktop
+          $env:PYTHONPATH='apps/api'
+          uv run --no-project python -m pytest apps/api/tests -q
+      - name: Build SQLite standalone runtime
+        run: |
+          bun run build:windows-service
+          bun run prepare:desktop-web
+          pwsh -NoProfile -File scripts/Provision-WindowsRuntimes.ps1
+          $taskService=(Get-ChildItem .local/windows-service -Directory | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName + '/dist/NotetakerService'
+          $taskWeb=(Get-ChildItem .local/desktop-web -Directory | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+          bun run prepare:windows-runtime $taskWeb $taskService
+          $taskRuntime=(Get-ChildItem .local/windows-runtime -Directory | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+          "NOTETAKER_NATIVE_RESOURCES=$taskRuntime" >> $env:GITHUB_ENV
       - name: Build Electron installer
         run: bun run build:desktop
+      - name: Verify packaged SQLite lecture workflow
+        run: |
+          $env:NOTETAKER_TEST_EXECUTABLE=(Resolve-Path .local/windows-standalone-dist/win-unpacked/Notetaker.exe).Path
+          $env:NOTETAKER_TEST_SERVICE_EXECUTABLE="$env:NOTETAKER_NATIVE_RESOURCES/service/NotetakerService.exe"
+          $env:PYTHONPATH='apps/api'
+          uv run --no-project python -m pytest apps/api/tests/test_sqlite_library.py apps/api/tests/test_windows_material_parser.py -q
+          bun run test:standalone "$env:NOTETAKER_NATIVE_RESOURCES"
       - uses: actions/upload-artifact@v4
         with:
           name: Notetaker-Electron-Windows-x64
-          path: .local/desktop-dist/*
+          path: .local/windows-standalone-dist/*
       - name: Publish GitHub release on Electron version tags
         if: startsWith(github.ref, 'refs/tags/electron-v')
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
         shell: pwsh
-        run: gh release create "$env:RELEASE_TAG" .local/desktop-dist/*.exe --title "Notetaker $env:RELEASE_TAG" --generate-notes
+        run: gh release create "$env:RELEASE_TAG" .local/windows-standalone-dist/*.exe --title "Notetaker $env:RELEASE_TAG" --generate-notes

@@ -26,7 +26,7 @@ def main():
     parser.add_argument('--report', type=Path, default=Path('.local/m06-live-model-check.json'))
     args = parser.parse_args()
     settings = Settings()
-    if settings.preview: raise SystemExit('Use the running PostgreSQL app for this probe.')
+    if settings.preview: raise SystemExit('Use the running SQLite app for this probe.')
     with wave.open(str(args.audio), 'rb') as wav:
         if wav.getnchannels() != 1 or wav.getsampwidth() != 2: raise SystemExit('Expected synthetic mono PCM16 WAV.')
         rate = wav.getframerate()

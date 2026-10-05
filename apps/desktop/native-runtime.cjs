@@ -3,7 +3,7 @@ const fs = require('node:fs/promises');
 const {createReadStream} = require('node:fs');
 const path = require('node:path');
 const {spawn} = require('node:child_process');
-const {createHash, randomBytes} = require('node:crypto');
+const {createHash} = require('node:crypto');
 
 const {desktopPlatform,validateRuntimeTarget}=require('./platform.cjs');
 
@@ -27,8 +27,8 @@ async function verifyBundle(root) {
 }
 
 class NativeRuntime {
-  constructor({resources,dataPath,safeStorage,utilityProcess,onFailure=()=>{},onProgress=()=>{},platform=desktopPlatform()}){
-    Object.assign(this,{resources,dataPath,safeStorage,utilityProcess,onFailure,onProgress,platform});
+  constructor({resources,dataPath,libraryPath,utilityProcess,onFailure=()=>{},onProgress=()=>{},platform=desktopPlatform()}){
+    Object.assign(this,{resources,dataPath,libraryPath:libraryPath||path.join(dataPath,'sqlite-library'),utilityProcess,onFailure,onProgress,platform});
     this.host=null;this.web=null;this.ready=false;this.stopping=false;
   }
   async start({speechPath='',bridgeConfig}={}){
@@ -39,19 +39,12 @@ class NativeRuntime {
     const manifest=await verifyBundle(this.resources);
     if(this.stopping)throw new Error('Standalone startup was cancelled.');
     validateRuntimeTarget(manifest,this.platform);
-    const library=path.join(this.dataPath,'standalone-library');
-    const secretPath=path.join(this.dataPath,'standalone-secret.bin');
-    if(!this.safeStorage.isEncryptionAvailable())throw new Error('Protected system storage is unavailable.');
-    let secret;
-    try{secret=this.safeStorage.decryptString(await fs.readFile(secretPath));}
-    catch(error){
-      if(error.code!=='ENOENT')throw new Error('The standalone library credential could not be unlocked.');
-      try{await fs.access(path.join(library,'postgres','PG_VERSION'));throw new Error('The existing library credential is missing. Restore it before opening this library.');}
-      catch(missing){if(missing.code!=='ENOENT')throw missing;}
-      secret=randomBytes(32).toString('hex');
-      await fs.mkdir(this.dataPath,{recursive:true});
-      await fs.writeFile(secretPath,this.safeStorage.encryptString(secret),{flag:'wx',mode:0o600});
-    }
+    const library=this.libraryPath;
+    if(!path.isAbsolute(library))throw new Error('Choose an absolute library folder.');
+    try{await fs.access(path.join(library,'postgres'));throw new Error('Convert this PostgreSQL library into a separate SQLite library first. Existing files were retained.');}
+    catch(error){if(error.code!=='ENOENT')throw error;}
+    try{await fs.access(path.join(library,'conversion.pending'));throw new Error('This library conversion is incomplete. Keep the original library and finish conversion before opening it.');}
+    catch(error){if(error.code!=='ENOENT')throw error;}
     const webRoot=path.join(this.dataPath,'standalone-web',manifest.web_build_id);
     safeRelative(manifest.web_build_id);
     // A writable copy keeps Next cache and generated files outside installation.
@@ -84,7 +77,7 @@ class NativeRuntime {
           }
         });
         host.stdin.on('error',fail);
-        host.stdin.write(JSON.stringify({resources:this.resources,data:library,secret,speechPath,
+        host.stdin.write(JSON.stringify({resources:this.resources,data:library,speechPath,
           bridgeURL:bridgeConfig?`http://127.0.0.1:${bridgeConfig.port}`:'',bridgeToken:bridgeConfig?.token||''})+'\n');
       });
       this.web=this.utilityProcess.fork(path.join(webRoot,'apps/web/server.js'),[],{

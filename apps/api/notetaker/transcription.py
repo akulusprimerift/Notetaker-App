@@ -15,9 +15,8 @@ CONTEXT_SECONDS = 2
 
 
 def lock_lecture(db, lecture_id):
-    if db.bind.dialect.name == 'sqlite':
-        db.execute(update(Lecture).where(Lecture.id == lecture_id).values(update_seq=Lecture.update_seq))
-    return db.scalar(select(Lecture).where(Lecture.id == lecture_id).with_for_update().execution_options(populate_existing=True))
+    db.execute(update(Lecture).where(Lecture.id == lecture_id).values(update_seq=Lecture.update_seq))
+    return db.scalar(select(Lecture).where(Lecture.id == lecture_id).execution_options(populate_existing=True))
 
 
 def current_runs(db, lecture):

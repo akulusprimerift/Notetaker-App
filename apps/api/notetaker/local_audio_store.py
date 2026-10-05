@@ -6,11 +6,19 @@ from pathlib import Path
 from uuid import uuid4
 
 
+def link_path(path):
+    # CreateHardLinkW still needs the extended prefix for long student/library paths.
+    value = str(path.absolute())
+    if os.name == 'nt' and not value.startswith('\\\\?\\'):
+        return '\\\\?\\UNC\\' + value[2:] if value.startswith('\\\\') else '\\\\?\\' + value
+    return value
+
+
 class LocalAudioStore:
     available = True
 
     def __init__(self, directory):
-        self.root = Path(directory).resolve()
+        self.root = Path(link_path(Path(directory).resolve()))
 
     def ready(self):
         self.root.mkdir(parents=True, exist_ok=True)
@@ -39,7 +47,7 @@ class LocalAudioStore:
                 stream.flush()
                 os.fsync(stream.fileno())
             try:
-                os.link(temporary, target)
+                os.link(link_path(temporary), link_path(target))
             except FileExistsError:
                 pass
             if self.read(key) != data:
@@ -49,7 +57,7 @@ class LocalAudioStore:
 
     def list_keys(self, prefix):
         self.ready()
-        base = self.path(prefix.rstrip('/'))
+        base = self.path(prefix.rstrip('/')) if prefix else self.root
         if not base.exists():
             return []
         return [p.relative_to(self.root).as_posix() for p in base.rglob('*')
