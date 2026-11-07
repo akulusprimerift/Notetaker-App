@@ -49,6 +49,18 @@ PYTHONPATH=apps/api uv run --no-project python scripts/test-windows-host.py /abs
 
 Use only existing local models; close any other Notetaker first (occupied ports are refused). Record macOS version, chip/memory and the report. Then repeat the packaged-app checks with `tests/desktop/native-smoke.cjs` (save/Quit/reopen, exports, themes) from the installed app location.
 
+## Mac runs — 2026-11-07
+
+Executed on the user's Apple Silicon Mac (Apple M5 Pro, 15 logical CPUs, 24 GB, macOS 26.6) against the native arm64 SQLite runtime `.local/macos-runtime/f7db3479-ba07-4da5-8e54-35677b63ed8b`, using 65.2 s of synthetic speech from `say` (22,050 Hz PCM16, no microphone).
+
+| Run | Result |
+| --- | --- |
+| Missing speech model, paced in real time | **Passed.** Host startup 0.98 s; Markdown material saved; 33 verified chunks, save p50 0.014 s / max 0.017 s; capture ended at 65.23 s; status shows the missing model, transcript stays `awaiting_saved_audio`, no invented passages, all chunk SHA-256 values match. Profile `.local/host-smoke-b172656309c6401c83ab0283a67b1b95`. |
+| Missing speech model, `--fast` | **Passed** (33 chunks, startup 1.25 s, no latency claim). |
+| Full local-model workflow | **Not run.** This Mac has no faster-whisper model folder and no Ollama models (`~/.ollama/models` is empty). Models are not downloaded by this project; the user must place them first. |
+
+The first missing-model run stopped at the material step with `material_unreadable`: the frozen API launched its parser under the Windows executable name. That product defect is fixed; see [SQLite standalone delivery](sqlite-standalone.md#apple-silicon-local-build--2026-11-07). The packaged-app smoke from the same build also passed. Mac speech/note throughput, backlog, memory and the note-model limit therefore remain unmeasured.
+
 ## Remaining 6.9.4 evidence
 
 - Native Mac runs of both harness modes and the packaged smoke; measured Mac limits (longest lecture whose notes keep pace, backlog growth, memory via Activity Monitor or `/usr/bin/time -l`).

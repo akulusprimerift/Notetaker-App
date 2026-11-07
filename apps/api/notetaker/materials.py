@@ -79,8 +79,8 @@ def extract(name, raw):
 def parse_upload(name, raw):
     # Keep malformed document processing out of the API process and bound runtime.
     try:
-        from pathlib import Path
-        parser = ([str(Path(sys.executable).with_name('NotetakerService.exe')), 'material-parser']
+        # A frozen API is itself NotetakerService(.exe), so relaunch the running executable on any platform.
+        parser = ([sys.executable, 'material-parser']
                   if getattr(sys, 'frozen', False) else [sys.executable, '-m', 'notetaker.material_parser'])
         result = subprocess.run([*parser, PurePosixPath(name).suffix.lower()],
             input=raw, capture_output=True, timeout=20, check=False,

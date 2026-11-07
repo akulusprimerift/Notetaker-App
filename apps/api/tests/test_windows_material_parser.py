@@ -74,3 +74,17 @@ def test_service_rejects_unreadable_uploads_without_echoing_content(service_comm
     assert result.returncode == 1
     assert result.stdout == b''
     assert raw not in result.stderr
+
+
+@pytest.mark.parametrize('executable', ['/Applications/Notetaker.app/Contents/Resources/native-runtime/service/NotetakerService',
+    'C:/Program Files/Notetaker/resources/native-runtime/service/NotetakerService.exe'])
+def test_frozen_api_relaunches_its_own_service_executable(monkeypatch, executable):
+    from notetaker import materials
+    calls = []
+    def run(argv, **_):
+        calls.append(argv)
+        return subprocess.CompletedProcess(argv, 0, b'[{"label": "Page 1", "text": "Course syllabus"}]', b'')
+    monkeypatch.setattr(materials, 'sys', SimpleNamespace(frozen=True, executable=executable, platform=sys.platform))
+    monkeypatch.setattr(materials.subprocess, 'run', run)
+    assert materials.parse_upload('syllabus.md', b'# Course syllabus')[0]['text'] == 'Course syllabus'
+    assert calls == [[executable, 'material-parser', '.md']]
