@@ -172,3 +172,35 @@ test('authenticated bridge delivers a preview while provider completion is held'
     assert.equal(result.type,'result');assert.equal(result.raw,'{"text":"Growing notes"}');
   }finally{finish?.();await bridge.close();await rm(directory,{recursive:true,force:true});}
 });
+
+test('Ollama Cloud key is confirmed before replacing a connection and notes stream from ollama.com',async()=>{
+  const directory=await mkdtemp(path.join(os.tmpdir(),'notetaker-ollama-cloud-test-'));
+  const calls=[];let probeStatus=200;
+  const bridge=new ProviderBridge(directory,storage,{fetch:async(url,init={})=>{
+    calls.push({url,init});
+    if(url==='https://ollama.com/api/tags')return new Response(JSON.stringify({models:[{name:'gpt-oss:120b'},{name:'deepseek-v3.1:671b'},{name:'nomic-embed-text'},{name:'bad name'}]}));
+    if(url==='https://ollama.com/api/chat'&&JSON.parse(init.body).stream===false)return new Response('{}',{status:probeStatus});
+    if(url==='https://ollama.com/api/chat')return new Response([{message:{content:'{"text":'},done:false},{message:{content:'"Cloud notes"}'},done:true,done_reason:'stop'}].map(line=>JSON.stringify(line)).join('\n'));
+    throw new Error('unexpected host '+url);
+  }});
+  try{
+    await bridge.save({provider:'ollama-cloud',api_key:'cloud-test-key'});
+    const rows=await bridge.inventory();
+    assert.deepEqual(rows.map(row=>row.name),['ollama-cloud/deepseek-v3.1:671b','ollama-cloud/gpt-oss:120b']);
+    const probe=JSON.parse(calls[1].init.body);
+    assert.equal(calls[1].init.headers.Authorization,'Bearer cloud-test-key');
+    assert.deepEqual(probe.messages,[{role:'user',content:'Reply with OK.'}]);assert.equal(probe.options.num_predict,1);
+    probeStatus=401;
+    await assert.rejects(bridge.save({provider:'ollama-cloud',api_key:'wrong-key'}),/did not accept this API key/);
+    assert.equal((await bridge.read('ollama-cloud')).api_key,'cloud-test-key');
+    probeStatus=403;await bridge.save({provider:'ollama-cloud',api_key:'plan-limited-key'});
+    const digest=(await bridge.read('ollama-cloud')).id;
+    const previews=[];
+    const result=await bridge.generate({model:'ollama-cloud/gpt-oss:120b',digest,messages:[{role:'system',content:'synthetic'},{role:'user',content:'synthetic'}]},raw=>previews.push(raw));
+    assert.equal(result.raw,'{"text":"Cloud notes"}');assert.equal(previews.at(-1),result.raw);
+    const sent=calls.at(-1);const request=JSON.parse(sent.init.body);
+    assert.equal(sent.url,'https://ollama.com/api/chat');assert.equal(sent.init.headers.Authorization,'Bearer plan-limited-key');assert.equal(sent.init.redirect,'error');
+    assert.equal(request.model,'gpt-oss:120b');assert.equal(request.stream,true);assert.equal(request.format,'json');
+    assert.equal(JSON.stringify(await bridge.inventory()).includes('plan-limited-key'),false);
+  }finally{await rm(directory,{recursive:true,force:true});}
+});

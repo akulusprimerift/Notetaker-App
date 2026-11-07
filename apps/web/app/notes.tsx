@@ -83,7 +83,7 @@ export default function Notes({lecture,csrf,onSessionExpired,onOpenTranscript}:{
     if(!state)return;
     const model=enabled?(selected||state.preference?.model):state.preference?.model;
     if(!model)return;
-    const cloud=Boolean(models.find(row=>row.name===model)?.provider)||/^(openai|anthropic|chatgpt|claude-subscription)\//.test(model);
+    const cloud=Boolean(models.find(row=>row.name===model)?.provider)||/^(openai|anthropic|ollama-cloud|chatgpt|claude-subscription)\//.test(model);
     const cloudConsent=consents.includes(providerOf(model));
     if(enabled&&cloud&&!cloudConsent){setError('Confirm cloud processing before applying this provider to the lecture.');return;}
     const body=JSON.stringify({expected_version:state.preference?.version??0,model,enabled,cloud_consent:cloud&&cloudConsent,...(enabled?{...profile,depth:'detailed',format:'topic_outline'}:{})});
@@ -109,7 +109,7 @@ export default function Notes({lecture,csrf,onSessionExpired,onOpenTranscript}:{
   const savedProfile=revision?.profile??state?.profile;
   const activeModel=selected||state?.preference?.model||'';
   const activeConsent=consents.includes(providerOf(activeModel));
-  const activeIsCloud=Boolean(models.find(row=>row.name===activeModel)?.provider)||/^(openai|anthropic|chatgpt|claude-subscription)\//.test(activeModel);
+  const activeIsCloud=Boolean(models.find(row=>row.name===activeModel)?.provider)||/^(openai|anthropic|ollama-cloud|chatgpt|claude-subscription)\//.test(activeModel);
   const localModels=models.filter(model=>!model.provider),cloudModels=models.filter(model=>model.provider);
   return <div className="note-layout generated-notes">{revision&&<div className="export-toolbar"><ExportNotes url={`/api${path}/${revision.student?'edits':'revisions'}/${revision.id}/export`}/></div>}<section className="note-paper" aria-labelledby="notes-title">
     <TranscriptPreview lecture={lecture} onSessionExpired={onSessionExpired} onOpen={onOpenTranscript}/>

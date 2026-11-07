@@ -8,6 +8,9 @@ from .provider_connections import Connections, PROVIDERS
 from .provider_bridge import ProviderBridge, ProviderBridgeError
 from .security import digest
 
+OLLAMA_CLOUD = 'https://ollama.com/api'
+OLLAMA_CLOUD_OUTPUT = 16384  # Reasoning models spend part of this on private thinking.
+
 
 def is_cloud(model):
     return model.partition('/')[0] in PROVIDERS
@@ -91,7 +94,42 @@ class NoteProviders:
             'adapter_version':'cloud-draft-v1', 'metrics':metrics,
             'semantic_support':'not_evaluated', 'human_review':'pending'}
 
+    def ollama_cloud_generate(self, row, messages, on_preview):
+        # Native Ollama chat streams NDJSON; message.thinking is private reasoning, never note text.
+        body = {'model':row['model'], 'messages':messages, 'stream':True, 'format':'json',
+            'options':{'temperature':0, 'num_predict':OLLAMA_CLOUD_OUTPUT}}
+        raw, final, received = '', None, 0
+        try:
+            with httpx.Client(timeout=httpx.Timeout(600, connect=20), trust_env=False, follow_redirects=False, transport=self.transport) as client:
+                with client.stream('POST', OLLAMA_CLOUD+'/chat', headers={'Authorization':'Bearer '+row['api_key']}, json=body) as response:
+                    if response.status_code in (401, 403): raise NoteFailure('provider_authentication')
+                    if response.status_code == 429: raise NoteFailure('provider_limit')
+                    response.raise_for_status()
+                    for line in response.iter_lines():
+                        received += len(line.encode())
+                        if received > 4_000_000: raise NoteFailure('invalid_output')
+                        if not line.strip(): continue
+                        if final is not None: raise NoteFailure('invalid_output')
+                        item = json.loads(line)
+                        if not isinstance(item, dict) or item.get('error'): raise NoteFailure('model_unavailable')
+                        message = item.get('message') or {}
+                        if message.get('tool_calls'): raise NoteFailure('invalid_output')
+                        delta = message.get('content') or ''
+                        if not isinstance(delta, str): raise NoteFailure('invalid_output')
+                        raw += delta
+                        if len(raw.encode()) > 2_000_000: raise NoteFailure('invalid_output')
+                        if on_preview and delta: on_preview(preview_text(raw))
+                        if item.get('done') is True:
+                            if item.get('done_reason') != 'stop': raise NoteFailure('truncated_output')
+                            final = item
+        except (httpx.HTTPError, ValueError, KeyError, TypeError):
+            raise NoteFailure('model_unavailable') from None
+        if final is None or not raw: raise NoteFailure('truncated_output')
+        return raw, {k: final[k] for k in ('prompt_eval_count', 'eval_count', 'total_duration') if isinstance(final.get(k), int)}
+
     def api_generate(self, provider, row, messages, on_preview):
+        if provider == 'ollama-cloud':
+            return self.ollama_cloud_generate(row, messages, on_preview)
         if provider == 'openai':
             url = 'https://api.openai.com/v1/chat/completions'
             headers = {'Authorization':'Bearer '+row['api_key']}

@@ -7,7 +7,8 @@ from pathlib import Path
 import re
 from uuid import uuid4
 
-PROVIDERS = ('openai', 'anthropic', 'chatgpt', 'claude-subscription')
+PROVIDERS = ('openai', 'anthropic', 'ollama-cloud', 'chatgpt', 'claude-subscription')
+API_KEY_PROVIDERS = ('openai', 'anthropic', 'ollama-cloud')
 
 
 def protect(data, decrypt=False):
@@ -55,7 +56,7 @@ class Connections:
         path = self.path(provider)
         if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._:-]{0,119}', model):
             raise ValueError('Enter a valid model ID from your provider.')
-        if provider in ('openai', 'anthropic'):
+        if provider in API_KEY_PROVIDERS:
             if not api_key or len(api_key) > 8192 or any(c.isspace() for c in api_key):
                 raise ValueError('Enter an API key without spaces.')
         else:

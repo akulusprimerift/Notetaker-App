@@ -1,6 +1,6 @@
 # Project phases
 
-Mac build (2026-11-07): phase **6.9.5** remains active. The SQLite Mac app and unsigned DMG were built natively on the user's Apple Silicon Mac, and the packaged app passes the synthetic save/record/export/Quit/reopen smoke after two Mac-only defects were fixed ([evidence](implementation/sqlite-standalone.md#apple-silicon-local-build--2026-11-07)). Developer ID signing/notarization, clean-machine install and the local-model workflow on Mac remain open.
+Mac build (2026-11-07): phase **6.9.5** remains active. The SQLite Mac app and unsigned DMG were built natively on the user's Apple Silicon Mac, and the packaged app passes the synthetic save/record/export/Quit/reopen smoke after two Mac-only defects were fixed ([evidence](implementation/sqlite-standalone.md#apple-silicon-local-build--2026-11-07)). Developer ID signing/notarization, clean-machine install and Mac note generation with a real model remain open. Local `small.en` transcription keeps pace on the Mac, and [Ollama Cloud](implementation/ollama-cloud.md) is available as an explicitly chosen note provider.
 
 Priority change (2026-10-05): the user selects **SQLite-only standalone delivery** and removes Docker. Phase **6.9.5** remains the single active phase. [Storage conversion, Windows/Mac packaging changes and executed evidence](implementation/sqlite-standalone.md) supersede the earlier PostgreSQL/Docker delivery directions. Prior libraries are retained; conversion is explicit and side by side. Earlier hardware, human quality and Mac release gates remain open.
 

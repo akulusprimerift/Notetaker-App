@@ -11,10 +11,14 @@ const {spawnOwned:spawn,killOwned,closeOwned}=require('./owned-child.cjs');
 const readline = require('node:readline');
 const {AccountClient,loginUrl}=require('./account-client.cjs');
 
-const PROVIDERS = ['openai', 'anthropic', 'chatgpt', 'claude-subscription'];
+const PROVIDERS = ['openai', 'anthropic', 'ollama-cloud', 'chatgpt', 'claude-subscription'];
+// Ollama Cloud's direct API (https://docs.ollama.com/cloud); never reached through the local Ollama.
+const OLLAMA_CLOUD = 'https://ollama.com/api';
+// Reasoning models spend part of this allowance on private thinking before the note JSON.
+const OLLAMA_CLOUD_OUTPUT = 16384;
 const MODEL = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/;
 const SUBSCRIPTIONS = new Set(['chatgpt', 'claude-subscription']);
-const BLOCKED_ENV = ['OPENAI_', 'ANTHROPIC_', 'CLAUDE_', 'CODEX_', 'NOTETAKER_', 'AWS_', 'AZURE_', 'GOOGLE_'];
+const BLOCKED_ENV = ['OPENAI_', 'ANTHROPIC_', 'OLLAMA_', 'CLAUDE_', 'CODEX_', 'NOTETAKER_', 'AWS_', 'AZURE_', 'GOOGLE_'];
 const CODEX_DISABLED = ['shell_tool', 'unified_exec', 'code_mode', 'code_mode_host', 'view_image',
   'computer_use', 'browser_use', 'browser_use_external', 'browser_use_full_cdp_access', 'in_app_browser',
   'apps', 'plugins', 'plugin_sharing', 'remote_plugin', 'hooks', 'multi_agent', 'multi_agent_v2',
@@ -151,12 +155,38 @@ class ProviderBridge {
     const apiKey=String(input.api_key||'');
     if(!apiKey||apiKey.length>8192||/\s/.test(apiKey))throw new BridgeError('provider_connection_invalid','Enter an API key without spaces.');
     // Validate the key and discover models before replacing any working connection.
-    const models=await this.apiModels(provider,apiKey);
+    const models=await this.apiModels(provider,apiKey,model);
     if(model&&!models.includes(model))throw new BridgeError('provider_connection_invalid','This key does not list the requested model.');
     const row={provider,model:model||models[0],models,api_key:apiKey,executable:'',id:randomUUID()};
     await this.write(provider,row);return {provider,model:row.model,digest:row.id};
   }
-  async apiModels(provider,key) {
+  async ollamaModels(key,preferred='') {
+    const fetcher=this.options.fetch||fetch,signal=AbortSignal.timeout(45_000),headers={Authorization:'Bearer '+key};
+    const rejected=status=>{
+      if(status===401)throw new BridgeError('provider_authentication','Ollama did not accept this API key. Create a key at ollama.com/settings/keys and try again.');
+      if(status===429)throw new BridgeError('provider_authentication','The Ollama Cloud usage limit was reached. Try again later.');
+    };
+    let response;
+    try{response=await fetcher(OLLAMA_CLOUD+'/tags',{headers,redirect:'error',signal});}
+    catch{throw new BridgeError('provider_unavailable','Could not load Ollama Cloud models. Check your connection and try again.');}
+    rejected(response.status);
+    if(!response.ok)throw new BridgeError('provider_unavailable','Ollama Cloud could not list models. Try again later.');
+    const text=await response.text();if(text.length>2_000_000)throw new BridgeError('invalid_output','The provider model list was too large.');
+    let result;try{result=JSON.parse(text);if(!Array.isArray(result.models))throw new Error();}catch{throw new BridgeError('invalid_output','The provider returned an invalid model list.');}
+    const models=[...new Set(result.models.map(item=>item?.name).filter(name=>typeof name==='string'&&MODEL.test(name)&&!/embed/i.test(name)))].sort();
+    if(!models.length)throw new BridgeError('provider_connection_invalid','Ollama Cloud listed no text models for this key.');
+    // The public model list may not check the key, so confirm it with one tiny request that carries no lecture data.
+    const probe=models.includes(preferred)?preferred:models[0];
+    try{response=await fetcher(OLLAMA_CLOUD+'/chat',{method:'POST',headers:{...headers,'Content-Type':'application/json'},
+      body:JSON.stringify({model:probe,messages:[{role:'user',content:'Reply with OK.'}],stream:false,options:{num_predict:1}}),redirect:'error',signal});}
+    catch{throw new BridgeError('provider_unavailable','Could not reach Ollama Cloud to confirm this key. Try again.');}
+    rejected(response.status);
+    // 403 means the key authenticated but this plan cannot use the probe model.
+    if(!response.ok&&response.status!==403)throw new BridgeError('provider_unavailable','Ollama Cloud could not confirm this key. Try again later.');
+    return models;
+  }
+  async apiModels(provider,key,preferred='') {
+    if(provider==='ollama-cloud')return this.ollamaModels(key,preferred);
     const base=provider==='openai'?'https://api.openai.com/v1/models':'https://api.anthropic.com/v1/models';
     const headers=provider==='openai'?{Authorization:'Bearer '+key}:{'x-api-key':key,'anthropic-version':'2023-06-01'};
     const signal=AbortSignal.timeout(45_000);
@@ -245,7 +275,8 @@ class ProviderBridge {
     const messages=input.messages;if(!Array.isArray(messages)||messages.length<1||JSON.stringify(messages).length>150_000)throw new BridgeError('invalid_request','The note request was invalid.');
     if(SUBSCRIPTIONS.has(provider))return provider==='chatgpt'?codexGenerate({...row,model:name},messages,this.directory,onPreview):claudeGenerate({...row,model:name},messages,this.directory,onPreview);
     const headers={'Content-Type':'application/json'};let url,request;
-    if(provider==='openai'){url='https://api.openai.com/v1/chat/completions';headers.Authorization='Bearer '+row.api_key;request={model:name,messages,stream:true,store:false,max_completion_tokens:6000,response_format:{type:'json_object'}};}
+    if(provider==='ollama-cloud'){url=OLLAMA_CLOUD+'/chat';headers.Authorization='Bearer '+row.api_key;request={model:name,messages,stream:true,format:'json',options:{temperature:0,num_predict:OLLAMA_CLOUD_OUTPUT}};}
+    else if(provider==='openai'){url='https://api.openai.com/v1/chat/completions';headers.Authorization='Bearer '+row.api_key;request={model:name,messages,stream:true,store:false,max_completion_tokens:6000,response_format:{type:'json_object'}};}
     else {url='https://api.anthropic.com/v1/messages';headers['x-api-key']=row.api_key;headers['anthropic-version']='2023-06-01';request={model:name,system:messages[0]?.content||'',messages:messages.slice(1),max_tokens:6000,stream:true};}
     let response;try {response=await (this.options.fetch||fetch)(url,{method:'POST',headers,body:JSON.stringify(request),signal:AbortSignal.timeout(600_000),redirect:'error'});} catch {throw new BridgeError('provider_unavailable','The provider could not be reached.',503);}
     if(response.status===401||response.status===403)throw new BridgeError('provider_authentication','The provider rejected this connection. Check the API key.');

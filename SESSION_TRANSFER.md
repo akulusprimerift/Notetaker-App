@@ -1,5 +1,13 @@
 # Session transfer
 
+## Ollama Cloud, speech model and transcript ending — 2026-11-07
+
+Active phase remains **6.9.5**. At the user's request: `faster-whisper-small.en` (Systran revision `d1d751a`, `model.bin` SHA-256 verified) is at `.local/models/faster-whisper-small.en`, and **Ollama Cloud** is an explicitly chosen note/question provider: key from ollama.com/settings/keys in Accounts & API keys, stored in the Keychain via the bridge, models from `ollama.com/api/tags`, a one-token key check with no lecture content, NDJSON streaming from `ollama.com/api/chat` with thinking excluded, the usual citation validation and per-lecture cloud consent. Local Ollama still hides `-cloud`/remote models. [Details](docs/implementation/ollama-cloud.md).
+
+Fixed: after recording stopped, the transcript reported `processed` before the final saved seconds were planned, so the ending (60–65 s) was missing when the harness stopped; it now stays `queued` until every saved second has a window (regression test failed before the fix). Executed on the Mac: **284 backend passed, 1 skipped**; **63 JavaScript / 42 desktop contracts**; typecheck, lint, Ruff, whitespace; packaged smoke passed (5.48/3.09 s); paced speech-only harness with `small.en` passed (first passage 8.15 s, backlog ≤ 8 s, done 2.05 s after capture, last passage 64.96/65.21 s, 98.9% script words). The packaged Accounts dialog shows Ollama Cloud. Final unsigned DMG: `.local/macos-standalone-dist/Notetaker-0.1.0-macOS-arm64-unsigned.dmg` (619,884,164 bytes, SHA-256 `0e910bd5c46b1351361d055a9d8327a695f3975fb1491986ec1a3a0422b347fe`).
+
+**Exact next work:** the user installs the DMG, chooses the speech folder in setup, connects their own Ollama Cloud key, selects an `ollama-cloud/…` model with cloud confirmation, and tries a lecture. Then record real cloud note latency/quality and which models honor JSON mode. No real key, cloud request or note model run has been made. Signing/notarization still needs a Developer ID.
+
 ## Apple Silicon SQLite build — 2026-11-07
 
 Active phase remains **6.9.5 — Mac installer and distribution**. The SQLite Mac app was built natively for the first time on the user's Apple Silicon Mac (M5 Pro, macOS 26.6) from the locked Bun/uv dependencies, and the unsigned DMG is at `.local/macos-standalone-dist/Notetaker-0.1.0-macOS-arm64-unsigned.dmg` (619,907,396 bytes, SHA-256 `a13fe179a6e5499969aeb0da51cabe24416d043619d4c26bee1a3bfe89de4cbb`). It was not installed, signed with Developer ID, notarized or published.

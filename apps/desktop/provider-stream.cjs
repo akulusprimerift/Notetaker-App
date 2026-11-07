@@ -1,8 +1,44 @@
 'use strict';
 
+// Ollama's native chat API streams newline-delimited JSON. Only message content is
+// note output; model reasoning in message.thinking is never previewed or returned.
+async function readOllamaStream(response, onPreview) {
+  let buffer='', raw='', metrics={}, complete=false;
+  const decoder=new TextDecoder();
+  const line=text=>{
+    if(!text.trim())return;
+    if(complete)throw new Error('Unexpected provider output after completion');
+    const value=JSON.parse(text);
+    if(!value||typeof value!=='object'||value.error)throw new Error('Provider stream failed');
+    const message=value.message||{};
+    if(message.tool_calls?.length)throw new Error('Unsupported tool request');
+    const delta=message.content??'';
+    if(typeof delta!=='string')throw new Error('Invalid provider text');
+    raw+=delta;
+    if(raw.length>2_000_000)throw new Error('Provider output too large');
+    if(delta)onPreview?.(raw);
+    if(value.done===true){
+      if(value.done_reason!=='stop')throw new Error('Incomplete provider output');
+      complete=true;
+      for(const key of ['prompt_eval_count','eval_count','total_duration'])if(typeof value[key]==='number')metrics[key]=value[key];
+    }
+  };
+  for await(const chunk of response.body){
+    buffer+=decoder.decode(chunk,{stream:true});
+    let boundary;
+    while((boundary=buffer.indexOf('\n'))>=0){line(buffer.slice(0,boundary));buffer=buffer.slice(boundary+1);}
+    if(buffer.length>2_000_000)throw new Error('Provider frame too large');
+  }
+  buffer+=decoder.decode();
+  line(buffer);
+  if(!complete||!raw)throw new Error('Incomplete provider stream');
+  return {raw,metrics};
+}
+
 // Decode SSE across arbitrary UTF-8/network boundaries. Never expose provider
 // metadata or JSON scaffolding as note prose; the API extracts that separately.
 async function readProviderStream(response, provider, onPreview) {
+  if(provider==='ollama-cloud')return readOllamaStream(response,onPreview);
   let buffer='', raw='', metrics={}, complete=false;
   const decoder=new TextDecoder();
   const event=frame=>{

@@ -161,3 +161,46 @@ def test_subscription_routes_through_selected_bridge_and_revalidates(tmp_path, m
     store.save(provider,'test-model',executable=str(executable))
     with pytest.raises(NoteFailure): adapter.generate(EVIDENCE,pref)
     assert calls == [provider]
+
+
+def test_ollama_cloud_streams_validated_notes_without_thinking_or_secrets(tmp_path):
+    store = Connections(tmp_path); store.save('ollama-cloud', 'gpt-oss:120b', api_key='cloud-secret-only')
+    pref = SimpleNamespace(model='ollama-cloud/gpt-oss:120b', model_digest=store.read('ollama-cloud')['id'])
+    raw = json.dumps(DRAFT); sent = []; final = {'done_reason': 'stop', 'status': 200}
+    def transport(request):
+        sent.append(request)
+        assert str(request.url) == 'https://ollama.com/api/chat'
+        assert request.headers['authorization'] == 'Bearer cloud-secret-only'
+        body = json.loads(request.content)
+        assert body['model'] == 'gpt-oss:120b' and body['stream'] is True and body['format'] == 'json'
+        lines = [{'message': {'content': '', 'thinking': 'private reasoning'}, 'done': False},
+            {'message': {'content': raw[:60]}, 'done': False},
+            {'message': {'content': raw[60:]}, 'done': True, 'done_reason': final['done_reason'], 'eval_count': 90}]
+        return httpx.Response(final['status'], content='\n'.join(json.dumps(line) for line in lines))
+    adapter = NoteProviders(SimpleNamespace(standalone=True, provider_directory=str(tmp_path), ollama_url='http://127.0.0.1:1'),
+        transport=httpx.MockTransport(transport))
+    previews = []
+    content, metadata = adapter.generate_stream(EVIDENCE, pref, previews.append)
+    assert content['blocks'][0]['passages'][0]['sources'][0]['source_id'] == 'water'
+    assert metadata['provider'] == 'ollama-cloud' and metadata['processing_location'] == 'cloud'
+    assert metadata['metrics'] == {'eval_count': 90}
+    assert not any('private reasoning' in text for text in previews)
+    assert 'cloud-secret' not in json.dumps(metadata)
+    final['done_reason'] = 'length'
+    with pytest.raises(NoteFailure) as failure: adapter.generate(EVIDENCE, pref)
+    assert failure.value.code == 'truncated_output'
+    final['status'] = 401
+    with pytest.raises(NoteFailure) as failure: adapter.generate(EVIDENCE, pref)
+    assert failure.value.code == 'provider_authentication' and len(sent) == 3
+
+
+def test_ollama_cloud_choice_requires_lecture_consent(notes, tmp_path):
+    app, client, headers, path, _ = notes
+    store = Connections(tmp_path); store.save('ollama-cloud', 'gpt-oss:120b', api_key='secret')
+    app.state.note_provider = NoteProviders(SimpleNamespace(standalone=True, provider_directory=str(tmp_path), ollama_url='http://127.0.0.1:1'))
+    body = {'model': 'ollama-cloud/gpt-oss:120b', 'expected_version': 1, 'enabled': True}
+    def post(value): return client.post(path+'/notes/model', json=value, headers={**headers, 'idempotency-key': str(uuid4())})
+    refused = post(body)
+    assert refused.status_code == 422 and refused.json()['error']['code'] == 'cloud_consent_required'
+    accepted = post({**body, 'cloud_consent': True})
+    assert accepted.status_code == 200 and accepted.json()['model'] == 'ollama-cloud/gpt-oss:120b'
