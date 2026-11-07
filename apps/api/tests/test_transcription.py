@@ -60,6 +60,23 @@ def test_sealed_context_windows_cover_once_and_chunk_jobs_wait(speech):
     assert claim(app.state.sessions) is None
 
 
+def test_unplanned_ending_after_stop_is_queued_not_processed(capture):
+    app,client,headers,path,run=capture
+    for sequence in range(3):
+        assert upload(client,headers,path,run,sequence,count=480000).status_code==200
+    plan_pending(app.state.sessions)
+    finish_all(app)
+    # Live cores wait for right-hand context, so the final seconds are not planned yet.
+    assert client.get(path+'/transcript').json()['status']=='listening'
+    assert seal(client,headers,path,run,last=2,samples=1440000).status_code==200
+    assert client.get(path+'/transcript').json()['status']=='queued'
+    plan_pending(app.state.sessions)
+    finish_all(app)
+    assert client.get(path+'/transcript').json()['status']=='processed'
+    with app.state.sessions() as db:
+        assert max(w.core_end for w in db.scalars(select(SpeechWindow)))==1440000
+
+
 def test_unsealed_or_missing_audio_never_becomes_silence(capture):
     app,client,headers,path,run=capture
     upload(client,headers,path,run,count=48000)

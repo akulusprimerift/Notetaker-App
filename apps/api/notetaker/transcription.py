@@ -193,13 +193,18 @@ def transcript_json(db, lecture, settings=None):
     counts = {state:sum(job.status == state for _, job, _ in windows) for state in ('due','running','completed','failed')}
     runs = current_runs(db, lecture)
     waiting = any(r.final_sample_count != 0 and not any(w.run_id == r.id for w,_,_ in windows) for r in runs)
+    saved = {r.id: saved_through(db, r) for r in runs}
+    # A stopped run whose saved audio extends past its last planned window still has an
+    # untranscribed ending until the planner adds it; never report that as processed.
+    unplanned = any(r.state != 'recording' and any(w.run_id == r.id for w,_,_ in windows)
+        and saved[r.id] > max(w.core_end for w,_,_ in windows if w.run_id == r.id) for r in runs)
     if counts['running']: status = 'processing'
-    elif counts['due']: status = 'queued'
+    elif counts['due'] or unplanned: status = 'queued'
     elif counts['failed']: status = 'needs_attention'
     elif waiting: status = 'awaiting_saved_audio'
     elif windows: status = 'listening' if any(r.state == 'recording' for r in runs) else 'processed'
     else: status = 'not_started'
-    backlog = sum(max(0, saved_through(db, r) - sum(w.core_end-w.core_start for w,j,_ in windows if w.run_id == r.id and j.status == 'completed')) / r.sample_rate for r in runs)
+    backlog = sum(max(0, saved[r.id] - sum(w.core_end-w.core_start for w,j,_ in windows if w.run_id == r.id and j.status == 'completed')) / r.sample_rate for r in runs)
     from .speech_provider import model_files_available
     model_missing = settings is not None and not model_files_available(settings.speech_model_path)
     errors = {job.error_code for _,job,_ in windows if job.error_code}

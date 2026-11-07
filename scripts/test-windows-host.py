@@ -37,6 +37,7 @@ def main():
     parser.add_argument('--synthetic-audio', type=Path, help='Mono PCM16 WAV; omit --speech-model to check the missing-model path')
     parser.add_argument('--note-model')
     parser.add_argument('--fast', action='store_true', help='Upload without real-time pacing (no live latency claim)')
+    parser.add_argument('--speech-only', action='store_true', help='With --speech-model and no note model: measure transcription only')
     parser.add_argument('--timeout', type=int, default=1800)
     args = parser.parse_args()
     profile = Path('.local') / ('host-smoke-' + uuid4().hex)
@@ -137,7 +138,7 @@ def workflow(client, headers, course, args, profile):
     if missing_speech:
         assert ok(client.get(path + '/transcript')).json()['speech_model']['state'] == 'missing'
     else:
-        assert args.note_model, 'Select an existing local note model for the workflow'
+        assert args.note_model or args.speech_only, 'Select an existing local note model, or pass --speech-only'
         began = time.monotonic()
         def speech_ready():
             status = ok(client.get(path + '/transcript')).json()['speech_model']
@@ -148,7 +149,8 @@ def workflow(client, headers, course, args, profile):
         missing = client.post(path + '/notes/model', json={'expected_version': 0, 'model': 'notetaker-missing-model:0'}, headers=headers())
         assert missing.status_code == 503 and missing.json()['error']['code'] == 'model_unavailable', missing.text
         report['missing_note_model_refused'] = True
-        post(path + '/notes/model', {'expected_version': 0, 'model': args.note_model})
+        if args.note_model:
+            post(path + '/notes/model', {'expected_version': 0, 'model': args.note_model})
 
     grant = secrets.token_urlsafe(48)
     run = post(path + '/capture-runs', {'grant': grant, 'sample_rate': rate, 'expected_capture_epoch': 0})
@@ -231,6 +233,31 @@ def workflow(client, headers, course, args, profile):
         assert not (transcript.get('snapshot') or {}).get('segments')
         stop.set()
         report.update(missing_speech_model_visible=True, transcript_status=transcript['status'], audio_intact=audio_intact())
+        return report
+
+    if args.speech_only and not args.note_model:
+        def transcribed():
+            transcript = ok(client.get(path + '/transcript')).json()
+            if transcript['status'] == 'needs_attention':
+                raise RuntimeError(f"Transcription failed: {transcript['errors']}")
+            return transcript if transcript['status'] == 'processed' else None
+        transcript = wait('Transcript', transcribed, args.timeout)
+        done = elapsed(); stop.set()
+        segments = (transcript.get('snapshot') or {}).get('segments') or []
+        assert segments, 'No timestamped passages'
+        assert all(0 <= s['start_sample'] < s['end_sample'] <= samples for s in segments), 'Passage timestamps outside the audio'
+        assert [s['start_sample'] for s in segments] == sorted(s['start_sample'] for s in segments), 'Passages out of order'
+        # Rough synthetic check only: share of the script's words present in the transcript (not WER).
+        words = lambda text: set(''.join(c if c.isalnum() else ' ' for c in text.lower()).split())
+        expected = words(Path('evaluations/fixtures/speech-cs-synthetic.txt').read_text())
+        heard = words(' '.join(s['text'] for s in segments))
+        notes = ok(client.get(path + '/notes')).json()
+        report.update(first_passage_seconds=timeline['first_passage'], transcript_done_after_capture_seconds=round(done - capture_end, 2),
+            max_speech_backlog_seconds=timeline['max_delay'], passages=len(segments),
+            last_passage_end_seconds=round(max(s['end_sample'] for s in segments) / rate, 2),
+            fixture_word_recall=round(len(expected & heard) / len(expected), 3), notes_revision_without_model=bool(notes.get('revision')),
+            audio_intact=audio_intact())
+        assert not report['notes_revision_without_model'], 'Notes appeared without a selected note model'
         return report
 
     def settled():
