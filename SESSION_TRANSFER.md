@@ -1,5 +1,15 @@
 # Session transfer
 
+## Apple Silicon SQLite build — 2026-11-07
+
+Active phase remains **6.9.5 — Mac installer and distribution**. The SQLite Mac app was built natively for the first time on the user's Apple Silicon Mac (M5 Pro, macOS 26.6) from the locked Bun/uv dependencies, and the unsigned DMG is at `.local/macos-standalone-dist/Notetaker-0.1.0-macOS-arm64-unsigned.dmg` (619,907,887 bytes, SHA-256 `c242d3dc00f848a27e00a3ac92f3bbd8fa9b5da6e2c4f6a221c1492ad3fc4e58`). It was not installed, signed with Developer ID, notarized or published.
+
+Executed on the Mac: **279 backend passed, 1 skipped**; **63 JavaScript / 40 desktop contracts**; typecheck, lint, Ruff, whitespace. The packaged `Notetaker.app` passed the full synthetic smoke: fresh SQLite library, bundled services, verified audio, three real recorder cycles, final-snapshot exports, Quit → reopen with byte-identical audio, isolation and themes (startup 5.56/3.08 s). Killing the Electron process removed every service process within 2 s. `verify:docs` was not run because PowerShell is not installed.
+
+Fixed: (1) reopening within about 30 s of Quit was refused with "Port 3000 is in use" because the host's port probe treated macOS `TIME_WAIT` leftovers as occupied; POSIX probes now match the servers' `SO_REUSEADDR` binds and also refuse any active loopback listener, with a regression test that failed before the fix. (2) Cloud-note backend tests used Windows DPAPI and failed on Mac; they now use a test double off Windows while a new check confirms the real store still refuses plaintext. (3) The smoke test now expects the standard Mac title bar. [Evidence](docs/implementation/sqlite-standalone.md#apple-silicon-local-build--2026-11-07).
+
+**Exact next work:** the user installs this DMG over their existing Mac app (the earlier PostgreSQL library needs explicit conversion first) or a fresh library, and confirms launch. To finish 6.9.5, add the Developer ID certificate and the five `MACOS_*`/`APPLE_*` repository secrets, push a new `macos-v*` tag, and verify the notarized DMG opens on a clean Mac without `xattr`. Then run the local-model [workflow harness](docs/implementation/macos-workflow.md) on the Mac (6.9.4 evidence) and 6.9.6. Microphone, Keychain with real credentials, sleep/wake, endurance and human note-quality gates remain open.
+
 ## SQLite standalone switch — 2026-10-05
 
 Active phase remains **6.9.5 — Mac installer and distribution**; the user's SQLite priority supersedes earlier PostgreSQL/Docker authority. The app now requires SQLite with foreign keys, WAL, FULL synchronization and writer locks, stores verified immutable audio in the library folder, and reconciles saved jobs without Kafka. Separate OS inference locks preserve speech/notes concurrency and release on worker death. Windows/Mac hosts launch only API, Ollama, speech and notes workers. Docker delivery/setup, PostgreSQL/SeaweedFS binaries and their normal client dependencies are removed. Account credentials remain protected in the original app-data profile. New libraries need no database password.

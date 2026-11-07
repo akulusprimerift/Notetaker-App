@@ -1,5 +1,7 @@
 # Project phases
 
+Mac build (2026-11-07): phase **6.9.5** remains active. The SQLite Mac app and unsigned DMG were built natively on the user's Apple Silicon Mac, and the packaged app passes the synthetic save/record/export/Quit/reopen smoke after two Mac-only defects were fixed ([evidence](implementation/sqlite-standalone.md#apple-silicon-local-build--2026-11-07)). Developer ID signing/notarization, clean-machine install and the local-model workflow on Mac remain open.
+
 Priority change (2026-10-05): the user selects **SQLite-only standalone delivery** and removes Docker. Phase **6.9.5** remains the single active phase. [Storage conversion, Windows/Mac packaging changes and executed evidence](implementation/sqlite-standalone.md) supersede the earlier PostgreSQL/Docker delivery directions. Prior libraries are retained; conversion is explicit and side by side. Earlier hardware, human quality and Mac release gates remain open.
 
 Implementation status: the SQLite app and explicit verified conversion are implemented; the rebuilt Windows standalone installer passes SQLite backend, frozen migration/parser and packaged synthetic recording/export/reopen checks. Mac source/build paths are updated and their shared contracts pass on Windows; native SQLite Mac packaging and qualification remain next. This does not close installed-upgrade, hardware or release gates.

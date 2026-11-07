@@ -1,5 +1,6 @@
 import copy
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
@@ -13,6 +14,25 @@ from notetaker.cloud_notes import NoteProviders
 from notetaker.note_provider import NoteFailure
 from notetaker.provider_connections import Connections
 from notetaker.subscription_notes import client_environment, codex_args, claude_args
+from notetaker import provider_connections
+
+REAL_PROTECT = provider_connections.protect
+
+
+@pytest.fixture(autouse=True)
+def platform_protection(monkeypatch):
+    # Backend-held keys use Windows DPAPI; Mac keys stay in the Electron bridge's Keychain storage.
+    # Off Windows, a reversible test double lets these cloud routing/validation checks still run.
+    if os.name != 'nt':
+        monkeypatch.setattr(provider_connections, 'protect',
+            lambda data, decrypt=False: bytes(byte ^ 0x5A for byte in data))
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='DPAPI storage is exercised by the cloud tests on Windows')
+def test_backend_key_storage_refuses_without_windows_protection():
+    for decrypt in (False, True):
+        with pytest.raises(ValueError, match='Windows protected storage'):
+            REAL_PROTECT(b'test-secret-only', decrypt=decrypt)
 
 
 def test_key_only_and_browser_link_routes_preserve_session_csrf_and_idempotency(setup):

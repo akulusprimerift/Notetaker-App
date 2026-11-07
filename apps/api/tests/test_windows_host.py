@@ -12,9 +12,10 @@ from notetaker.windows_host import require_free_ports
 from notetaker import windows_host as host, runtime_platform
 
 
-@pytest.mark.skipif(sys.platform != 'win32', reason='Windows exclusive socket semantics')
 def test_native_host_refuses_an_occupied_port_without_touching_listener():
     with socket.socket() as listener:
+        if sys.platform != 'win32':
+            listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind(('127.0.0.1', 0))
         listener.listen()
         port = listener.getsockname()[1]
@@ -22,6 +23,25 @@ def test_native_host_refuses_an_occupied_port_without_touching_listener():
             require_free_ports([port])
         with socket.create_connection(('127.0.0.1', port), timeout=1):
             assert listener.fileno() != -1
+
+
+@pytest.mark.skipif(sys.platform == 'win32', reason='POSIX TIME_WAIT bind semantics')
+def test_reopen_is_not_blocked_by_time_wait_left_by_a_quit_workspace():
+    # A quit workspace server closes its accepted connections first, leaving server-side TIME_WAIT.
+    with socket.socket() as listener:
+        listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        listener.bind(('127.0.0.1', 0))
+        listener.listen()
+        port = listener.getsockname()[1]
+        client = socket.create_connection(('127.0.0.1', port), timeout=1)
+        accepted, _ = listener.accept()
+        accepted.close()
+        client.recv(1)
+        client.close()
+    with socket.socket() as strict:
+        with pytest.raises(OSError):
+            strict.bind(('127.0.0.1', port))  # Proves the TIME_WAIT condition exists.
+    require_free_ports([port])
 
 
 def test_native_profile_defaults_to_sqlite_and_local_audio():

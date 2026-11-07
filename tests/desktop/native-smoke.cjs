@@ -61,7 +61,10 @@ const {_electron:electron}=require(playwrightDriver);
     const chrome=await application.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].getContentBounds());
     assert.ok(chrome.width>0);
     if(process.platform==='win32')assert.equal(await page.evaluate(()=>navigator.windowControlsOverlay?.visible),true);
-    assert.equal(await page.locator('.topbar').evaluate(el=>getComputedStyle(el).webkitAppRegion),'drag');
+    // Windows draws its own title bar region; Mac keeps the standard title bar, so content must not drag.
+    const mac=process.platform==='darwin';
+    assert.equal(await page.locator('html').getAttribute('data-desktop'),String(!mac));
+    assert.equal(await page.locator('.topbar').evaluate(el=>getComputedStyle(el).webkitAppRegion),mac?'none':'drag');
     await setTheme(page,'blue');
     assert.equal(await page.locator('html').getAttribute('data-theme'),'blue');
     assert.equal(await page.locator('h1').evaluate(element=>getComputedStyle(element).fontFamily.includes('Workspace Sans')),true);

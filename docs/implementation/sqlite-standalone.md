@@ -98,6 +98,27 @@ The unsigned local Windows installer was built successfully: `.local/sqlite-swit
 
 The first packaged workflow exposed a migration transaction boundary: a successful process exit retained schema 0012 because the new explicit transaction had no owner committing its tail. The standalone migration path now uses an owned transaction, with fresh/upgrade process regression checks and a rebuilt service. Earlier unsuccessful runs are not counted as passing checks. The workflow harness now honors the requested timeout for finalization (with a 600 s minimum). Recovery evidence is retained in `.local/host-smoke-8775fb2a52f64504b6a3ac1c66e51225/sqlite-recovery-report.json`; original timeout, recovery and confirmation logs remain separate.
 
+## Apple Silicon local build — 2026-11-07
+
+Executed on the user's Apple Silicon Mac (Apple M5 Pro, 24 GB, macOS 26.6 build 25G72, native arm64): Xcode command-line tools, Bun 1.4.4 (the repository pins 1.3.10; `bun install --frozen-lockfile --ignore-scripts` left `bun.lock` unchanged), uv 0.13.7 and CPython 3.12.16 synchronized from the existing locks. All libraries and audio were disposable/synthetic; no student library, microphone, model download or provider call was used.
+
+| Executed check | Result |
+| --- | --- |
+| Shared contracts | **63 JavaScript / 40 desktop passed**; typecheck, JavaScript lint, Ruff and whitespace passed. `bun run verify:docs` was **not run**: PowerShell is not installed on this Mac. |
+| Full backend, first run | **268 passed, 8 failed, 2 skipped.** All failures were `test_cloud_notes.py` storing keys through Windows DPAPI, which deliberately refuses off Windows; Mac keys use the Electron bridge's Keychain-backed storage. Off Windows these tests now use a reversible test double, and a new check confirms the real backend store still refuses plaintext. |
+| Full backend after fixes | **279 passed, 1 skipped** (packaged document parser). |
+| Native components | Pinned Ollama 0.33.3 `ollama-darwin.tgz` matched the workflow SHA-256; 22 Intel-only libraries were removed and the arm64 `ollama`/`llama-server`/`llama-quantize` slices load only system libraries. Codex 0.154.0 came from the Bun lock. Lock, staging (arm64/load-path audit) and app packaging passed. |
+| Artifact | `.local/macos-standalone-dist/Notetaker-0.1.0-macOS-arm64-unsigned.dmg`, **619,907,887 bytes**, SHA-256 `c242d3dc00f848a27e00a3ac92f3bbd8fa9b5da6e2c4f6a221c1492ad3fc4e58`. Ad-hoc signed: `codesign --verify --deep --strict` and `hdiutil verify` passed. Runtime stage `.local/macos-runtime/79b8e7c9-0bf3-48f0-8d5c-457ecc3da1b0`. Not Developer ID signed, notarized, installed or published. |
+| Packaged Electron smoke | **Passed** with the packaged `Notetaker.app`: fresh SQLite library, bundled host/API/speech/notes/Ollama/web startup, verified synthetic audio, **3 real recorder start/stop cycles** (AudioWorklet in the packaged app), finalization with Word/slides/text exports, Quit → reopen with byte-identical audio, renderer isolation and theme persistence. Startup 5.56 s fresh / 3.08 s reopen. Profile `.local/standalone-smoke-5747d532-f8f4-43bb-b83a-79d5dd4996eb`. |
+| Abrupt parent death | One manual check on a disposable profile: after `SIGKILL` of the Electron process, all bundled service processes exited within 2 s and ports 3000/8010/11435 were released. |
+
+Defects found and fixed during this build:
+
+- **Reopen refused after Quit.** Relaunching within about 30 s of a confirmed Quit showed "Port 3000 is in use" although no process was listening: the host's port probe bound without `SO_REUSEADDR`, so macOS rejected it while only `TIME_WAIT` sockets remained. The bundled servers themselves bind with reuse, so the probe was stricter than what it protects. On POSIX the probe now binds with `SO_REUSEADDR`, and a loopback connect check refuses any active listener, including wildcard binds. The occupied-port refusal test now runs on every platform; a new `TIME_WAIT` regression test failed on the old code and passes with the fix. Windows keeps `SO_EXCLUSIVEADDRUSE`.
+- **Smoke test expected Windows chrome on Mac.** The Mac app intentionally keeps the standard title bar (`data-desktop=false`), so the test now checks for a non-draggable top bar on Mac and the drag region on Windows.
+
+Still not executed on the Mac: Developer ID signing/notarization (no credentials configured), a quarantined download/clean-machine Gatekeeper launch, installing over the earlier PostgreSQL-based DMG, the local-model [workflow harness](macos-workflow.md), real Keychain credentials, microphone permission/capture and sleep/wake.
+
 ## Remaining qualification
 
 Actual SQLite Mac startup, permissions/Keychain, sleep/wake, native packaged lecture workflows, signed/notarized delivery, clean-machine installation and installed-library upgrades require their named environments. Synthetic checks do not qualify physical microphone capture, power-loss storage behavior, long-duration endurance or human note usefulness. Fewer processes are expected to reduce startup work; this change does not promise a measured end-user loading improvement without a matched before/after benchmark. No existing student library is converted automatically or accessed for these checks.

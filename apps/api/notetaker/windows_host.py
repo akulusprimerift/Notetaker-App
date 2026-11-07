@@ -45,13 +45,24 @@ def own_process_tree():
 
 def require_free_ports(ports):
     for port in ports:
+        in_use = RuntimeError(f'Port {port} is in use. Close the other workspace before starting this library.')
+        # Any listener reachable on loopback (including a wildcard bind) is another workspace or app.
+        try:
+            with socket.create_connection(('127.0.0.1', port), timeout=0.5):
+                raise in_use
+        except OSError:
+            pass
         with socket.socket() as probe:
             if sys.platform == 'win32':
                 probe.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+            else:
+                # Match the bundled servers' own binds: TIME_WAIT sockets left by a just-quit
+                # workspace must not block reopening, while an active listener still fails.
+                probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             try:
                 probe.bind(('127.0.0.1', port))
             except OSError:
-                raise RuntimeError(f'Port {port} is in use. Close the other workspace before starting this library.') from None
+                raise in_use from None
 
 
 def require_sqlite_library(data):
